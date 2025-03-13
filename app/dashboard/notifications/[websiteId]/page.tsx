@@ -6,7 +6,7 @@ import { FaArrowLeft, FaPlus, FaCopy, FaImage, FaGripVertical, FaPlay, FaStop, F
 import { toast } from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import ButtonCheckout from "@/components/ButtonCheckout";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 // Popular brand logos
 const POPULAR_LOGOS = [
