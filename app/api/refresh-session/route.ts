@@ -4,6 +4,9 @@ import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/next-auth";
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Get the current session
@@ -26,7 +29,6 @@ export async function GET(req: NextRequest) {
     console.log("Refreshing session with plan:", user.plan);
     
     // Make sure to return the user data in a format that NextAuth expects
-    // The structure here should match what's expected in your next-auth.ts callbacks
     return NextResponse.json({ 
       success: true, 
       user: {
@@ -34,8 +36,8 @@ export async function GET(req: NextRequest) {
         email: user.email,
         name: user.name,
         image: user.image || session.user.image,
-        plan: user.plan || "pro",  // Ensure plan is never undefined
-        customerId: user.customerId || ""  // Ensure customerId is never undefined
+        plan: user.plan || "pro",
+        customerId: user.customerId || ""
       }
     });
     
