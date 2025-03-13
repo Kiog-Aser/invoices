@@ -1,11 +1,10 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import { MongoDBAdapter } from "@next-auth/mongodb-adapter"; // Changed from @auth/mongodb-adapter
 import clientPromise from "@/libs/mongo";
 import User from "@/models/User";
 
-// Move authOptions to a separate file or declare it within the handler scope
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -39,7 +38,14 @@ const handler = NextAuth({
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise, {
+    collections: {
+      Users: "users",
+      Accounts: "accounts",
+      Sessions: "sessions",
+      VerificationTokens: "verification_tokens",
+    },
+  }),
   callbacks: {
     async jwt({ token, user, account, trigger }) {
       if (user) {
