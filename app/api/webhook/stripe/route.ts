@@ -80,6 +80,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Error processing webhook" },
       { status: 500 }
-    ); 
+    );
   }
 }
