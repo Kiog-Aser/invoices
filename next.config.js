@@ -15,34 +15,19 @@ const nextConfig = {
     ];
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'www.google.com',
-        pathname: '/s2/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.googleusercontent.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'avatar.vercel.sh',
-        pathname: '/**',
-      },
-      // Allow images from any domain for favicon display
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
     domains: [
-      // NextJS <Image> component needs to whitelist domains for src={}
+      // Add your image domains here
       "lh3.googleusercontent.com",
       "pbs.twimg.com",
       "images.unsplash.com",
       "logos-world.net",
+      // Add any other domains you need
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
   },
 };
