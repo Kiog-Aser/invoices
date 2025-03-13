@@ -58,6 +58,11 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
       .find({ websiteId: websiteIdStr })
       .toArray();
 
+    // Add null check before accessing website properties
+    if (!website) {
+      return NextResponse.json({ error: "Website not found" }, { status: 404 });
+    }
+
     // Return with merged default config
     return NextResponse.json({ 
       website,

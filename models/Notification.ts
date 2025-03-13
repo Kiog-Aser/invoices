@@ -1,7 +1,7 @@
 export interface Notification {
   id?: string;
-  userId: string;
-  websiteId: string;
+  userId?: string;  // Make optional for client-side use
+  websiteId?: string; // Make optional for client-side use
   title: string;
   message: string;
   image?: string;
@@ -9,6 +9,6 @@ export interface Notification {
   delay: number;
   createdAt?: Date;
   updatedAt?: Date;
-  url: string;
-  theme: string;
+  url?: string; // Make properly optional
+  theme?: string; // Make optional since it might not always be set
 }
