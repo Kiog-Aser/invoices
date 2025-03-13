@@ -1,9 +1,18 @@
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+import type { JWT } from "next-auth/jwt";
 import clientPromise from "@/libs/mongo";
 import User from "@/models/User";
+
+// Define the JWT callback parameters type
+type JWTCallbackParams = {
+  token: JWT;
+  user?: any;
+  trigger?: "signIn" | "signUp" | "update";
+  session?: any;
+};
 
 const handler = NextAuth({
   providers: [
@@ -47,14 +56,14 @@ const handler = NextAuth({
     },
   }),
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger }: JWTCallbackParams) {
       if (user) {
         token.id = user.id;
-        // Now TypeScript knows about the plan property
-        token.plan = (user as any).plan || "";
+        token.plan = user.plan || "";
       }
       
-      if (trigger === "update" || trigger === "refresh" || trigger === "session") {
+      // Check if we need to update the token
+      if (trigger === "update" || token?.email) {
         try {
           const dbUser = await User.findOne({ email: token.email });
           if (dbUser) {
@@ -67,7 +76,7 @@ const handler = NextAuth({
       
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: JWT }) {
       if (session.user) {
         session.user.id = token.id;
         session.user.plan = token.plan || "";
