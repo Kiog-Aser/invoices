@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { api } from '@/libs/api';
+import apiClient from "@/libs/api";
 
 export default function WebsiteDetailsPage() {
   const { websiteId } = useParams();
@@ -14,7 +14,7 @@ export default function WebsiteDetailsPage() {
     async function fetchWebsite() {
       try {
         setLoading(true);
-        const response = await api.get(`/websites/${websiteId}`);
+        const response = await apiClient.get(`/websites/${websiteId}`);
         setWebsite(response.data);
         setLoading(false);
       } catch (err) {
