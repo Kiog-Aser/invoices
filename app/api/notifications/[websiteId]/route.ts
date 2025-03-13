@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
       message: notification.message || "",
       image: notification.image || "",
       timestamp: notification.timestamp || "now",
-      delay: notification.delay || 0
+      delay: notification.delay || 0,
       url: notification.url || "",
     }));
     
