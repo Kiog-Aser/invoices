@@ -31,10 +31,15 @@ const userSchema = new mongoose.Schema(
         return value.includes("price_");
       },
     },
-    // Used to determine if the user has access to the product—it's turn on/off by the Stripe webhook
-    hasAccess: {
-      type: Boolean,
-      default: false,
+    // User's current plan (free or pro)
+    plan: {
+      type: String,
+      enum: ['', 'pro'],
+      default: ''
+    },
+    provider: {
+      type: String,
+      required: false, // Make it optional for backward compatibility
     },
   },
   {

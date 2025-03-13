@@ -1,64 +1,74 @@
-import NextAuth from "next-auth";
-import type { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import EmailProvider from "next-auth/providers/email";
+import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import connectMongoose from "@/libs/mongoose";
 import config from "@/config";
-import connectMongo from "./mongo";
 
-interface NextAuthOptionsExtended extends NextAuthOptions {
-  adapter: any;
-}
+// Used for storing users, sessions, etc. in MongoDB
+const connectMongo = process.env.MONGODB_URI ? connectMongoose : null;
 
-export const authOptions: NextAuthOptionsExtended = {
-  // Set any random key in .env.local
-  secret: process.env.NEXTAUTH_SECRET,
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      // Follow the "Login with Google" tutorial to get your credentials
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET,
-      async profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.given_name ? profile.given_name : profile.name,
-          email: profile.email,
-          image: profile.picture,
-          createdAt: new Date(),
-        };
-      },
+      clientId: process.env.GOOGLE_ID || "",
+      clientSecret: process.env.GOOGLE_SECRET || "",
     }),
-    // Follow the "Login with Email" tutorial to set up your email server
-    // Requires a MongoDB database. Set MONOGODB_URI env variable.
-    ...(connectMongo
-      ? [
-          EmailProvider({
-            server: process.env.EMAIL_SERVER,
-            from: config.mailgun.fromNoReply,
-          }),
-        ]
-      : []),
+    GithubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+    }),
   ],
-  // New users will be saved in Database (MongoDB Atlas). Each user (model) has some fields like name, email, image, etc..
-  // Requires a MongoDB database. Set MONOGODB_URI env variable.
-  // Learn more about the model type: https://next-auth.js.org/v3/adapters/models
-  ...(connectMongo && { adapter: MongoDBAdapter(connectMongo) }),
+  // New users will be saved in Database (MongoDB Atlas)
+  ...(connectMongo && { 
+    adapter: MongoDBAdapter(connectMongo, {
+      databaseName: "test",
+      // Ensure new users are created with a default plan
+      collections: {
+        Users: {
+          beforeCreate(user) {
+            // Set default plan for new users
+            user.plan = user.plan || '';
+            return user;
+          }
+        }
+      }
+    }) 
+  }),
 
   callbacks: {
-    session: async ({ session, token }) => {
+    // Include user.id and plan in session
+    session({ session, token }) {
       if (session?.user) {
         session.user.id = token.sub;
+        // Add plan from token to session
+        session.user.plan = token.plan;
+        session.user.customerId = token.customerId; // Make sure this line exists
       }
       return session;
     },
+    // Store plan in the token
+    async jwt({ token, user, account, profile, trigger, session }) {
+      // Initial sign in - add plan from database user
+      if (user) {
+        token.plan = user.plan;
+        token.customerId = user.customerId; // Make sure this line exists
+      }
+      
+      // When using the refresh-session API route
+      if (trigger === "update" && session?.user?.plan) {
+        token.plan = session.user.plan;
+        token.customerId = session.user.customerId; // Make sure this line exists
+      }
+      
+      return token;
+    }
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const, // Ensure the strategy is correctly typed
   },
   theme: {
     brandColor: config.colors.main,
-    // Add you own logo below. Recommended size is rectangle (i.e. 200x50px) and show your logo + name.
-    // It will be used in the login flow to display your logo. If you don't add it, it will look faded.
     logo: `https://${config.domainName}/logoAndName.png`,
   },
 };

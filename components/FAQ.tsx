@@ -3,9 +3,6 @@
 import { useRef, useState } from "react";
 import type { JSX } from "react";
 
-// <FAQ> component is a lsit of <Item> component
-// Just import the FAQ & add your FAQ content to the const faqList arrayy below.
-
 interface FAQItemProps {
   question: string;
   answer: JSX.Element;
@@ -13,22 +10,21 @@ interface FAQItemProps {
 
 const faqList: FAQItemProps[] = [
   {
-    question: "What do I get exactly?",
-    answer: <div className="space-y-2 leading-relaxed">Loreum Ipseum</div>,
+    question: "Is it a subscription?",
+    answer: <div className="space-y-2 leading-relaxed">Nope. You pay once and it's yours forever.</div>,
   },
   {
-    question: "Can I get a refund?",
+    question: "Is it compatible with...?",
     answer: (
       <p>
-        Yes! You can request a refund within 7 days of your purchase. Reach out
-        by email.
+        Wordpress, Shopify, Carrd, Webflow, Bubble, Wix, etc. are all supported. If you can add a code snippet (script) to your website, you can use NotiFast.
       </p>
     ),
   },
   {
-    question: "I have another question",
+    question: "Do I need to code?",
     answer: (
-      <div className="space-y-2 leading-relaxed">Cool, contact us by email</div>
+      <div className="space-y-2 leading-relaxed">You don't. All you need to do is copy and paste a small code snippet in your website's {'<head>'} tag. Wordpress, Shopify, Webflow, Bubble, Wix, etc. are all supported.</div>
     ),
   },
 ];
@@ -38,56 +34,19 @@ const FaqItem = ({ item }: { item: FAQItemProps }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <li>
-      <button
-        className="relative flex gap-2 items-center w-full py-5 text-base font-semibold text-left border-t md:text-lg border-base-content/10"
-        onClick={(e) => {
-          e.preventDefault();
-          setIsOpen(!isOpen);
-        }}
-        aria-expanded={isOpen}
-      >
-        <span
-          className={`flex-1 text-base-content ${isOpen ? "text-primary" : ""}`}
-        >
-          {item?.question}
-        </span>
-        <svg
-          className={`flex-shrink-0 w-4 h-4 ml-auto fill-current`}
-          viewBox="0 0 16 16"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect
-            y="7"
-            width="16"
-            height="2"
-            rx="1"
-            className={`transform origin-center transition duration-200 ease-out ${
-              isOpen && "rotate-180"
-            }`}
-          />
-          <rect
-            y="7"
-            width="16"
-            height="2"
-            rx="1"
-            className={`transform origin-center rotate-90 transition duration-200 ease-out ${
-              isOpen && "rotate-180 hidden"
-            }`}
-          />
-        </svg>
-      </button>
-
-      <div
-        ref={accordion}
-        className={`transition-all duration-300 ease-in-out opacity-80 overflow-hidden`}
-        style={
-          isOpen
-            ? { maxHeight: accordion?.current?.scrollHeight, opacity: 1 }
-            : { maxHeight: 0, opacity: 0 }
-        }
-      >
-        <div className="pb-5 leading-relaxed">{item?.answer}</div>
+    <li className="collapse collapse-arrow bg-base-100">
+      <input 
+        type="checkbox" 
+        checked={isOpen} 
+        onChange={() => setIsOpen(!isOpen)}
+      />
+      <div className="collapse-title text-xl font-medium">
+        {item?.question}
+      </div>
+      <div className="collapse-content">
+        <div className="pt-2 text-base-content/80">
+          {item?.answer}
+        </div>
       </div>
     </li>
   );
@@ -99,12 +58,12 @@ const FAQ = () => {
       <div className="py-24 px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-12">
         <div className="flex flex-col text-left basis-1/2">
           <p className="inline-block font-semibold text-primary mb-4">FAQ</p>
-          <p className="sm:text-4xl text-3xl font-extrabold text-base-content">
+          <p className="text-4xl font-bold text-base-content">
             Frequently Asked Questions
           </p>
         </div>
 
-        <ul className="basis-1/2">
+        <ul className="basis-1/2 space-y-4">
           {faqList.map((item, i) => (
             <FaqItem key={i} item={item} />
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, FormEvent } from "react";
 import { toast } from "react-hot-toast";
 import apiClient from "@/libs/api";
 
@@ -9,22 +9,25 @@ import apiClient from "@/libs/api";
 // For instance: A popup to send a freebie, joining a waitlist, etc.
 // It calls the /api/lead/route.js route and store a Lead document in the database
 const ButtonLead = ({ extraStyle }: { extraStyle?: string }) => {
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isDisabled, setIsDisabled] = useState<boolean>(false);
+  const [isDisabled, setIsDisabled] = useState<boolean>(true);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e?.preventDefault();
+  useEffect(() => {
+    setIsDisabled(!validateEmail(email));
+  }, [email]);
 
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
+
     try {
       await apiClient.post("/lead", { email });
 
-      toast.success("Thanks for joining the waitlist!");
-
-      // just remove the focus on the input
-      inputRef.current.blur();
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
       setEmail("");
       setIsDisabled(true);
     } catch (error) {
@@ -33,9 +36,10 @@ const ButtonLead = ({ extraStyle }: { extraStyle?: string }) => {
       setIsLoading(false);
     }
   };
+
   return (
     <form
-      className={`w-full max-w-xs space-y-3 ${extraStyle ? extraStyle : ""}`}
+      className={`w-full max-w-xs space-y-3 ${extraStyle || ""}`}
       onSubmit={handleSubmit}
     >
       <input
@@ -62,7 +66,7 @@ const ButtonLead = ({ extraStyle }: { extraStyle?: string }) => {
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="w-5 h-5"
+            className="w-5 h-5 ml-2"
           >
             <path
               fillRule="evenodd"

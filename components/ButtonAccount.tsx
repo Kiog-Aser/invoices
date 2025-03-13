@@ -38,6 +38,8 @@ const ButtonAccount = () => {
     setIsLoading(false);
   };
 
+  const user = session?.user;
+
   // Don't show anything if not authenticated (we don't have any info about the user)
   if (status === "unauthenticated") return null;
 
@@ -45,43 +47,20 @@ const ButtonAccount = () => {
     <Popover className="relative z-10">
       {({ open }) => (
         <>
-          <Popover.Button className="btn">
-            {session?.user?.image ? (
+          <Popover.Button className="btn btn-ghost btn-circle avatar">
+            <div className="w-8 rounded-full ring ring-primary ring-offset-2">
               <img
-                src={session?.user?.image}
+                src={session?.user?.image || "https://i.pravatar.cc/300"}
                 alt={session?.user?.name || "Account"}
                 className="w-6 h-6 rounded-full shrink-0"
                 referrerPolicy="no-referrer"
                 width={24}
                 height={24}
               />
-            ) : (
-              <span className="w-6 h-6 bg-base-300 flex justify-center items-center rounded-full shrink-0">
-                {session?.user?.name?.charAt(0) ||
-                  session?.user?.email?.charAt(0)}
+              <span className="tooltip tooltip-bottom tooltip-primary">
+                {session?.user?.name || "Account"}
               </span>
-            )}
-
-            {session?.user?.name || "Account"}
-
-            {isLoading ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className={`w-5 h-5 duration-200 opacity-50 ${
-                  open ? "transform rotate-180 " : ""
-                }`}
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
+            </div>
           </Popover.Button>
           <Transition
             enter="transition duration-100 ease-out"
@@ -92,10 +71,10 @@ const ButtonAccount = () => {
             leaveTo="transform scale-95 opacity-0"
           >
             <Popover.Panel className="absolute left-0 z-10 mt-3 w-screen max-w-[16rem] transform">
-              <div className="overflow-hidden rounded-xl shadow-xl ring-1 ring-base-content ring-opacity-5 bg-base-100 p-1">
+              <div className="overflow-hidden rounded-box shadow-xl ring-1 ring-base-content/5 bg-base-100 p-1">
                 <div className="space-y-0.5 text-sm">
                   <button
-                    className="flex items-center gap-2 hover:bg-base-300 duration-200 py-1.5 px-4 w-full rounded-lg font-medium"
+                    className="flex items-center gap-2 hover:bg-base-200 duration-200 py-1.5 px-4 w-full rounded-btn font-medium"
                     onClick={handleBilling}
                   >
                     <svg
@@ -113,7 +92,7 @@ const ButtonAccount = () => {
                     Billing
                   </button>
                   <button
-                    className="flex items-center gap-2 hover:bg-error/20 hover:text-error duration-200 py-1.5 px-4 w-full rounded-lg font-medium"
+                    className="flex items-center gap-2 hover:bg-error/20 hover:text-error duration-200 py-1.5 px-4 w-full rounded-btn font-medium"
                     onClick={handleSignOut}
                   >
                     <svg

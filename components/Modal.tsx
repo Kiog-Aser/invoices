@@ -1,55 +1,52 @@
 "use client";
 
-import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
-
-import React from "react";
+import { Dialog, Transition } from "@headlessui/react";
 
 interface ModalProps {
   isModalOpen: boolean;
-  setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsModalOpen: (isOpen: boolean) => void;
+  children?: React.ReactNode;
 }
 
-// A simple modal component which can be shown/hidden with a boolean and a function
-// Because of the setIsModalOpen function, you can't use it in a server component.
-const Modal = ({ isModalOpen, setIsModalOpen }: ModalProps) => {
+const Modal = ({ isModalOpen, setIsModalOpen, children }: ModalProps) => {
   return (
     <Transition appear show={isModalOpen} as={Fragment}>
       <Dialog
         as="div"
-        className="relative z-50"
+        className="modal modal-open"
         onClose={() => setIsModalOpen(false)}
       >
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-300"
+          enter="transition-opacity ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in duration-200"
+          leave="transition-opacity ease-in duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-neutral-focus bg-opacity-50" />
+          <div className="fixed inset-0 bg-black/50" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full overflow-hidden items-start md:items-center justify-center p-2">
+          <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-300"
+              enter="transition ease-out duration-300"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
+              leave="transition ease-in duration-200"
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="relative w-full max-w-3xl h-full overflow-visible transform text-left align-middle shadow-xl transition-all rounded-xl bg-base-100 p-6 md:p-8">
+              <Dialog.Panel className="modal-box w-full max-w-3xl">
                 <div className="flex justify-between items-center mb-4">
-                  <Dialog.Title as="h2" className="font-semibold">
-                    I&apos;m a modal
+                  <Dialog.Title as="h2" className="text-lg font-medium">
+                    {/* Title comes from children */}
                   </Dialog.Title>
                   <button
-                    className="btn btn-square btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm btn-circle"
                     onClick={() => setIsModalOpen(false)}
                   >
                     <svg
@@ -63,7 +60,7 @@ const Modal = ({ isModalOpen, setIsModalOpen }: ModalProps) => {
                   </button>
                 </div>
 
-                <section>And here is my content</section>
+                {children}
               </Dialog.Panel>
             </Transition.Child>
           </div>

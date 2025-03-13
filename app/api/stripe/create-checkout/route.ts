@@ -16,46 +16,48 @@ export async function POST(req: NextRequest) {
       { error: "Price ID is required" },
       { status: 400 }
     );
-  } else if (!body.successUrl || !body.cancelUrl) {
-    return NextResponse.json(
-      { error: "Success and cancel URLs are required" },
-      { status: 400 }
-    );
-  } else if (!body.mode) {
-    return NextResponse.json(
-      {
-        error:
-          "Mode is required (either 'payment' for one-time payments or 'subscription' for recurring subscription)",
-      },
-      { status: 400 }
-    );
   }
 
   try {
     const session = await getServerSession(authOptions);
-
     await connectMongo();
 
-    const user = await User.findById(session?.user?.id);
+    const user = session?.user?.email 
+      ? await User.findOne({ email: session.user.email }).select('+plan')
+      : null;
+      
+    console.log("Creating checkout for user:", user?._id?.toString() || "anonymous");
+    console.log("User ID from request:", body.userId);
 
-    const { priceId, mode, successUrl, cancelUrl } = body;
+    const { priceId } = body;
 
     const stripeSessionURL = await createCheckout({
+      mode: "payment",
       priceId,
-      mode,
-      successUrl,
-      cancelUrl,
-      // If user is logged in, it will pass the user ID to the Stripe Session so it can be retrieved in the webhook later
-      clientReferenceId: user?._id?.toString(),
-      // If user is logged in, this will automatically prefill Checkout data like email and/or credit card for faster checkout
-      user,
-      // If you send coupons from the frontend, you can pass it here
-      // couponId: body.couponId,
+      successUrl: body.successUrl,
+      cancelUrl: body.cancelUrl,
+      // Use userId from body if available, otherwise use the user ID from database
+      clientReferenceId: body.userId || user?._id?.toString(),
+      user: user ? {
+        email: user.email,
+        customerId: user.customerId,
+      } : undefined,
     });
 
+    if (!stripeSessionURL) {
+      return NextResponse.json(
+        { error: "Failed to create checkout session" },
+        { status: 500 }
+      );
+    }
+
+    console.log("Checkout session created successfully");
     return NextResponse.json({ url: stripeSessionURL });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: e?.message }, { status: 500 });
+    console.error("Create checkout error:", e);
+    return NextResponse.json(
+      { error: e?.message || "Failed to create checkout session" },
+      { status: 500 }
+    );
   }
 }

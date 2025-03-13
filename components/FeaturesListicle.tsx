@@ -27,7 +27,7 @@ const features: {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
               >
                 <path
                   fillRule="evenodd"
@@ -39,7 +39,7 @@ const features: {
               {item}
             </li>
           ))}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -68,7 +68,7 @@ const features: {
       >
         <path
           strokeLinecap="round"
-          d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 0c0 1.657 1.007 3 2.25 3S21 13.657 21 12a9 9 0 10-2.636 6.364M16.5 12V8.25"
+          d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
         />
       </svg>
     ),
@@ -88,7 +88,7 @@ const features: {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
               >
                 <path
                   fillRule="evenodd"
@@ -100,7 +100,7 @@ const features: {
               {item}
             </li>
           ))}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -151,7 +151,7 @@ const features: {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
               >
                 <path
                   fillRule="evenodd"
@@ -163,7 +163,7 @@ const features: {
               {item}
             </li>
           ))}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -210,7 +210,7 @@ const features: {
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                  className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
                 >
                   <path
                     fillRule="evenodd"
@@ -223,7 +223,7 @@ const features: {
               </li>
             )
           )}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -275,7 +275,7 @@ const features: {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
               >
                 <path
                   fillRule="evenodd"
@@ -287,7 +287,7 @@ const features: {
               {item}
             </li>
           ))}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -337,7 +337,7 @@ const features: {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="w-[18px] h-[18px] inline shrink-0 opacity-80"
+                className="w-[18px] h-[18px] inline shrink-0 text-base-content/60"
               >
                 <path
                   fillRule="evenodd"
@@ -349,7 +349,7 @@ const features: {
               {item}
             </li>
           ))}
-          <li className="flex items-center gap-3 text-accent font-medium">
+          <li className="flex items-center gap-3 text-primary font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -440,11 +440,11 @@ const FeaturesListicle = () => {
     <section className="py-24" id="features">
       <div className="max-w-3xl mx-auto">
         <div className="bg-base-100 max-md:px-8 max-w-3xl">
-          <p className="text-accent font-medium text-sm font-mono mb-3">
+          <p className="text-primary font-medium text-sm font-mono mb-3">
             {/* Pure decoration, you can remove it */}
             const launch_time = &quot;Today&quot;;
           </p>
-          <h2 className="font-extrabold text-3xl lg:text-5xl tracking-tight mb-8">
+          <h2 className="font-extrabold text-3xl lg:text-5xl tracking-tight mb-8 text-base-content">
             {/* 💡 COPY TIP: Remind visitors about the value of your product. Why do they need it? */}
             Supercharge your app instantly, launch faster, make $
           </h2>

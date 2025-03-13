@@ -20,6 +20,16 @@ export type Theme =
   | "black"
   | "luxury"
   | "dracula"
+  | "cmyk"
+  | "autumn"
+  | "business"
+  | "acid"
+  | "lemonade"
+  | "night"
+  | "coffee"
+  | "winter"
+  | "soul"
+  | "siliconfan"
   | "";
 
 export interface ConfigProps {
