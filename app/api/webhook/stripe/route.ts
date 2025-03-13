@@ -8,6 +8,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-08-16",
 });
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     // Connect to database first
@@ -81,10 +83,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-// This is important for raw body parsing
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
