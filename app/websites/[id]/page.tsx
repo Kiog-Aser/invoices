@@ -4,9 +4,19 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import apiClient from "@/libs/api";
 
+// Define interface for website object
+interface Website {
+  id: string;
+  domain: string;
+  userId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Add other properties your website object might have
+}
+
 export default function WebsiteDetailsPage() {
   const { websiteId } = useParams();
-  const [website, setWebsite] = useState(null);
+  const [website, setWebsite] = useState<Website | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
