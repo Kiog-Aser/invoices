@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, Fragment } from "react";
-import { FaUpload, FaTimes } from "react-icons/fa";
+import { FaUpload } from "react-icons/fa";
 import { Dialog, Transition } from "@headlessui/react";
+import Image from "next/image";
 
 // Popular brand logos with their names and URLs - including Stripe and PayPal
 const POPULAR_LOGOS = [
@@ -154,9 +155,11 @@ export default function ImageSelectorPopup({ isOpen, onClose, onSelect }: ImageS
                       
                       {imageUrl && (
                         <div className="flex flex-col items-center space-y-3">
-                          <img 
+                          <Image 
                             src={imageUrl} 
                             alt="Preview" 
+                            width={160}
+                            height={160}
                             className="h-40 object-contain rounded-box"
                           />
                           <button
@@ -169,19 +172,17 @@ export default function ImageSelectorPopup({ isOpen, onClose, onSelect }: ImageS
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
-                      {POPULAR_LOGOS.map((logo) => (
-                        <div 
-                          key={logo.name}
-                          className="card bg-base-100 hover:bg-base-200 cursor-pointer p-3 transition-all"
-                          onClick={() => onSelect(logo.url)}
-                        >
-                          <img 
-                            src={logo.url} 
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      {POPULAR_LOGOS.map(logo => (
+                        <div key={logo.name} className="text-center">
+                          <Image
+                            src={logo.url}
                             alt={logo.name}
-                            className="w-12 h-12 object-contain mx-auto"
+                            width={64}
+                            height={64}
+                            className="mx-auto mb-2"
                           />
-                          <span className="mt-2 text-sm text-center font-medium">{logo.name}</span>
+                          <span className="text-sm">{logo.name}</span>
                         </div>
                       ))}
                     </div>

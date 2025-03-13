@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { FaTimes, FaImage, FaPlay, FaClock } from "react-icons/fa";
-import Image from "next/image";
 
 interface NewMessageModalProps {
   isOpen: boolean;
@@ -22,15 +21,6 @@ interface NewMessageModalProps {
   isEditing?: boolean;
 }
 
-const POPULAR_ICONS = [
-  { name: "Gmail", url: "https://www.google.com/s2/favicons?domain=gmail.com&sz=64" },
-  { name: "Stripe", url: "https://www.google.com/s2/favicons?domain=stripe.com&sz=64" },
-  { name: "PayPal", url: "https://www.google.com/s2/favicons?domain=paypal.com&sz=64" },
-  { name: "Facebook", url: "https://www.google.com/s2/favicons?domain=facebook.com&sz=64" },
-  { name: "Twitter", url: "https://www.google.com/s2/favicons?domain=twitter.com&sz=64" },
-  { name: "Instagram", url: "https://www.google.com/s2/favicons?domain=instagram.com&sz=64" },
-];
-
 export default function NewMessageModal({ 
   isOpen, 
   onClose, 
@@ -38,29 +28,7 @@ export default function NewMessageModal({
   initialData,
   isEditing = false
 }: NewMessageModalProps) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [content, setContent] = useState(initialData?.content || "");
-  const [icon, setIcon] = useState(initialData?.icon || "");
-  const [duration, setDuration] = useState(initialData?.duration || 5000);
-  const [showPreview, setShowPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState("url");
-
-  useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title);
-      setContent(initialData.content);
-      setIcon(initialData.icon);
-      setDuration(initialData.duration);
-    } else {
-      setTitle("");
-      setContent("");
-      setIcon("");
-      setDuration(5000);
-    }
-    setShowPreview(false);
-  }, [initialData, isOpen]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title || !content) return;
     
