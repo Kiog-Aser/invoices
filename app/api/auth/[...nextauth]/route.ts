@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter"; // Changed from @auth/mongodb-adapter
+import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "@/libs/mongo";
 import User from "@/models/User";
 
@@ -47,10 +47,11 @@ const handler = NextAuth({
     },
   }),
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.plan = user.plan || "";
+        // Now TypeScript knows about the plan property
+        token.plan = (user as any).plan || "";
       }
       
       if (trigger === "update" || trigger === "refresh" || trigger === "session") {
