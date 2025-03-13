@@ -2,10 +2,10 @@
 
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 
-export default function SignUp() {
+function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard/";
@@ -37,13 +37,11 @@ export default function SignUp() {
             Sign up to start creating iOS-style notifications for your website
           </p>
         </div>
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{error}</span>
           </div>
         )}
-
         <div className="flex flex-col gap-4 mt-8">
           <button
             onClick={() => handleOAuthSignUp("google")}
@@ -74,7 +72,6 @@ export default function SignUp() {
             )}
             Sign up with Google
           </button>
-
           <button
             onClick={() => handleOAuthSignUp("github")}
             disabled={isLoading.github}
@@ -93,7 +90,7 @@ export default function SignUp() {
             Sign up with GitHub
           </button>
         </div>
-        
+
         <div className="mt-6">
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}
@@ -102,7 +99,6 @@ export default function SignUp() {
             </Link>
           </p>
         </div>
-
         <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
             ← Back to home
@@ -110,5 +106,17 @@ export default function SignUp() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="loading loading-spinner"></div>
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
   );
 }

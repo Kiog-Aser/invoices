@@ -1,12 +1,11 @@
 "use client";
-
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function ErrorPage() {
+function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
-
   let errorMessage = "An error occurred during authentication";
   
   // Translate error codes to user-friendly messages
@@ -39,7 +38,6 @@ export default function ErrorPage() {
           <h2 className="mt-4 text-lg font-medium text-red-800">Authentication Error</h2>
           <p className="mt-2 text-sm text-red-700">{errorMessage}</p>
         </div>
-
         <div className="mt-8">
           <Link 
             href="/auth/signin"
@@ -48,7 +46,6 @@ export default function ErrorPage() {
             Try Again
           </Link>
         </div>
-
         <div className="mt-4">
           <Link 
             href="/"
@@ -59,5 +56,17 @@ export default function ErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="loading loading-spinner"></div>
+      </div>
+    }>
+      <ErrorContent />
+    </Suspense>
   );
 }

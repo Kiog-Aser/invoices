@@ -456,7 +456,6 @@ const FeaturesListicle = () => {
           </div>
         </div>
       </div>
-
       <div>
         <div className="grid grid-cols-4 md:flex justify-start gap-4 md:gap-12 max-md:px-8 max-w-3xl mx-auto mb-8">
           {features.map((feature) => (
@@ -496,10 +495,9 @@ const FeaturesListicle = () => {
               key={featureSelected}
             >
               <h3 className="font-semibold text-base-content text-lg">
-                {features.find((f) => f.name === featureSelected)["name"]}
+                {features.find((f) => f.name === featureSelected)?.name || ""}
               </h3>
-
-              {features.find((f) => f.name === featureSelected)["description"]}
+              {features.find((f) => f.name === featureSelected)?.description || "No description available"}
             </div>
           </div>
         </div>
@@ -509,5 +507,4 @@ const FeaturesListicle = () => {
     </section>
   );
 };
-
 export default FeaturesListicle;

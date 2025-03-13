@@ -1,7 +1,16 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { FaTimes, FaImage, FaPlay, FaClock } from "react-icons/fa";
+
+// Define popular icons
+const POPULAR_ICONS = [
+  { name: "Stripe", url: "https://cdn.iconscout.com/icon/free/png-256/free-stripe-2-498440.png" },
+  { name: "PayPal", url: "https://cdn.iconscout.com/icon/free/png-256/free-paypal-54-675727.png" },
+  { name: "Gmail", url: "https://cdn.iconscout.com/icon/free/png-256/free-gmail-2981844-2476484.png" },
+  { name: "Facebook", url: "https://cdn.iconscout.com/icon/free/png-256/free-facebook-263-721950.png" },
+  { name: "Twitter", url: "https://cdn.iconscout.com/icon/free/png-256/free-twitter-241-721979.png" },
+  { name: "LinkedIn", url: "https://cdn.iconscout.com/icon/free/png-256/free-linkedin-162-498418.png" },
+];
 
 interface NewMessageModalProps {
   isOpen: boolean;
@@ -28,6 +37,24 @@ export default function NewMessageModal({
   initialData,
   isEditing = false
 }: NewMessageModalProps) {
+  // Add missing state variables
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [content, setContent] = useState(initialData?.content || "");
+  const [icon, setIcon] = useState(initialData?.icon || "");
+  const [duration, setDuration] = useState(initialData?.duration || 5000);
+  const [activeTab, setActiveTab] = useState<"url" | "popular">("url");
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Update state when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title);
+      setContent(initialData.content);
+      setIcon(initialData.icon);
+      setDuration(initialData.duration);
+    }
+  }, [initialData]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title || !content) return;
@@ -78,7 +105,6 @@ export default function NewMessageModal({
               <FaTimes />
             </button>
           </div>
-
           <form onSubmit={handleSubmit}>
             <div className="space-y-5">
               <div className="form-control">
@@ -95,7 +121,6 @@ export default function NewMessageModal({
                   required
                 />
               </div>
-
               <div className="form-control">
                 <label htmlFor="content" className="label">
                   <span className="label-text">Message Content</span>
@@ -110,12 +135,10 @@ export default function NewMessageModal({
                   required
                 />
               </div>
-
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Icon</span>
                 </label>
-
                 <div className="tabs tabs-boxed mb-2">
                   <button 
                     type="button"
@@ -132,7 +155,6 @@ export default function NewMessageModal({
                     Popular Icons
                   </button>
                 </div>
-
                 {activeTab === "url" ? (
                   <div className="join">
                     <input
@@ -175,7 +197,6 @@ export default function NewMessageModal({
                     ))}
                   </div>
                 )}
-
                 {icon && (
                   <div className="mt-2 flex items-center">
                     <span className="label-text mr-2">Preview:</span>
@@ -185,7 +206,6 @@ export default function NewMessageModal({
                   </div>
                 )}
               </div>
-
               <div className="form-control">
                 <label htmlFor="duration" className="label">
                   <span className="label-text flex items-center gap-2">
@@ -208,7 +228,6 @@ export default function NewMessageModal({
                   <span>15s</span>
                 </div>
               </div>
-
               <div className="alert shadow-lg">
                 <button 
                   type="button" 
@@ -219,7 +238,6 @@ export default function NewMessageModal({
                   {showPreview ? "Preview Running..." : "Preview This Notification"}
                 </button>
               </div>
-
               {showPreview && (
                 <div className="card bg-base-200 shadow-lg">
                   <div className="card-body">
@@ -237,7 +255,6 @@ export default function NewMessageModal({
                   </div>
                 </div>
               )}
-
               <div className="modal-action">
                 <button 
                   type="button" 

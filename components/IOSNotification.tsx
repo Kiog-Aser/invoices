@@ -1,25 +1,32 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Notification } from "@/models/Notification";
 
+// Extended interface for notifications with UI-specific properties
+interface ExtendedNotification extends Notification {
+  duration?: number;
+  position?: string;
+  body?: string;
+  icon?: string;
+}
+
 interface IOSNotificationProps {
-  notification: Notification;
+  notification: ExtendedNotification;
   onClose?: () => void;
   isPreview?: boolean;
 }
 
 export default function IOSNotification({ notification, onClose, isPreview = false }: IOSNotificationProps) {
   const [isLeaving, setIsLeaving] = useState(false);
-
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
-    }, isPreview ? 4000 : notification.duration);
-
+    }, isPreview ? 4000 : notification.duration || 5000); // Add default 5000ms if duration not specified
+    
     return () => clearTimeout(timer);
   }, [notification, isPreview]);
-
+  
   const handleClose = () => {
     setIsLeaving(true);
     
@@ -27,12 +34,12 @@ export default function IOSNotification({ notification, onClose, isPreview = fal
       if (onClose) onClose();
     }, 500); // Animation duration
   };
-
-  // Position calculation based on notification.position
-  const positionClass = notification.position === "top" 
+  
+  // Position calculation based on notification.position with default
+  const positionClass = (notification.position || "bottom") === "top" 
     ? "top-4" 
     : "bottom-4";
-
+    
   return (
     <div 
       className={`fixed z-50 left-1/2 transform -translate-x-1/2 transition-all duration-500 ease-in-out ${positionClass} ${
@@ -60,7 +67,7 @@ export default function IOSNotification({ notification, onClose, isPreview = fal
                 {notification.title}
               </div>
               <div className="text-sm text-base-content/70 mt-1 break-words">
-                {notification.body}
+                {notification.body || notification.message}
               </div>
             </div>
             

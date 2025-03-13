@@ -1,12 +1,14 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import connectMongoose from "@/libs/mongoose";
+import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+import { MongoClient } from "mongodb";
 import config from "@/config";
 
 // Used for storing users, sessions, etc. in MongoDB
-const connectMongo = process.env.MONGODB_URI ? connectMongoose : null;
+const clientPromise = process.env.MONGODB_URI 
+  ? MongoClient.connect(process.env.MONGODB_URI)
+  : null;
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,52 +22,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   // New users will be saved in Database (MongoDB Atlas)
-  ...(connectMongo && { 
-    adapter: MongoDBAdapter(connectMongo, {
-      databaseName: "test",
-      // Ensure new users are created with a default plan
-      collections: {
-        Users: {
-          beforeCreate(user) {
-            // Set default plan for new users
-            user.plan = user.plan || '';
-            return user;
-          }
-        }
-      }
-    }) 
-  }),
-
+  adapter: clientPromise ? MongoDBAdapter(clientPromise) : undefined,
   callbacks: {
-    // Include user.id and plan in session
     session({ session, token }) {
-      if (session?.user) {
+      if (session?.user && token.sub) {
         session.user.id = token.sub;
-        // Add plan from token to session
-        session.user.plan = token.plan;
-        session.user.customerId = token.customerId; // Make sure this line exists
+        session.user.plan = token.plan as string || '';
+        session.user.customerId = token.customerId as string || '';
       }
       return session;
     },
-    // Store plan in the token
-    async jwt({ token, user, account, profile, trigger, session }) {
-      // Initial sign in - add plan from database user
+    async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.plan = user.plan;
-        token.customerId = user.customerId; // Make sure this line exists
+        token.plan = (user as any).plan;
+        token.customerId = (user as any).customerId;
       }
       
-      // When using the refresh-session API route
       if (trigger === "update" && session?.user?.plan) {
         token.plan = session.user.plan;
-        token.customerId = session.user.customerId; // Make sure this line exists
+        token.customerId = session.user.customerId;
       }
       
       return token;
     }
   },
   session: {
-    strategy: "jwt" as const, // Ensure the strategy is correctly typed
+    strategy: "jwt",
   },
   theme: {
     brandColor: config.colors.main,

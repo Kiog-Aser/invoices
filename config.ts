@@ -20,22 +20,42 @@ const config = {
   //   measurementId: "G-XXXXXXXXXX",
   // },
 
-  // Optional: If you need to have Stripe, Stripe products, and pricing plans.
+  crisp: {
+    // Optional Crisp chat widget configuration
+    id: undefined,
+    onlyShowOnRoutes: [],
+  },
+
   stripe: {
-    // See https://stripe.com/docs/keys
     publicKey: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
-    // These are entirely optional
     plans: [
       {
         name: "Free",
-        price: 0, // $0.00 USD
+        price: 0,
+        priceId: "free-tier",
+        description: "Perfect for individuals",
+        features: [
+          { name: "1 website" },
+          { name: "Up to 5 notifications" },
+          { name: "Basic customization options" },
+          { name: "One theme (iOS)" }
+        ]
       },
       {
         name: "Pro Lifetime",
         price: 10,
         priceId: "price_1R0PNQIpDPy0JgwZ33p7CznT",
-      },
-    ],
+        description: "One-time payment, lifetime access",
+        isFeatured: true,
+        features: [
+          { name: "Unlimited websites" },
+          { name: "Unlimited notifications" },
+          { name: "Advanced customization options" },
+          { name: "Custom notification themes" },
+          { name: "No NotiFast backlinks" }
+        ]
+      }
+    ]
   },
 
   aws: {

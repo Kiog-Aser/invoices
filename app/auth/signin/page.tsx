@@ -1,12 +1,10 @@
 "use client";
-
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 
-export default function SignIn() {
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -42,13 +40,11 @@ export default function SignIn() {
             Sign in to access your iOS Notifications dashboard
           </p>
         </div>
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{error}</span>
           </div>
         )}
-
         <div className="flex flex-col gap-4 mt-8">
           <button
             onClick={() => handleOAuthSignIn("google")}
@@ -79,7 +75,6 @@ export default function SignIn() {
             )}
             Sign in with Google
           </button>
-
           <button
             onClick={() => handleOAuthSignIn("github")}
             disabled={isLoading.github}
@@ -98,7 +93,6 @@ export default function SignIn() {
             Sign in with GitHub
           </button>
         </div>
-
         <div className="mt-6">
           <p className="text-center text-sm text-gray-600">
             Don't have an account?{" "}
@@ -107,7 +101,6 @@ export default function SignIn() {
             </Link>
           </p>
         </div>
-
         <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
             ← Back to home
@@ -115,5 +108,17 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="loading loading-spinner"></div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }

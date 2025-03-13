@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { StaticImageData } from "next/image";
+import type { StaticImport } from "next/dist/shared/lib/get-img-props";
 import config from "@/config";
 
 // The list of your testimonials. It needs 3 items to fill the row.
@@ -7,16 +7,12 @@ const list: {
   username?: string;
   name: string;
   text: string;
-  img?: string | StaticImageData;
+  img?: string | StaticImport;
 }[] = [
   {
-    // Optional, use for social media like Twitter. Does not link anywhere but cool to display
     username: "marclou",
-    // REQUIRED
     name: "Marc Lou",
-    // REQUIRED
     text: "Really easy to use. The tutorials are really useful and explains how everything works. Hope to ship my next project really fast!",
-    // Optional, a statically imported image (usually from your public folder—recommended) or a link to the person's avatar. Shows a fallback letter if not provided
     img: "https://pbs.twimg.com/profile_images/1514863683574599681/9k7PqDTA_400x400.jpg",
   },
   {
@@ -31,12 +27,10 @@ const list: {
   },
 ];
 
-// A single testimonial, to be rendered in  a list
+// A single testimonial, to be rendered in a list
 const Testimonial = ({ i }: { i: number }) => {
   const testimonial = list[i];
-
   if (!testimonial) return null;
-
   return (
     <li key={i}>
       <figure className="relative max-w-lg h-full p-6 md:p-10 bg-base-200 rounded-2xl max-md:text-sm flex flex-col">
@@ -57,13 +51,12 @@ const Testimonial = ({ i }: { i: number }) => {
                 </div>
               )}
             </div>
-
             <div className="overflow-hidden rounded-full bg-base-300 shrink-0">
               {testimonial.img ? (
                 <Image
                   className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover"
-                  src={list[i].img}
-                  alt={`${list[i].name}'s testimonial for ${config.appName}`}
+                  src={testimonial.img}
+                  alt={`${testimonial.name}'s testimonial for ${config.appName}`}
                   width={48}
                   height={48}
                 />
@@ -95,7 +88,6 @@ const Testimonials3 = () => {
             about ShipFast.
           </p>
         </div>
-
         <ul
           role="list"
           className="flex flex-col items-center lg:flex-row lg:items-stretch gap-6 lg:gap-8"

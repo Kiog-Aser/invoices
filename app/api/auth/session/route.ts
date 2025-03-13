@@ -4,6 +4,9 @@ import { authOptions } from "@/libs/next-auth";
 import connectMongo from "@/libs/mongoose";
 import User from "@/models/User";
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Check if this is a manual update request
@@ -25,14 +28,14 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
       
-      // Return the updated user data (to be handled by the client)
+      // Return the updated user data
       return NextResponse.json({ 
         user: {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
           image: user.image,
-          plan: user.plan || "", // Make sure to include the plan
+          plan: user.plan || "",
           createdAt: user.createdAt
         }
       });

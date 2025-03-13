@@ -27,10 +27,14 @@ export const createCheckout = async ({
   cancelUrl,
   priceId,
   couponId,
-}: CreateCheckoutParams): Promise<string> => {
+}: CreateCheckoutParams): Promise<string | null> => {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Missing Stripe secret key");
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-08-16", // Using current API version
+      apiVersion: "2023-08-16",
       typescript: true,
     });
 
@@ -91,32 +95,41 @@ export const createCheckout = async ({
 export const createCustomerPortal = async ({
   customerId,
   returnUrl,
-}: CreateCustomerPortalParams): Promise<string> => {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2023-08-16", // TODO: update this when Stripe updates their API
-    typescript: true,
-  });
+}: CreateCustomerPortalParams): Promise<string | null> => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Missing Stripe secret key");
+    }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: returnUrl,
-  });
-
-  return portalSession.url;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2023-08-16",
+      typescript: true,
+    });
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
+    return portalSession.url;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
 };
 
 // This is used to get the uesr checkout session and populate the data so we get the planId the user subscribed to
 export const findCheckoutSession = async (sessionId: string) => {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Missing Stripe secret key");
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-08-16", // TODO: update this when Stripe updates their API
+      apiVersion: "2023-08-16",
       typescript: true,
     });
-
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["line_items"],
     });
-
     return session;
   } catch (e) {
     console.error(e);
