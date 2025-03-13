@@ -77,7 +77,7 @@ export async function PUT(
       url: updates.url || "", // Explicitly include URL
       updatedAt: new Date()
     };
-
+    
     const { db } = await connectToDatabase();
     
     // First check if the notification exists and belongs to the user
@@ -105,63 +105,57 @@ export async function PUT(
       _id: new ObjectId(id)
     });
     
-    return NextResponse.json({ccessing properties
-      ...updatedNotification, {
-      id: updatedNotification._id.toString(),ed to find updated notification" }, { status: 404 });
+    if (!updatedNotification) {
+      return NextResponse.json({ error: "Failed to find updated notification" }, { status: 404 });
+    }
+    
+    return NextResponse.json({
+      ...updatedNotification,
+      id: updatedNotification._id.toString(),
       _id: updatedNotification._id.toString()
     });
-  } catch (error) {onse.json({
+  } catch (error) {
     console.error("Error updating notification:", error);
     return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
-  }   _id: updatedNotification._id.toString()
-}   });
-  } catch (error) {
-// DELETE a specific notification notification:", error);
-export async function DELETE({ error: "Failed to update notification" }, { status: 500 });
+  }
+}
+
+// DELETE a specific notification
+export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {TE a specific notification
+  try {
     const session = await getServerSession(authOptions);
-    q: NextRequest,
-    if (!session?.user?.email) {ring } }
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    } {
-    const session = await getServerSession(authOptions);
-    const { id } = params;
+    
     if (!session?.user?.email) {
-    // Validate ID format for MongoDBr: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    const { id } = params;
+    
+    // Validate ID format for MongoDB
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 });
-    }onst { id } = params;
+    }
     
     const { db } = await connectToDatabase();
-    if (!ObjectId.isValid(id)) {
-    // First check if the notification exists and belongs to the user{ status: 400 });
+    
+    // First check if the notification exists and belongs to the user
     const existingNotification = await db.collection("notifications").findOne({
       _id: new ObjectId(id),
-      userId: session.user.emailToDatabase();
-    });
-    // First check if the notification exists and belongs to the user
-    if (!existingNotification) { await db.collection("notifications").findOne({
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
-    } userId: session.user.email
+      userId: session.user.email
     });
     // Delete the notification
     const result = await db.collection("notifications").deleteOne({
-      _id: new ObjectId(id)son({ error: "Notification not found" }, { status: 404 });
+      _id: new ObjectId(id)
     });
     
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: "Notification not deleted" }, { status: 500 });
-    } _id: new ObjectId(id)
-    });
+    }
+    
     return NextResponse.json({ message: "Notification deleted successfully" });
-  } catch (error) {tedCount === 0) {
-    console.error("Error deleting notification:", error); deleted" }, { status: 500 });
-    return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });
-  } 
-}   return NextResponse.json({ message: "Notification deleted successfully" });
   } catch (error) {
     console.error("Error deleting notification:", error);
     return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });
