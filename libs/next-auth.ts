@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: 'shipfast', // Specify your database name
+    databaseName: 'shipfast',
     collections: {
       Users: 'users',
       Accounts: 'accounts',
@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
   }),
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours instead of 30 days to reduce database load
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     session({ session, token }) {
@@ -39,14 +39,17 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async jwt({ token, user, trigger, session }) {
+      // Reduce database calls by only updating when necessary
       if (user) {
         token.plan = (user as any).plan;
         token.customerId = (user as any).customerId;
+        return token;
       }
       
       if (trigger === "update" && session?.user?.plan) {
         token.plan = session.user.plan;
         token.customerId = session.user.customerId;
+        return token;
       }
       
       return token;
@@ -56,8 +59,18 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === "production"
+      }
+    }
+  },
   secret: process.env.NEXTAUTH_SECRET,
-  // Lower the JWT timeout to match the session maxAge
   jwt: {
     maxAge: 24 * 60 * 60, // 24 hours
   },

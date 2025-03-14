@@ -13,13 +13,23 @@ if (!process.env.MONGODB_URI) {
   throw new Error("Please add your MongoDB URI to .env");
 }
 
-const uri = process.env.MONGODB_URI;
+// Add query parameters to MongoDB URI for better connection handling
+const MONGODB_URI = process.env.MONGODB_URI!;
+const uri = MONGODB_URI + (MONGODB_URI.includes('?') ? '&' : '?') + 
+  'retryWrites=true&' +
+  'w=majority&' +
+  'maxPoolSize=10&' +
+  'serverSelectionTimeoutMS=10000&' +
+  'connectTimeoutMS=10000';
+
 const options = {
   maxPoolSize: 10,
   minPoolSize: 5,
-  maxIdleTimeMS: 5000,
-  connectTimeoutMS: 5000,
-  socketTimeoutMS: 5000,
+  maxIdleTimeMS: 30000,
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 20000,
+  serverSelectionTimeoutMS: 10000,
+  waitQueueTimeoutMS: 10000
 };
 
 let client;

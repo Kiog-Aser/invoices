@@ -27,33 +27,45 @@ if (!global.mongoose) {
 }
 
 const opts = {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 5000,
   maxPoolSize: 10,
   minPoolSize: 5,
-  maxIdleTimeMS: 5000,
-  connectTimeoutMS: 5000,
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+  maxIdleTimeMS: 30000,
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 20000,
+  serverSelectionTimeoutMS: 10000,
+  waitQueueTimeoutMS: 10000,
+  keepAlive: true,
+  bufferCommands: false,
 } as const;
 
 async function connectMongo(): Promise<typeof mongoose> {
   if (cached.conn) {
+    console.log("Using cached Mongoose connection");
     return cached.conn;
   }
 
   if (!cached.promise) {
+    console.log("Creating new Mongoose connection");
+    const opts = {
+      bufferCommands: false,
+      ...opts
+    };
+
+    mongoose.set("strictQuery", false);
     cached.promise = mongoose.connect(MONGODB_URI, opts);
+  } else {
+    console.log("Using existing Mongoose connection promise");
   }
 
   try {
     cached.conn = await cached.promise;
-    return cached.conn;
   } catch (e) {
     cached.promise = null;
-    console.error("Mongoose Client Error:", e);
+    console.error("Mongoose connection error:", e);
     throw e;
   }
+
+  return cached.conn;
 }
 
 export default connectMongo;
