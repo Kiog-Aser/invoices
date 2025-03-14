@@ -923,7 +923,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         {/* Bottom Section - Embed Script */}
         <div className="divider"></div>
         <div className="text-center">
-          <h3 className="text-lg font-medium mb-1">Make your Alertly live ✌️</h3>
+          <h3 className="text-lg font-medium mb-1">Make your notifications live ✌️</h3>
           <p className="text-base-content/70 text-sm mb-4">Paste this snippet in the &lt;head&gt; of your website.</p>
           
           <div className="max-w-sm mx-auto">

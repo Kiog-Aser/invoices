@@ -46,22 +46,45 @@ export default function FeaturesAccordion() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Image column */}
+          {/* Media column */}
           <div className="relative aspect-video rounded-2xl overflow-hidden bg-base-300">
-            <video
-              className="rounded-2xl w-full h-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              poster="/notifast-demo.jpg"
-              onError={(e) => {
-                console.error('Error loading video:', e);
-              }}
-            >
-              <source src="/notifast-demo.mp4" type="video/mp4" />
-            </video>
+            {activeIndex === 0 ? (
+              <video
+                className="rounded-2xl w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/notifast-demo.jpg"
+                onError={(e) => {
+                  console.error('Error loading video:', e);
+                }}
+              >
+                <source src="/notifast-demo.mp4" type="video/mp4" />
+              </video>
+            ) : activeIndex === 1 ? (
+              <img
+                src="/feature2.png"
+                alt="Beautiful & Customizable Notifications"
+                className="rounded-2xl w-full h-full object-cover"
+              />
+            ) : (
+              <video
+                className="rounded-2xl w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/noti-demo.mp4"
+                onError={(e) => {
+                  console.error('Error loading video:', e);
+                }}
+              >
+                <source src="/noti-demo.mp4" type="video/mp4" />
+              </video>
+            )}
           </div>
           
           {/* Accordion column */}

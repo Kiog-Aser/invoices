@@ -138,9 +138,9 @@ export default function Page() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col lg:flex-row items-center">
                 <div className="lg:w-1/2 mb-8 lg:mb-0 text-center lg:text-left">
-                  <Suspense fallback={<div className="loading loading-spinner"></div>}>
+                 {/* <Suspense fallback={<div className="loading loading-spinner"></div>}>
                     <TestimonialRating />
-                  </Suspense>
+                  </Suspense> */} 
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
                     Notifications that <span className="text-primary">convert visitors</span>
                   </h1>
@@ -164,18 +164,22 @@ export default function Page() {
                   </div>
                 </div>
                 <div className="lg:w-1/2 w-full px-4 sm:px-0">
-                  <div className="relative bg-base-100 p-2 rounded-box shadow-2xl border border-base-300 max-w-xl mx-auto">
-                    <Image
-                      src="/images/notification-demo.png"
-                      alt="PoopUp Notification Example"
-                      width={600}
-                      height={400}
-                      className="rounded-box w-full"
-                    />
-                    <div className="absolute -bottom-4 -right-4 bg-primary/10 text-primary px-4 py-2 rounded-box shadow-md font-medium text-sm sm:text-base">
-                      Boost conversions by 37%
-                    </div>
-                  </div>
+
+                  <video
+              className="rounded-2xl w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster="/notifast-demo.jpg"
+              onError={(e) => {
+                console.error('Error loading video:', e);
+              }}
+            >
+              <source src="/notifast-demo.mp4" type="video/mp4" />
+            </video>
+
                 </div>
               </div>
             </div>
