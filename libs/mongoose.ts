@@ -1,26 +1,59 @@
 import mongoose from "mongoose";
-import User from "@/models/User";
 
-const connectMongo = async () => {
-  if (!process.env.MONGODB_URI) {
-    throw new Error(
-      "Add the MONGODB_URI environment variable inside .env.local to use mongoose"
-    );
+interface GlobalMongoose {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
+declare global {
+  var mongoose: GlobalMongoose | undefined;
+}
+
+const MONGODB_URI = process.env.MONGODB_URI!;
+
+if (!MONGODB_URI) {
+  throw new Error(
+    "Add the MONGODB_URI environment variable inside .env.local to use mongoose"
+  );
+}
+
+let cached: GlobalMongoose = global.mongoose ?? {
+  conn: null,
+  promise: null,
+};
+
+if (!global.mongoose) {
+  global.mongoose = cached;
+}
+
+const opts = {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 5000,
+  maxPoolSize: 10,
+  minPoolSize: 5,
+  maxIdleTimeMS: 5000,
+  connectTimeoutMS: 5000,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+} as const;
+
+async function connectMongo(): Promise<typeof mongoose> {
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  const opts = {
-    serverSelectionTimeoutMS: 5000, // Reduce the timeout from 30 seconds to 5 seconds
-    socketTimeoutMS: 10000,
-    maxPoolSize: 10,
-    maxIdleTimeMS: 10000,
-    // Use the new topology layer
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  };
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, opts);
+  }
 
-  return mongoose
-    .connect(process.env.MONGODB_URI, opts)
-    .catch((e) => console.error("Mongoose Client Error: " + e.message));
-};
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (e) {
+    cached.promise = null;
+    console.error("Mongoose Client Error:", e);
+    throw e;
+  }
+}
 
 export default connectMongo;

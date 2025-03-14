@@ -2,13 +2,8 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import { MongoClient } from "mongodb";
+import clientPromise from "@/libs/mongo";
 import config from "@/config";
-
-// Used for storing users, sessions, etc. in MongoDB
-const clientPromise = process.env.MONGODB_URI 
-  ? MongoClient.connect(process.env.MONGODB_URI)
-  : null;
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,8 +16,19 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
     }),
   ],
-  // New users will be saved in Database (MongoDB Atlas)
-  adapter: clientPromise ? MongoDBAdapter(clientPromise) : undefined,
+  adapter: MongoDBAdapter(clientPromise, {
+    databaseName: 'shipfast', // Specify your database name
+    collections: {
+      Users: 'users',
+      Accounts: 'accounts',
+      Sessions: 'sessions',
+      VerificationTokens: 'verification_tokens',
+    }
+  }),
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours instead of 30 days to reduce database load
+  },
   callbacks: {
     session({ session, token }) {
       if (session?.user && token.sub) {
@@ -46,13 +52,16 @@ export const authOptions: NextAuthOptions = {
       return token;
     }
   },
-  session: {
-    strategy: "jwt",
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/error",
   },
-  theme: {
-    brandColor: config.colors.main,
-    logo: `https://${config.domainName}/logoAndName.png`,
+  secret: process.env.NEXTAUTH_SECRET,
+  // Lower the JWT timeout to match the session maxAge
+  jwt: {
+    maxAge: 24 * 60 * 60, // 24 hours
   },
+  debug: process.env.NODE_ENV === "development",
 };
 
 export default NextAuth(authOptions);
