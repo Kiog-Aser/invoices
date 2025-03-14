@@ -1,71 +1,26 @@
 import mongoose from "mongoose";
+import User from "@/models/User";
 
-interface GlobalMongoose {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-}
+const connectMongo = async () => {
+  if (!process.env.MONGODB_URI) {
+    throw new Error(
+      "Add the MONGODB_URI environment variable inside .env.local to use mongoose"
+    );
+  }
 
-declare global {
-  var mongoose: GlobalMongoose | undefined;
-}
+  const opts = {
+    serverSelectionTimeoutMS: 5000, // Reduce the timeout from 30 seconds to 5 seconds
+    socketTimeoutMS: 10000,
+    maxPoolSize: 10,
+    maxIdleTimeMS: 10000,
+    // Use the new topology layer
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  };
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "Add the MONGODB_URI environment variable inside .env.local to use mongoose"
-  );
-}
-
-let cached: GlobalMongoose = global.mongoose ?? {
-  conn: null,
-  promise: null,
+  return mongoose
+    .connect(process.env.MONGODB_URI, opts)
+    .catch((e) => console.error("Mongoose Client Error: " + e.message));
 };
-
-if (!global.mongoose) {
-  global.mongoose = cached;
-}
-
-const opts = {
-  maxPoolSize: 10,
-  minPoolSize: 5,
-  maxIdleTimeMS: 30000,
-  connectTimeoutMS: 10000,
-  socketTimeoutMS: 20000,
-  serverSelectionTimeoutMS: 10000,
-  waitQueueTimeoutMS: 10000,
-  keepAlive: true,
-  bufferCommands: false,
-} as const;
-
-async function connectMongo(): Promise<typeof mongoose> {
-  if (cached.conn) {
-    console.log("Using cached Mongoose connection");
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    console.log("Creating new Mongoose connection");
-    const opts = {
-      bufferCommands: false,
-      ...opts
-    };
-
-    mongoose.set("strictQuery", false);
-    cached.promise = mongoose.connect(MONGODB_URI, opts);
-  } else {
-    console.log("Using existing Mongoose connection promise");
-  }
-
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    console.error("Mongoose connection error:", e);
-    throw e;
-  }
-
-  return cached.conn;
-}
 
 export default connectMongo;

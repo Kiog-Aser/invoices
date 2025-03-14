@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import NextAuth, { DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
@@ -6,11 +5,6 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import type { JWT } from "next-auth/jwt";
 import clientPromise from "@/libs/mongo";
 import User from "@/models/User";
-import { authOptions } from "@/libs/next-auth";
-
-// Mark as edge runtime for better performance
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 
 // Define the JWT callback parameters type
 type JWTCallbackParams = {

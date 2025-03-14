@@ -2,6 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+import type { JWT } from "next-auth/jwt";
 import clientPromise from "@/libs/mongo";
 import config from "@/config";
 
@@ -39,17 +40,14 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async jwt({ token, user, trigger, session }) {
-      // Reduce database calls by only updating when necessary
       if (user) {
-        token.plan = (user as any).plan;
-        token.customerId = (user as any).customerId;
-        return token;
+        token.plan = user.plan;
+        token.customerId = user.customerId;
       }
       
-      if (trigger === "update" && session?.user?.plan) {
+      if (trigger === "update" && session?.user) {
         token.plan = session.user.plan;
         token.customerId = session.user.customerId;
-        return token;
       }
       
       return token;

@@ -21,7 +21,6 @@ const nextConfig = {
       "pbs.twimg.com",
       "images.unsplash.com",
       "logos-world.net",
-      "avatars.githubusercontent.com",
       // Add any other domains you need
     ],
     remotePatterns: [
@@ -33,19 +32,6 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    serverActions: true,
-    serverMinification: true,
-    optimizeCss: true,
-  },
-  webpack: (config) => {
-    config.externals = [...config.externals, 'bcrypt'];  // Add any native modules here
-    return config;
-  },
-  serverRuntimeConfig: {
-    // Increase timeout for API routes
-    apiTimeout: 60000, // 60 seconds
   },
 };
 
