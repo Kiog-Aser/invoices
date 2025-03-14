@@ -12,6 +12,9 @@ declare global {
 const uri = process.env.MONGODB_URI;
 const options = {
   maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 10000,
+  maxIdleTimeMS: 10000,
 };
 
 if (!uri) {

@@ -122,6 +122,19 @@ function PricingSection() {
 }
 
 export default function Page() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "/js/embed.js";
+    script.async = true;
+    script.defer = true;
+    script.dataset.websiteId = "67d1ee0297c36cce9ddd19c5";
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   return (
     <>
       <Suspense fallback={
