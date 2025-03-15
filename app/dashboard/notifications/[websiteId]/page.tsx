@@ -27,7 +27,8 @@ interface Notification {
   image?: string;
   timestamp: string;
   delay: number;
-  url?: string; // Add this new field
+  url?: string;
+  pushDown?: boolean;  // Add this property for animation support
 }
 
 export default function NotificationSettings({ params }: { params: { websiteId: string } }) {
@@ -447,17 +448,27 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     
     // Add new notification to the beginning of the array (top of stack)
     setActiveNotifications(prev => {
+      // Add push-down class to existing notifications
+      const existingWithPushDown = prev.map(n => ({
+        ...n,
+        pushDown: true
+      }));
+      
       // Respect maxVisibleNotifications setting for desktop, but always 1 for mobile
       const maxVisible = window.innerWidth <= 768 ? 1 : (isPro ? config.maxVisibleNotifications : 1);
-      const limitedPrev = prev.slice(0, maxVisible - 1);
-      return [notification, ...limitedPrev];
+      const limitedPrev = existingWithPushDown.slice(0, maxVisible - 1);
+      
+      // Add new notification at the beginning
+      return [{...notification, pushDown: false}, ...limitedPrev];
     });
     
     // Auto hide after display duration
     setTimeout(() => {
-      setActiveNotifications(prev => 
-        prev.filter(note => note.id !== notification.id)
-      );
+      setActiveNotifications(prev => {
+        const filtered = prev.filter(note => note.id !== notification.id);
+        // Remove push-down class from remaining notifications
+        return filtered.map(n => ({...n, pushDown: false}));
+      });
     }, config.displayDuration);
     
     notificationIndex.current += 1;
@@ -1015,7 +1026,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               }}
             >
               <div 
-                className={`card transition-all duration-300 animate-slide-in ${
+                className={`card transition-all duration-300 ${notification.pushDown ? 'animate-push-down' : 'animate-slide-in'} ${
                   THEMES.find(t => t.id === selectedTheme)?.class || THEMES[0].class
                 }`}
                 style={{
@@ -1162,16 +1173,32 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         @keyframes slide-in {
           from {
             opacity: 0;
-            transform: translateY(-20px) scale(0.95);
+            transform: translateY(-20px);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
           }
         }
         
+        @keyframes push-down {
+          0% { 
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(10px);
+          }
+          100% { 
+            transform: translateY(76px);
+          }
+        }
+
         .animate-slide-in {
           animation: slide-in 0.3s ease-out forwards;
+        }
+
+        .animate-push-down {
+          animation: push-down 0.3s ease-out forwards;
         }
 
         /* Hide spinner buttons for number inputs */

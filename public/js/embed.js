@@ -46,6 +46,18 @@
         }
       }
 
+      @keyframes poopup-push {
+        0% { 
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(10px);
+        }
+        100% { 
+          transform: translateY(76px); /* height of notification + margin */
+        }
+      }
+
       /* Theme Styles */
       .poopup {
         margin-bottom: 12px;
@@ -54,6 +66,11 @@
         animation: poopup-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         cursor: default;
         max-width: calc(100% - 20px);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .poopup.push-down {
+        animation: poopup-push 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
 
       @media (max-width: 768px) {
@@ -259,6 +276,11 @@
         while (container.children.length >= maxNotifications) {
           container.removeChild(container.lastChild);
         }
+
+        // Add push-down class to existing notifications
+        Array.from(container.children).forEach(child => {
+          child.classList.add('push-down');
+        });
       }
 
       const el = document.createElement('div');
@@ -288,14 +310,7 @@
         closeBtn.textContent = '×';
         closeBtn.onclick = (e) => {
           e.stopPropagation();
-          el.style.opacity = '0';
-          el.style.transform = 'translateY(-20px)';
-          el.style.transition = 'all 0.3s ease-out';
-          setTimeout(() => {
-            if (container.contains(el)) {
-              container.removeChild(el);
-            }
-          }, 300);
+          removeNotification(el);
         };
         el.appendChild(closeBtn);
       }
@@ -305,22 +320,29 @@
         el.addEventListener('click', () => window.open(notification.url, '_blank'));
       }
 
-      container.appendChild(el);
+      // Insert at the beginning of the container
+      container.insertBefore(el, container.firstChild);
 
+      // Set timeout to close notification
+      setTimeout(() => {
+        removeNotification(el);
+      }, data.config.displayDuration);
+    }
+
+    function removeNotification(el) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-20px)';
+      el.style.transition = 'all 0.3s ease-out';
+      
       setTimeout(() => {
         if (container.contains(el)) {
-          el.style.opacity = '0';
-          el.style.transform = 'translateY(-120px)';
-          el.style.transition = window.innerWidth <= 768 
-            ? 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' 
-            : 'all 0.3s ease-out';
-          setTimeout(() => {
-            if (container.contains(el)) {
-              container.removeChild(el);
-            }
-          }, 300);
+          container.removeChild(el);
+          // Animate remaining notifications back up
+          Array.from(container.children).forEach(child => {
+            child.classList.remove('push-down');
+          });
         }
-      }, data.config.displayDuration);
+      }, 300);
     }
 
     // Show first notification after initial delay
