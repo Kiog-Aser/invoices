@@ -14,6 +14,9 @@ type JWTCallbackParams = {
   session?: any;
 };
 
+// Force dynamic to ensure this is not cached
+export const dynamic = 'force-dynamic';
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -62,15 +65,24 @@ const handler = NextAuth({
         token.plan = user.plan || "";
       }
       
-      // Check if we need to update the token
-      if (trigger === "update" || token?.email) {
-        try {
-          const dbUser = await User.findOne({ email: token.email });
-          if (dbUser) {
-            token.plan = dbUser.plan || "";
+      // Only update from db when absolutely necessary to avoid timeouts
+      if (trigger === "update") {
+        // The token update is handled by the session update data
+        if (token?.email) {
+          try {
+            // Explicitly type the returned document to fix the TypeScript error
+            interface UserDoc {
+              plan?: string;
+            }
+            
+            // Limit fields returned to improve performance
+            const dbUser = await User.findOne({ email: token.email }, 'plan').lean() as UserDoc | null;
+            if (dbUser) {
+              token.plan = dbUser.plan || "";
+            }
+          } catch (error) {
+            console.error("Error fetching user in JWT callback:", error);
           }
-        } catch (error) {
-          console.error("Error fetching user in JWT callback:", error);
         }
       }
       

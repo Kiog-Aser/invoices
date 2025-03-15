@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: 'shipfast',
+    databaseName: 'shipfast', // Make sure this matches your database name
     collections: {
       Users: 'users',
       Accounts: 'accounts',
@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async jwt({ token, user, trigger, session }) {
+      // Keep JWT callback lightweight
       if (user) {
         token.plan = user.plan;
         token.customerId = user.customerId;
