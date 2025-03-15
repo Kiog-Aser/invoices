@@ -1,44 +1,21 @@
-'use client';
+import Link from 'next/link';
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-
-function ActivationSuccessContent() {
-  const searchParams = useSearchParams();
-  const email = searchParams.get("email");
-
+export default function ActivationSuccessPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 text-center">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">🎉 Activation Successful!</h1>
-          <p className="text-base-content/60">
-            {email ? `Your account (${email}) has been successfully activated.` : 'Your account has been successfully activated.'}
-          </p>
-        </div>
-        
-        <div>
-          <Link 
-            href="/auth/signin" 
-            className="btn btn-primary"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <main className="flex flex-col items-center justify-center flex-1 px-8 text-center">
+        <h1 className="text-4xl font-bold mb-6">Pro Plan Activated! 🎉</h1>
+        <p className="text-xl mb-8">
+          Your Pro plan has been successfully activated.
+          You now have access to all premium features.
+        </p>
+        <Link 
+          href="/dashboard" 
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Go to Dashboard
+        </Link>
+      </main>
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex justify-center items-center">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    }>
-      <ActivationSuccessContent />
-    </Suspense>
   );
 }

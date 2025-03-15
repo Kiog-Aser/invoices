@@ -14,7 +14,7 @@ const Modal = ({ isModalOpen, setIsModalOpen, children }: ModalProps) => {
     <Transition appear show={isModalOpen} as={Fragment}>
       <Dialog
         as="div"
-        className={`modal ${isModalOpen ? "modal-open" : ""}`}
+        className="modal modal-open"
         onClose={() => setIsModalOpen(false)}
       >
         <Transition.Child
@@ -40,38 +40,31 @@ const Modal = ({ isModalOpen, setIsModalOpen, children }: ModalProps) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="modal-box relative w-11/12 max-w-xl mx-auto p-4 sm:p-6">
-                <button
-                  className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  ✕
-                </button>
-                
-                <div className="mt-4">
-                  {children}
+              <Dialog.Panel className="modal-box w-full max-w-3xl">
+                <div className="flex justify-between items-center mb-4">
+                  <Dialog.Title as="h2" className="text-lg font-medium">
+                    {/* Title comes from children */}
+                  </Dialog.Title>
+                  <button
+                    className="btn btn-ghost btn-sm btn-circle"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                  </button>
                 </div>
+
+                {children}
               </Dialog.Panel>
             </Transition.Child>
           </div>
         </div>
-        
-        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}></div>
-        
-        <style jsx>{`
-          .modal-box {
-            max-height: 90vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          
-          @media (max-width: 640px) {
-            .modal-box {
-              margin-top: 1rem;
-              margin-bottom: 1rem;
-            }
-          }
-        `}</style>
       </Dialog>
     </Transition>
   );

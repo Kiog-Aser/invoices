@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FaArrowRight, FaPlus } from "react-icons/fa";
@@ -15,7 +15,7 @@ interface Website {
   notificationCount?: number;
 }
 
-function DashboardContent() {
+export default function Page() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
@@ -160,124 +160,122 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <header className="navbar bg-base-100 border-b border-base-300 flex-col sm:flex-row gap-2 p-4">
+    <div className="min-h-screen bg-base-100/50 py-12">
+      <header className="navbar bg-base-100 border-b border-base-300">
         <div className="flex-1">
           <div className="dropdown">
             <ButtonAccount />
           </div>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
+        <div className="flex-none gap-2">
           {!isPro && (
             <ButtonCheckout
               priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
               mode="payment"
               successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
               cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-              className="btn btn-primary w-full sm:w-auto"
+              className="btn btn-primary"
             />
           )}
           
           {isPro && (
-            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost w-full sm:w-auto">
+            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               Feature Request
             </a>
           )}
         </div>
       </header>
       
-      <main className="max-w-6xl mx-auto p-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         {showOnboarding ? (
-          <div className="card bg-base-100">
-            <div className="card-body">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
-                <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
-                  Let's get started by setting up your first website. NotiFast will help you engage visitors 
-                  with beautiful notifications that increase conversion and engagement.
-                </p>
+          <div className="px-6">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
+              <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
+                Let's get started by setting up your first website. NotiFast will help you engage visitors 
+                with beautiful notifications that increase conversion and engagement.
+              </p>
+            </div>
+            
+            <div className="max-w-md mx-auto">
+              <div className="mb-6">
+                <label htmlFor="website" className="label">
+                  <span className="label-text">What's your website domain?</span>
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                  <input
+                    type="text"
+                    id="website"
+                    placeholder="example.com"
+                    value={newWebsite}
+                    onChange={(e) => setNewWebsite(e.target.value)}
+                    className="flex-1 input input-bordered w-full sm:rounded-r-none"
+                  />
+                  <button
+                    onClick={handleAddWebsite}
+                    disabled={isSubmitting}
+                    className="btn btn-primary w-full sm:w-auto sm:rounded-l-none"
+                  >
+                    {isSubmitting ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      <>Continue <FaArrowRight className="ml-2" /></>
+                    )}
+                  </button>
+                </div>
               </div>
               
-              <div className="max-w-md mx-auto w-full px-4 sm:px-0">
-                <div className="mb-6">
-                  <label htmlFor="website" className="label">
-                    <span className="label-text">What's your website domain?</span>
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-                    <input
-                      type="text"
-                      id="website"
-                      placeholder="example.com"
-                      value={newWebsite}
-                      onChange={(e) => setNewWebsite(e.target.value)}
-                      className="input input-bordered w-full sm:rounded-r-none"
-                    />
-                    <button
-                      onClick={handleAddWebsite}
-                      disabled={isSubmitting}
-                      className="btn btn-primary w-full sm:w-auto sm:rounded-l-none"
+              <div className="text-center text-sm text-base-content/60">
+                <p>You'll be able to add {isPro ? "unlimited" : "up to 1"} website{isPro ? "s" : ""}.</p>
+                {!isPro && (
+                  <p className="mt-1">
+                    <ButtonCheckout
+                      priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                      mode="payment"
+                      successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
+                      cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
+                      asLink={true}
+                      className="link link-primary"
                     >
-                      {isSubmitting ? (
-                        <span className="loading loading-spinner loading-sm"></span>
-                      ) : (
-                        <>Continue <FaArrowRight className="ml-2" /></>
-                      )}
-                    </button>
+                      Upgrade to Pro
+                    </ButtonCheckout>
+                    {" "}for unlimited websites.
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="divider">How it works</div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+              <div className="card bg-base-200">
+                <div className="card-body items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <span className="text-primary font-bold">1</span>
                   </div>
-                </div>
-                
-                <div className="text-center text-sm text-base-content/60">
-                  <p>You'll be able to add {isPro ? "unlimited" : "up to 1"} website{isPro ? "s" : ""}.</p>
-                  {!isPro && (
-                    <p className="mt-1">
-                      <ButtonCheckout
-                        priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
-                        mode="payment"
-                        successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
-                        cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-                        asLink={true}
-                        className="link link-primary"
-                      >
-                        Upgrade to Pro
-                      </ButtonCheckout>
-                      {" "}for unlimited websites.
-                    </p>
-                  )}
+                  <h3 className="card-title text-base">Add your website</h3>
+                  <p className="text-sm text-base-content/70">Enter your domain to get started</p>
                 </div>
               </div>
               
-              <div className="divider my-8">How it works</div>
+              <div className="card bg-base-200">
+                <div className="card-body items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <span className="text-primary font-bold">2</span>
+                  </div>
+                  <h3 className="card-title text-base">Create notifications</h3>
+                  <p className="text-sm text-base-content/70">Customize messages for your audience</p>
+                </div>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center px-4 sm:px-0">
-                <div className="card bg-base-200">
-                  <div className="card-body items-center">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                      <span className="text-primary font-bold">1</span>
-                    </div>
-                    <h3 className="card-title text-base">Add your website</h3>
-                    <p className="text-sm text-base-content/70">Enter your domain to get started</p>
+              <div className="card bg-base-200">
+                <div className="card-body items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <span className="text-primary font-bold">3</span>
                   </div>
-                </div>
-                
-                <div className="card bg-base-200">
-                  <div className="card-body items-center">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                      <span className="text-primary font-bold">2</span>
-                    </div>
-                    <h3 className="card-title text-base">Create notifications</h3>
-                    <p className="text-sm text-base-content/70">Customize messages for your audience</p>
-                  </div>
-                </div>
-                
-                <div className="card bg-base-200">
-                  <div className="card-body items-center">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                      <span className="text-primary font-bold">3</span>
-                    </div>
-                    <h3 className="card-title text-base">Add to your site</h3>
-                    <p className="text-sm text-base-content/70">Paste one line of code</p>
-                  </div>
+                  <h3 className="card-title text-base">Add to your site</h3>
+                  <p className="text-sm text-base-content/70">Paste one line of code</p>
                 </div>
               </div>
             </div>
@@ -297,14 +295,14 @@ function DashboardContent() {
             </div>
             
             {websites.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {websites.map((website) => (
                   <div 
                     key={website._id} 
                     onClick={() => handleWebsiteClick(website._id)}
                     className="card bg-base-100 hover:shadow-md transition-shadow cursor-pointer"
                   >
-                    <div className="card-body p-4 sm:p-6">
+                    <div className="card-body">
                       <div className="flex items-center mb-3">
                         <div className="avatar placeholder">
                           <div className="w-10 h-10 rounded-lg bg-primary text-primary-content font-bold">
@@ -344,17 +342,5 @@ function DashboardContent() {
         )}
       </main>
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-base-200 flex justify-center items-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
   );
 }

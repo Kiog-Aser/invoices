@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import type { JSX } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -27,23 +27,18 @@ const links: {
   },
 ];
 
-const cta: JSX.Element = <ButtonSignin />;
+const cta: JSX.Element = <ButtonSignin/>;
 
-function HeaderContent() {
+// A header with a logo on the left, links in the center (like Pricing, etc...), and a CTA (like Get Started or Login) on the right.
+// The header is responsive, and on mobile, the links are hidden behind a burger button.
+const Header = () => {
   const searchParams = useSearchParams();
-  const [isOpen, setIsOpen] = useState(false);
-  const [hash, setHash] = useState("");
-  
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  // setIsOpen(false) when the route changes (i.e: when the user clicks on a link on mobile)
   useEffect(() => {
-    // Get hash from URL
-    setHash(window.location.hash);
-    
-    // Listen for hash changes
-    const handleHashChange = () => setHash(window.location.hash);
-    window.addEventListener("hashchange", handleHashChange);
-    
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+    setIsOpen(false);
+  }, [searchParams]);
 
   return (
     <header className="bg-base-200">
@@ -182,26 +177,6 @@ function HeaderContent() {
       </div>
     </header>
   );
-}
+};
 
-export default function Header() {
-  return (
-    <Suspense fallback={
-      <header className="bg-base-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center py-4">
-            <div className="w-8 h-8 rounded bg-base-300 animate-pulse" />
-            <div className="hidden md:flex gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-16 h-4 rounded bg-base-300 animate-pulse" />
-              ))}
-            </div>
-            <div className="w-24 h-8 rounded bg-base-300 animate-pulse" />
-          </div>
-        </div>
-      </header>
-    }>
-      <HeaderContent />
-    </Suspense>
-  );
-}
+export default Header;
