@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/libs/mongo";
 import { ObjectId } from "mongodb";
 
+// Define the config type
+type WebsiteConfig = {
+  startDelay?: number;
+  displayDuration?: number;
+  cycleDuration?: number;
+  loop?: boolean;
+  showCloseButton?: boolean;
+  theme?: string;
+  updatedAt?: Date;
+};
+
 export async function GET(req: Request, { params }: { params: { websiteId: string } }) {
   try {
     const { db } = await connectToDatabase();
@@ -24,6 +35,12 @@ export async function GET(req: Request, { params }: { params: { websiteId: strin
       return NextResponse.json({ error: "Website not found" }, { status: 404 });
     }
 
+    // Check if user is pro
+    const user = await db.collection("users").findOne({
+      email: website.userId
+    });
+    const isPro = user?.plan === 'pro';
+
     // Get notifications for this website
     const websiteId = website._id.toString();
     const notifications = await db
@@ -33,9 +50,20 @@ export async function GET(req: Request, { params }: { params: { websiteId: strin
       .toArray();
 
     // Get config from websiteConfigs collection
-    const websiteConfig = await db.collection("websiteConfigs").findOne({
+    const websiteConfigDoc = await db.collection("websiteConfigs").findOne({
       websiteId: params.websiteId
     });
+    
+    // Cast the config to our type
+    const websiteConfig: WebsiteConfig | null = websiteConfigDoc ? {
+      startDelay: websiteConfigDoc.startDelay,
+      displayDuration: websiteConfigDoc.displayDuration,
+      cycleDuration: websiteConfigDoc.cycleDuration,
+      loop: websiteConfigDoc.loop,
+      showCloseButton: websiteConfigDoc.showCloseButton,
+      theme: websiteConfigDoc.theme,
+      updatedAt: websiteConfigDoc.updatedAt
+    } : null;
 
     // Transform for public consumption and ensure all necessary fields
     const transformedNotifications = notifications.map(n => ({
@@ -44,20 +72,20 @@ export async function GET(req: Request, { params }: { params: { websiteId: strin
       message: n.message || "", // Keep message field for compatibility
       body: n.message || "", // Add body field for new embed script
       image: n.image || "",
-      url: n.url || "",
+      url: isPro ? (n.url || "") : "https://www.notifast.fun", // Force NotiFast URL for free users
       timestamp: n.timestamp || "now"
     }));
 
     // Return the data in the format the embed script expects
     return NextResponse.json({
       notifications: transformedNotifications,
-      config: websiteConfig || {
-        startDelay: 500,
-        displayDuration: 5000,
-        cycleDuration: 3000,
-        loop: false,
-        showCloseButton: true,
-        theme: "ios"
+      config: {
+        startDelay: websiteConfig?.startDelay || 500,
+        displayDuration: websiteConfig?.displayDuration || 5000,
+        cycleDuration: websiteConfig?.cycleDuration || 3000,
+        loop: isPro ? (websiteConfig?.loop || false) : false,
+        showCloseButton: isPro ? (websiteConfig?.showCloseButton || false) : false,
+        theme: isPro ? (websiteConfig?.theme || "ios") : "ios"
       }
     });
 

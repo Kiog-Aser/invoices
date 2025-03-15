@@ -100,6 +100,12 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
     const { notifications, config } = await req.json();
     
     const { db } = await connectToDatabase();
+
+    // Check if user is pro
+    const user = await db.collection("users").findOne({
+      email: session.user.email
+    });
+    const isPro = user?.plan === 'pro';
     
     // Verify website ownership
     let website;
@@ -120,7 +126,7 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
     if (!website) {
       return NextResponse.json({ error: "Website not found" }, { status: 404 });
     }
-    
+
     const websiteIdStr = website._id.toString();
     
     // Validate the config - ensure proper types and defaults
@@ -131,21 +137,19 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
       displayDuration: parseInt(config.displayDuration) || DEFAULT_CONFIG.displayDuration,
       cycleDuration: parseInt(config.cycleDuration) || DEFAULT_CONFIG.cycleDuration,
       maxVisibleNotifications: parseInt(config.maxVisibleNotifications) || DEFAULT_CONFIG.maxVisibleNotifications,
-      loop: Boolean(config.loop),
-      showCloseButton: Boolean(config.showCloseButton),
-      theme: config.theme || DEFAULT_CONFIG.theme
+      loop: isPro ? Boolean(config.loop) : false,
+      showCloseButton: isPro ? Boolean(config.showCloseButton) : false,
+      theme: isPro ? (config.theme || DEFAULT_CONFIG.theme) : "ios"
     };
 
     // Update website config in websiteConfigs collection
     if (config) {
-      // Merge with default config to ensure all fields exist
       const mergedConfig = {
         ...DEFAULT_CONFIG,
-        ...config,
+        ...sanitizedConfig,
         updatedAt: new Date()
       };
 
-      // Use upsert to create or update using websiteId directly
       await db.collection("websiteConfigs").updateOne(
         { 
           websiteId,
@@ -173,7 +177,7 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
           image: notification.image || "",
           timestamp: notification.timestamp || "now",
           delay: notification.delay || 0,
-          url: notification.url || "",
+          url: isPro ? (notification.url || "") : "https://www.notifast.fun", // Force NotiFast URL for free users
           websiteId: websiteIdStr,
           userId: session.user.email,
           createdAt: new Date()
