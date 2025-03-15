@@ -24,9 +24,6 @@ export default function Page() {
   const [refreshingSession, setRefreshingSession] = useState(false);
   const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
 
-  // Define isPageLoading here as a computed value
-  const isPageLoading = isLoading || planIsLoading || refreshingSession;
-
   // Effect to check pro status
   useEffect(() => {
     const checkProStatus = async () => {
@@ -147,6 +144,8 @@ export default function Page() {
     router.push(`/dashboard/notifications/${websiteId}`);
   };
 
+  const isPageLoading = isLoading || planIsLoading || refreshingSession;
+
   // If authentication is still being determined, show a loading state
   if (status === 'loading') {
     return (
@@ -155,48 +154,6 @@ export default function Page() {
       </div>
     );
   }
-
-  // Effect to check success parameter and refresh session
-  useEffect(() => {
-    if (searchParams?.get("success") === "true") {
-      const retryRefresh = async (attempts = 0, maxAttempts = 5) => {
-        try {
-          setRefreshingSession(true);
-          const userData = await refreshUserSession();
-          if (userData?.plan === "pro") {
-            setIsPro(true);
-            toast.success("Welcome to Pro! Your account has been upgraded.");
-            // Remove success parameter from URL
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete("success");
-            window.history.replaceState({}, "", newUrl.toString());
-          } else if (attempts < maxAttempts) {
-            // Wait and retry if plan isn't updated yet
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await retryRefresh(attempts + 1, maxAttempts);
-          }
-        } catch (error) {
-          console.error("Error refreshing session:", error);
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await retryRefresh(attempts + 1, maxAttempts);
-          }
-        } finally {
-          setRefreshingSession(false);
-        }
-      };
-
-      retryRefresh();
-    }
-  }, [searchParams]);
-
-  // Effect to check pro status
-  useEffect(() => {
-    if (session?.user?.plan === "pro") {
-      setIsPro(true);
-    }
-    setIsLoading(false); // Changed from setIsPageLoading to setIsLoading
-  }, [session]);
 
   return (
     <>
@@ -238,20 +195,13 @@ export default function Page() {
           <div className="flex justify-center py-20">
             <span className="loading loading-spinner loading-lg text-primary"></span>
           </div>
-        ) : refreshingSession ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
-            <p className="text-center text-base-content/70">
-              Updating your account... Please wait.
-            </p>
-          </div>
         ) : showOnboarding ? (
           <div className="card bg-base-100">
             <div className="card-body">
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
                 <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
-                  Let's get started by setting up your first website. NotiFasts will help you engage visitors 
+                  Let's get started by setting up your first website. PoopUps will help you engage visitors 
                   with beautiful notifications that increase conversion and engagement.
                 </p>
               </div>
@@ -288,7 +238,7 @@ export default function Page() {
                   <p>You'll be able to add {isPro ? "unlimited" : "up to 1"} website{isPro ? "s" : ""}.</p>
                   {!isPro && (
                     <p className="mt-1">
-                      <Link href="/#pricing" className="link link-primary">
+                      <Link href="/pricing" className="link link-primary">
                         Upgrade to Pro
                       </Link>
                       {" "}for unlimited websites.

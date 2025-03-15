@@ -9,31 +9,28 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    // Get current session first
+    const session = await getServerSession(authOptions);
+    
     // Check if this is a manual update request
     const shouldUpdate = req.nextUrl.searchParams.has('update');
     
-    if (shouldUpdate) {
-      // Get the current session
-      const session = await getServerSession(authOptions);
-      
-      if (!session || !session.user?.email) {
-        console.log("No session found during update request");
-        return NextResponse.json({ user: null });
-      }
+    if (shouldUpdate && session?.user?.email) {
+      console.log("Updating session for user:", session.user.email);
       
       // Connect to MongoDB and fetch fresh user data
       await connectMongo();
-      const user = await User.findOne({ email: session.user.email }).select('+plan');
+      const user = await User.findOne({ email: session.user.email });
       
       if (!user) {
-        console.log("User not found in database:", session.user.email);
+        console.warn("User not found in database:", session.user.email);
         return NextResponse.json({ user: null });
       }
       
-      console.log("Found user data during session update:", {
+      console.log("Found user data:", {
         id: user._id,
-        email: user.email,
-        plan: user.plan
+        plan: user.plan,
+        customerId: user.customerId
       });
       
       // Return the updated user data
@@ -50,12 +47,10 @@ export async function GET(req: NextRequest) {
       });
     }
     
-    // If not a manual update request, just return the current session
-    const session = await getServerSession(authOptions);
+    // Always return a properly structured JSON object
     return NextResponse.json(session || { user: null });
-    
   } catch (error) {
     console.error("Error in session route:", error);
-    return NextResponse.json({ error: "Internal server error", details: error?.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

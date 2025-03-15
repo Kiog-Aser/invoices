@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { toast } from "react-hot-toast";
-import apiClient from "@/libs/api";
 
 const ButtonCheckout = ({ 
   priceId, 
@@ -25,25 +23,41 @@ const ButtonCheckout = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePayment = async () => {
-    try {
-      setIsLoading(true);
+    setIsLoading(true);
 
-      const { data } = await apiClient.post('/stripe/create-checkout', {
-        priceId,
-        successUrl: successUrl || window.location.href + "?success=true",
-        cancelUrl: cancelUrl || window.location.href + "?canceled=true",
-        userId: session?.user?.id
+    try {
+
+      const response = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          priceId,
+          mode: "payment",
+          successUrl: window.location.origin + "/dashboard?success=true",
+          cancelUrl: cancelUrl || window.location.href + "?canceled=true",
+          // Pass the user ID in the request so it can be included in client_reference_id
+          userId: session?.user?.id
+        }),
       });
+
+      const data = await response.json();
       
-      if (!data?.url) {
+      console.log("Checkout API response:", data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      if (!data.url) {
         throw new Error("No checkout URL returned from API");
       }
 
       // Redirect to Stripe checkout
       window.location.href = data.url;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Payment error:", error);
-      toast.error(error?.response?.data?.error || "Failed to initiate checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }
