@@ -160,30 +160,30 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100/50 py-12">
-      <header className="navbar bg-base-100 border-b border-base-300">
-        <div className="flex-1">
-          <div className="dropdown">
+    <div className="min-h-screen bg-base-100/50">
+      <header className="bg-base-100 border-b border-base-200">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
             <ButtonAccount />
           </div>
-        </div>
-        
-        <div className="flex-none gap-2">
-          {!isPro && (
-            <ButtonCheckout
-              priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
-              mode="payment"
-              successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
-              cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-              className="btn btn-primary"
-            />
-          )}
           
-          {isPro && (
-            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
-              Feature Request
-            </a>
-          )}
+          <div className="flex gap-2">
+            {!isPro && (
+              <ButtonCheckout
+                priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                mode="payment"
+                successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
+                cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
+                className="btn btn-primary btn-sm"
+              />
+            )}
+            
+            {isPro && (
+              <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                Feature Request
+              </a>
+            )}
+          </div>
         </div>
       </header>
       
