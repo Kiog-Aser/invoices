@@ -2,10 +2,18 @@ import { Metadata } from "next";
 import Link from "next/link";
 import guides from "./[slug]/guides-data";
 import GuidesWrapper from "@/components/GuidesWrapper";
+import { BsBook, BsBarChart, BsLightning } from "react-icons/bs";
+
+// Define niches for the GuidesWrapper component
+const niches = [
+  { id: "ecommerce", name: "E-commerce" },
+  { id: "saas", name: "SaaS" },
+  { id: "blog", name: "Content Creation" }
+];
 
 export const metadata: Metadata = {
   title: "Notification Strategy Guides by Industry | NotiFast",
-  description: "Industry-specific guides on using notifications to boost conversions and engagement. Find strategies tailored for e-commerce, SaaS, content creators, and more.",
+  description: "Expert notification strategies for every industry. Find tailored guides to boost conversions, engagement, and retention with smart notifications.",
   openGraph: {
     type: "website",
     title: "Notification Strategy Guides by Industry",
@@ -14,24 +22,17 @@ export const metadata: Metadata = {
 } satisfies Metadata;
 
 const categories = {
+  'strategy': 'Implementation Strategies',
   'landing-page': 'Landing Page Optimization',
-  'conversion': 'Industry-Specific Strategies',
+  'conversion': 'Conversion Rate Optimization',
   'engagement': 'User Engagement',
-  'social-proof': 'Social Proof',
-  'strategy': 'Notification Strategy'
+  'social-proof': 'Social Proof'
 } as const;
-
-const niches = [
-  { id: "ecommerce", name: "E-commerce" },
-  { id: "saas", name: "SaaS" },
-  { id: "blog", name: "Content" },
-  { id: "agency", name: "Agency" },
-  { id: "coaching", name: "Coaching" },
-  { id: "marketplace", name: "Marketplace" }
-];
 
 type CategoryType = keyof typeof categories;
 type Guide = typeof guides[0];
+
+const GUIDES_PER_PAGE = 12;
 
 export default function GuidesPage({
   searchParams
@@ -39,11 +40,21 @@ export default function GuidesPage({
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   const selectedNiche = searchParams?.niche as string | undefined;
+  const selectedRole = searchParams?.role as string | undefined;
+  const selectedTopic = searchParams?.topic as string | undefined;
+  const selectedSegment = searchParams?.segment as string | undefined;
+  const page = Number(searchParams?.page) || 1;
+  
+  // Filter guides based on selected criteria
+  const filteredGuides = guides.filter(guide => {
+    if (selectedNiche && !guide.tags.includes(selectedNiche)) return false;
+    if (selectedRole && !guide.tags.includes(selectedRole)) return false;
+    if (selectedTopic && !guide.tags.includes(selectedTopic)) return false;
+    if (selectedSegment && !guide.tags.includes(selectedSegment)) return false;
+    return true;
+  });
 
-  const filteredGuides = selectedNiche
-    ? guides.filter(guide => guide.tags.includes(selectedNiche))
-    : guides;
-
+  // Group guides by category
   const guidesByCategory = filteredGuides.reduce((acc, guide: Guide) => {
     if (!acc[guide.category]) {
       acc[guide.category] = [];
@@ -51,6 +62,13 @@ export default function GuidesPage({
     acc[guide.category].push(guide);
     return acc;
   }, {} as Record<CategoryType, Guide[]>);
+
+  // Calculate pagination
+  const totalGuides = filteredGuides.length;
+  const totalPages = Math.ceil(totalGuides / GUIDES_PER_PAGE);
+  const startIndex = (page - 1) * GUIDES_PER_PAGE;
+  const endIndex = startIndex + GUIDES_PER_PAGE;
+  const paginatedGuides = filteredGuides.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-base-200/50 to-base-100">
@@ -62,60 +80,105 @@ export default function GuidesPage({
               Notification Strategy
             </h1>
           </div>
-          <p className="text-xl text-base-content/70 max-w-2xl mx-auto">
+          <p className="text-xl text-base-content/70 max-w-2xl mx-auto mb-8">
             Learn proven strategies to boost conversions and engagement with notifications. 
             Find guides tailored for your industry and use case.
           </p>
+
+          {/* Quick stats */}
+          <div className="stats shadow bg-base-100">
+            <div className="stat">
+              <div className="stat-figure text-primary">
+                <BsBook className="w-6 h-6" />
+              </div>
+              <div className="stat-title">Total Guides</div>
+              <div className="stat-value text-primary">{guides.length}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-figure text-primary">
+                <BsBarChart className="w-6 h-6" />
+              </div>
+              <div className="stat-title">Industries</div>
+              <div className="stat-value text-primary">{niches.length}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-figure text-primary">
+                <BsLightning className="w-6 h-6" />
+              </div>
+              <div className="stat-title">Success Rate</div>
+              <div className="stat-value text-primary">37%</div>
+              <div className="stat-desc">Avg. conversion lift</div>
+            </div>
+          </div>
         </header>
 
         <GuidesWrapper niches={niches}>
           <div className="grid gap-16">
-            {Object.entries(guidesByCategory).map(([category, categoryGuides]) => (
-              categoryGuides.length > 0 && (
-                <section key={category} className="scroll-m-20" id={category}>
-                  <div className="flex items-center gap-4 mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold">{categories[category as CategoryType]}</h2>
-                    <div className="h-px flex-grow bg-base-300"></div>
-                  </div>
-                  
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {categoryGuides.map((guide) => (
-                      <Link
-                        key={guide.slug}
-                        href={`/guides/${guide.slug}`}
-                        className="group card bg-base-100 hover:shadow-lg transition-all hover:-translate-y-1 border border-base-200"
-                      >
-                        <div className="card-body">
-                          <h3 className="card-title text-lg mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-                            {guide.title}
-                          </h3>
-                          <p className="text-base-content/70 mb-4 text-sm line-clamp-2">
-                            {guide.excerpt}
-                          </p>
-                          <div className="flex flex-wrap gap-2 items-center justify-between mt-auto">
-                            <div className="flex flex-wrap gap-2">
-                              {guide.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className="badge badge-primary badge-outline text-xs">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                            {guide.readingTime && (
-                              <div className="text-xs text-base-content/50 flex items-center gap-1">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {guide.readingTime}
-                              </div>
-                            )}
-                          </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedGuides.map((guide) => (
+                <Link
+                  key={guide.slug}
+                  href={`/guides/${guide.slug}`}
+                  className="group card bg-base-100 hover:shadow-lg transition-all hover:-translate-y-1 border border-base-200"
+                >
+                  <div className="card-body">
+                    <h3 className="card-title text-lg mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                      {guide.title}
+                    </h3>
+                    <p className="text-base-content/70 mb-4 text-sm line-clamp-2">
+                      {guide.excerpt}
+                    </p>
+                    <div className="flex flex-wrap gap-2 items-center justify-between mt-auto">
+                      <div className="flex flex-wrap gap-2">
+                        {guide.tags.slice(0, 2).map((tag) => (
+                          <span key={tag} className="badge badge-primary badge-outline text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      {guide.readingTime && (
+                        <div className="text-xs text-base-content/50 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {guide.readingTime}
                         </div>
-                      </Link>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                </section>
-              )
-            ))}
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-8">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <Link
+                    key={pageNum}
+                    href={{
+                      pathname: '/guides',
+                      query: {
+                        ...searchParams,
+                        page: pageNum
+                      }
+                    }}
+                    className={`btn btn-circle btn-sm ${pageNum === page ? 'btn-primary' : 'btn-ghost'}`}
+                  >
+                    {pageNum}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {filteredGuides.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-xl font-semibold mb-2">No guides found</h3>
+                <p className="text-base-content/70">
+                  Try adjusting your filters to find more guides.
+                </p>
+              </div>
+            )}
           </div>
         </GuidesWrapper>
       </div>

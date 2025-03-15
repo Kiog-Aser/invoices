@@ -1,91 +1,75 @@
 import Link from "next/link";
 import config from "@/config";
+import { BsLightningCharge, BsBarChart, BsPeople, BsBullseye } from "react-icons/bs";
 
-// Define niches for programmatic SEO
-const niches = [
-  { id: "ecommerce", name: "E-commerce Store", examples: ["product reviews", "limited-time offers", "cart abandonment", "new arrivals"] },
-  { id: "saas", name: "SaaS Platform", examples: ["feature updates", "trial expiration", "onboarding tips", "usage milestones"] },
-  { id: "blog", name: "Content Creator", examples: ["new articles", "subscriber milestones", "content series", "community updates"] },
-  { id: "agency", name: "Digital Agency", examples: ["case studies", "service promotions", "client testimonials", "industry insights"] },
-  { id: "coaching", name: "Online Coach", examples: ["course launches", "student success stories", "workshop announcements", "coaching slots"] },
-  { id: "marketplace", name: "Online Marketplace", examples: ["new listings", "buyer activity", "seller milestones", "special deals"] }
+// Define industries (niches) with specific examples and metrics
+const industries = [
+  { 
+    id: "ecommerce", 
+    name: "E-commerce Store",
+    metrics: ["conversion rate", "average order value", "cart abandonment rate"],
+    examples: ["product reviews", "limited-time offers", "cart abandonment", "new arrivals"],
+    segments: ["fashion", "electronics", "beauty", "home goods", "food & beverage"]
+  },
+  { 
+    id: "saas",
+    name: "SaaS Platform",
+    metrics: ["trial conversion rate", "churn rate", "feature adoption"],
+    examples: ["feature updates", "trial expiration", "onboarding tips", "usage milestones"],
+    segments: ["productivity", "marketing", "developer tools", "business analytics", "customer support"]
+  },
+  {
+    id: "blog",
+    name: "Content Creation",
+    metrics: ["subscriber conversion", "engagement rate", "time on page"],
+    examples: ["new articles", "subscriber milestones", "content series", "community updates"],
+    segments: ["tech", "lifestyle", "business", "education", "entertainment"]
+  }
 ] as const;
 
-// Helper function to generate niche-specific content
-function generateNicheContent(niche: typeof niches[number]) {
-  return {
-    title: `How to Boost Conversions as a ${niche.name}`,
-    excerpt: `Learn proven notification strategies specifically designed for ${niche.name.toLowerCase()}s to increase engagement and drive more sales.`,
-    content: (examples: readonly string[]) => (
-      <div className="prose prose-lg max-w-none">
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg mb-8">
-          <p className="text-lg font-medium text-primary">
-            This guide is specifically tailored for {niche.name.toLowerCase()}s looking to increase their conversion rates using smart notification strategies.
-          </p>
-        </div>
+// Define roles for targeting
+const roles = [
+  {
+    id: "marketer",
+    name: "Marketing Professional",
+    goals: ["increase conversion rates", "improve engagement", "reduce acquisition costs"],
+    kpis: ["CAC", "ROI", "conversion rate"]
+  },
+  {
+    id: "founder",
+    name: "Startup Founder",
+    goals: ["grow revenue", "reduce churn", "increase customer satisfaction"],
+    kpis: ["MRR", "churn rate", "NPS"]
+  },
+  {
+    id: "product",
+    name: "Product Manager",
+    goals: ["increase feature adoption", "improve user retention", "boost user satisfaction"],
+    kpis: ["feature usage", "retention rate", "user satisfaction"]
+  }
+] as const;
 
-        <h2 className="text-2xl font-bold mb-4">Why Notifications Matter for {niche.name}s</h2>
-        <p className="mb-6">
-          In the competitive world of {niche.name.toLowerCase()}s, engaging your visitors at the right moment
-          can make the difference between a conversion and a bounce. Strategic notifications can increase
-          your conversion rates by up to 37%.
-        </p>
-
-        <div className="bg-base-200 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4">Key Notification Types for {niche.name}s</h3>
-          <ul className="space-y-3">
-            {examples.map((example) => (
-              <li key={example} className="flex items-start">
-                <svg className="w-6 h-6 text-primary shrink-0 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{example}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <h2 className="text-2xl font-bold mb-4">Implementation Strategy</h2>
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="card bg-base-200">
-            <div className="card-body">
-              <h3 className="card-title text-lg mb-2">Timing & Placement</h3>
-              <ul className="space-y-2">
-                <li>• Show social proof within 5-10 seconds</li>
-                <li>• Position based on content relevance</li>
-                <li>• Avoid disrupting key CTAs</li>
-              </ul>
-            </div>
-          </div>
-          <div className="card bg-base-200">
-            <div className="card-body">
-              <h3 className="card-title text-lg mb-2">Content & Design</h3>
-              <ul className="space-y-2">
-                <li>• Keep messages concise and clear</li>
-                <li>• Use your brand's voice</li>
-                <li>• Include relevant imagery</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <h2 className="text-2xl font-bold mb-4">Advanced Tips</h2>
-        <div className="alert alert-info mb-6">
-          <svg className="w-6 h-6 shrink-0 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p>
-            Pro Tip: Use A/B testing to optimize your notification strategy specifically for your {niche.name.toLowerCase()} audience.
-          </p>
-        </div>
-
-        <div className="not-prose">
-          <GuideCTA />
-        </div>
-      </div>
-    )
-  };
-}
+// Topics with specific metrics and goals
+const topics = [
+  {
+    id: "conversion",
+    name: "Conversion Optimization",
+    metrics: ["conversion rate", "bounce rate", "average order value"],
+    tactics: ["A/B testing", "social proof", "urgency triggers"]
+  },
+  {
+    id: "engagement",
+    name: "User Engagement",
+    metrics: ["session duration", "pages per visit", "return rate"],
+    tactics: ["personalization", "gamification", "interactive content"]
+  },
+  {
+    id: "retention",
+    name: "Customer Retention",
+    metrics: ["churn rate", "lifetime value", "repeat purchase rate"],
+    tactics: ["loyalty programs", "reactivation campaigns", "personalized offers"]
+  }
+] as const;
 
 interface Guide {
   slug: string;
@@ -94,183 +78,194 @@ interface Guide {
   content: JSX.Element;
   category: 'landing-page' | 'conversion' | 'engagement' | 'social-proof' | 'strategy';
   tags: string[];
-  relatedGuides?: string[]; // Slugs of related guides
-  readingTime?: string; // Estimated reading time
+  relatedGuides?: string[];
+  readingTime?: string;
+  publishedAt: string;
+  author?: {
+    name: string;
+    role: string;
+  };
 }
 
-// Component for consistent CTA styling
-const GuideCTA = () => (
-  <div className="my-8 p-6 bg-gradient-to-r from-primary/20 to-primary/10 rounded-lg text-center">
-    <h3 className="text-xl font-bold mb-3">Ready to Boost Your Conversions?</h3>
-    <p className="mb-4">
-      Start using NotiFast to implement these strategies and see your conversion rates soar.
-    </p>
-    <Link 
-      href="/#pricing" 
-      className="btn btn-primary"
-    >
-      Try NotiFast Free
-    </Link>
+// Components for consistent styling
+const GuideSection = ({ 
+  title, 
+  children, 
+  icon: Icon 
+}: { 
+  title: string; 
+  children: React.ReactNode; 
+  icon: React.ComponentType<{ className?: string }> 
+}) => (
+  <div className="mb-12">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2 bg-primary/10 rounded-lg">
+        <Icon className="w-6 h-6 text-primary" />
+      </div>
+      <h2 className="text-2xl font-bold">{title}</h2>
+    </div>
+    {children}
   </div>
 );
 
-// Helper component for internal guide links
-const GuideLink = ({ slug, children }: { slug: string; children: React.ReactNode }) => (
-  <Link 
-    href={`/guides/${slug}`}
-    className="text-primary hover:underline font-medium"
-  >
-    {children}
-  </Link>
+const InfoCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="card bg-base-200">
+    <div className="card-body">
+      <h3 className="card-title text-lg mb-2">{title}</h3>
+      {children}
+    </div>
+  </div>
 );
 
-// Generate guides for each niche
-const nicheGuides = niches.map(niche => {
-  const nicheContent = generateNicheContent(niche);
-  return {
-    slug: `conversion-guide-${niche.id}`,
-    title: nicheContent.title,
-    excerpt: nicheContent.excerpt,
-    category: 'conversion' as const,
-    tags: ['conversion rate', niche.id, 'notifications', 'strategy'],
-    readingTime: "4 min read",
-    content: nicheContent.content([...niche.examples])
-  } satisfies Guide;
-});
+const MetricsCard = ({ metrics }: { metrics: string[] }) => (
+  <div className="card bg-primary/5 border border-primary/10">
+    <div className="card-body">
+      <h3 className="card-title text-lg mb-4">Key Metrics to Track</h3>
+      <div className="space-y-3">
+        {metrics.map((metric, index) => (
+          <div key={index} className="flex items-center gap-3">
+            <BsBarChart className="text-primary" />
+            <span>{metric}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
-// Combine with existing guides
-const guides: Guide[] = [
-  ...nicheGuides,
-  {
-    slug: "landing-page-notification-placement",
-    title: "Strategic Notification Placement for Landing Pages",
-    excerpt: "Learn where to place notifications on your landing page for maximum impact and higher conversion rates",
-    category: 'landing-page' as const,
-    tags: ["landing page", "conversion rate", "ux design", "notifications"],
-    readingTime: "4 min read",
-    relatedGuides: ["social-proof-notifications-guide"],
-    content: (
-      <>
-        <GuideCTA />
+const GuideCTA = () => (
+  <div className="my-12 card bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5">
+    <div className="card-body text-center">
+      <h3 className="card-title text-xl justify-center mb-3">Ready to Boost Your Conversions?</h3>
+      <p className="mb-6">
+        Start using NotiFast to implement these strategies and see your conversion rates soar.
+      </p>
+      <div className="justify-center">
+        <Link href="/#pricing" className="btn btn-primary">
+          Try NotiFast Free
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
+// Generate guides programmatically
+function generateGuides(): Guide[] {
+  const guides: Guide[] = [];
+
+  // Generate industry-specific guides
+  industries.forEach(industry => {
+    industry.segments.forEach(segment => {
+      roles.forEach(role => {
+        topics.forEach(topic => {
+          const guide: Guide = {
+            slug: `${topic.id}-guide-${industry.id}-${segment}-${role.id}`.toLowerCase().replace(/\s+/g, '-'),
+            title: `${topic.name} Guide for ${segment} ${industry.name}s: A ${role.name}'s Perspective`,
+            excerpt: `Learn how to optimize ${topic.name.toLowerCase()} for your ${segment} ${industry.name.toLowerCase()} and achieve ${role.goals[0]}.`,
+            category: 'strategy',
+            tags: [industry.id, role.id, topic.id, segment],
+            readingTime: "4 min read",
+            publishedAt: new Date().toISOString(),
+            author: {
+              name: "NotiFast Team",
+              role: "Conversion Strategy Team"
+            },
+            content: generateGuideContent({ industry, segment, role, topic })
+          };
+          guides.push(guide);
+        });
+      });
+    });
+  });
+
+  return guides;
+}
+
+function generateGuideContent({ 
+  industry, 
+  segment, 
+  role, 
+  topic 
+}: { 
+  industry: typeof industries[number];
+  segment: string;
+  role: typeof roles[number];
+  topic: typeof topics[number];
+}): JSX.Element {
+  return (
+    <div className="prose prose-lg max-w-none">
+      <GuideCTA />
+      
+      <GuideSection title="Overview" icon={BsLightningCharge}>
+        <p className="lead text-lg text-base-content/80">
+          As a {role.name} in the {segment} {industry.name} space, optimizing your {topic.name.toLowerCase()} 
+          is crucial for achieving {role.goals[0]}.
+        </p>
         
-        <h2>Why Notification Placement Matters</h2>
-        <p>
-          Strategic notification placement can increase conversion rates by up to 37%. The key is to show
-          the right message at the right time without disrupting the user experience. For maximum impact, 
-          combine this guide with our <GuideLink slug="social-proof-notifications-guide">
-          social proof notifications guide</GuideLink>.
-        </p>
+        <div className="grid md:grid-cols-2 gap-6 my-8">
+          <InfoCard title="Industry Challenges">
+            <ul className="space-y-2">
+              {industry.examples.map((example, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary/60" />
+                  {example}
+                </li>
+              ))}
+            </ul>
+          </InfoCard>
+          
+          <MetricsCard metrics={[...new Set([...role.kpis, ...topic.metrics])]} />
+        </div>
+      </GuideSection>
 
-        <h2>Best Practices for Notification Placement</h2>
-        <ul>
-          <li>Top-right corner for social proof notifications</li>
-          <li>Bottom-right for chat and support notifications</li>
-          <li>Top-center for important announcements</li>
-          <li>Avoid blocking primary CTAs or important content</li>
-        </ul>
+      <GuideSection title="Implementation Strategy" icon={BsBullseye}>
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <InfoCard title="Best Practices">
+            <ul className="space-y-2">
+              {topic.tactics.map((tactic, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary/60" />
+                  {tactic}
+                </li>
+              ))}
+            </ul>
+          </InfoCard>
+          
+          <InfoCard title={`${segment} Specific Tips`}>
+            <ul className="space-y-2">
+              <li>Customize messaging for {segment} audience</li>
+              <li>Focus on {industry.metrics[0]}</li>
+              <li>Monitor {role.kpis[0]} impact</li>
+            </ul>
+          </InfoCard>
+        </div>
+      </GuideSection>
 
-        <h2>Timing Your Notifications</h2>
-        <p>
-          The timing of your notifications is just as important as their placement. Here's when to show different types:
-        </p>
-        <ul>
-          <li>Social proof: 5-10 seconds after page load</li>
-          <li>Special offers: After 30 seconds or 50% scroll</li>
-          <li>Exit intent: When cursor moves to close tab</li>
-        </ul>
+      <GuideSection title="Next Steps" icon={BsPeople}>
+        <div className="card bg-base-200 p-6">
+          <h3 className="font-bold mb-4">Your Action Plan</h3>
+          <ol className="space-y-4">
+            <li className="flex items-start gap-3">
+              <span className="font-bold text-primary">1.</span>
+              Set up NotiFast notifications targeting {segment} customers
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold text-primary">2.</span>
+              Implement {topic.tactics[0]} using our templates
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold text-primary">3.</span>
+              Track {role.kpis[0]} to measure impact
+            </li>
+          </ol>
+        </div>
+      </GuideSection>
 
-        <h2>Mobile Considerations</h2>
-        <p>
-          Mobile devices require special attention for notification placement:
-        </p>
-        <ul>
-          <li>Keep notifications small and unobtrusive</li>
-          <li>Avoid covering navigation elements</li>
-          <li>Use bottom placement for better thumb accessibility</li>
-        </ul>
+      <GuideCTA />
+    </div>
+  );
+}
 
-        <h2>Testing and Optimization</h2>
-        <p>
-          Always A/B test your notification placement and timing. Key metrics to track:
-        </p>
-        <ul>
-          <li>Click-through rates</li>
-          <li>Conversion rates</li>
-          <li>Bounce rates</li>
-          <li>Time on page</li>
-        </ul>
-
-        <h2>Next Steps</h2>
-        <p className="mb-6">
-          Now that you understand notification placement, learn how to create compelling social proof
-          notifications in our <GuideLink slug="social-proof-notifications-guide">
-          Social Proof Notifications Guide</GuideLink>.
-        </p>
-
-        <GuideCTA />
-      </>
-    )
-  },
-  {
-    slug: "social-proof-notifications-guide",
-    title: "Leveraging Social Proof in Notifications",
-    excerpt: "Master the art of social proof notifications to build trust and drive conversions",
-    category: 'social-proof' as const,
-    tags: ["social proof", "trust", "conversions", "psychology"],
-    readingTime: "3 min read",
-    relatedGuides: ["landing-page-notification-placement"],
-    content: (
-      <>
-        <GuideCTA />
-
-        <h2>The Power of Social Proof</h2>
-        <p>
-          Social proof is one of the most powerful psychological triggers in marketing. When visitors see
-          others taking action, they're more likely to follow suit. For best results, combine these techniques
-          with proper <GuideLink slug="landing-page-notification-placement">notification placement strategies</GuideLink>.
-        </p>
-
-        <h2>Types of Social Proof Notifications</h2>
-        <ul>
-          <li>Recent purchases</li>
-          <li>User count milestones</li>
-          <li>Live visitor counts</li>
-          <li>Recent signups</li>
-          <li>Customer reviews</li>
-        </ul>
-
-        <h2>Writing Effective Social Proof Messages</h2>
-        <p>
-          Your notification copy should be clear, concise, and compelling:
-        </p>
-        <ul>
-          <li>Include specific details (location, time)</li>
-          <li>Use real names when possible</li>
-          <li>Keep messages short and scannable</li>
-          <li>Include social proof elements (★★★★★)</li>
-        </ul>
-
-        <h2>Implementation Tips</h2>
-        <p>
-          For maximum effectiveness:
-        </p>
-        <ul>
-          <li>Rotate between different types of social proof</li>
-          <li>Keep notifications fresh and recent</li>
-          <li>Test different display durations</li>
-          <li>Ensure mobile responsiveness</li>
-        </ul>
-
-        <h2>Next Steps</h2>
-        <p className="mb-6">
-          Now that you understand social proof, learn where to place these notifications for maximum impact
-          in our <GuideLink slug="landing-page-notification-placement">Landing Page Notification Placement Guide</GuideLink>.
-        </p>
-
-        <GuideCTA />
-      </>
-    )
-  }
-];
+const guides = generateGuides();
 
 export default guides;
