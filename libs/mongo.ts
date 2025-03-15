@@ -9,6 +9,10 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
+if (!process.env.MONGODB_URI) {
+  throw new Error("Please add your MongoDB URI to .env");
+}
+
 const uri = process.env.MONGODB_URI;
 const options = {
   maxPoolSize: 10,
@@ -17,17 +21,25 @@ const options = {
   serverSelectionTimeoutMS: 5000
 };
 
-if (!uri) {
-  throw new Error("Please add your MongoDB URI to .env");
-}
-
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
+async function connect() {
+  try {
+    client = new MongoClient(uri, options);
+    console.log("🔄 Attempting MongoDB connection...");
+    const connection = await client.connect();
+    console.log("✅ MongoDB connection established");
+    return connection;
+  } catch (e) {
+    console.error("❌ MongoDB connection error:", e instanceof Error ? e.message : e);
+    throw e;
+  }
+}
+
 // Use cached connection in both development and production
 if (!global._mongoClientPromise) {
-  client = new MongoClient(uri, options);
-  global._mongoClientPromise = client.connect();
+  global._mongoClientPromise = connect();
 }
 
 clientPromise = global._mongoClientPromise;
@@ -38,7 +50,7 @@ export async function connectToDatabase() {
     const db = client.db();
     return { db, client };
   } catch (error) {
-    console.error('Failed to connect to database:', error);
+    console.error('❌ Failed to connect to database:', error instanceof Error ? error.message : error);
     throw error;
   }
 }

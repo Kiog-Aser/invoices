@@ -9,18 +9,20 @@ const connectMongo = async () => {
   }
 
   const opts = {
-    serverSelectionTimeoutMS: 5000, // Reduce the timeout from 30 seconds to 5 seconds
-    socketTimeoutMS: 10000,
     maxPoolSize: 10,
-    maxIdleTimeMS: 10000,
-    // Use the new topology layer
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 5000
   };
 
-  return mongoose
-    .connect(process.env.MONGODB_URI, opts)
-    .catch((e) => console.error("Mongoose Client Error: " + e.message));
+  try {
+    await mongoose
+      .connect(process.env.MONGODB_URI, opts);
+    console.log("🔌 MongoDB connected successfully");
+  } catch (e) {
+    console.error("❌ MongoDB connection error:", e.message);
+    throw e;
+  }
 };
 
 export default connectMongo;

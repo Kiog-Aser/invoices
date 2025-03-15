@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: 'test',
+    databaseName: process.env.MONGODB_URI?.split('/').pop()?.split('?')[0],
     collections: {
       Users: 'users',
       Accounts: 'accounts',
