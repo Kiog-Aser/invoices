@@ -14,11 +14,17 @@ export default async function LayoutPrivate({
 }: {
   children: ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (!session) {
+    if (!session) {
+      redirect(config.auth.loginUrl);
+    }
+
+    return <>{children}</>;
+  } catch (error) {
+    console.error("Dashboard layout error:", error);
+    // Redirect to login on error to prevent infinite refresh
     redirect(config.auth.loginUrl);
   }
-
-  return <>{children}</>;
 }
