@@ -210,12 +210,12 @@ export default function Page() {
                     placeholder="example.com"
                     value={newWebsite}
                     onChange={(e) => setNewWebsite(e.target.value)}
-                    className="flex-1 input input-bordered h-12 sm:h-auto w-full sm:rounded-r-none"
+                    className="flex-1 input input-bordered min-h-[3rem] !h-[3rem] w-full sm:rounded-r-none"
                   />
                   <button
                     onClick={handleAddWebsite}
                     disabled={isSubmitting}
-                    className="btn btn-primary h-12 sm:h-auto w-full sm:w-auto sm:rounded-l-none"
+                    className="btn btn-primary min-h-[3rem] !h-[3rem] w-full sm:w-auto sm:rounded-l-none"
                   >
                     {isSubmitting ? (
                       <span className="loading loading-spinner loading-sm"></span>
