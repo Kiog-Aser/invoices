@@ -180,8 +180,8 @@ export default function Page() {
           )}
           
           {isPro && (
-            <a href="mailto:support@notifast.fun" className="btn btn-ghost">
-              Feedback
+            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+              Feature Request
             </a>
           )}
         </div>
