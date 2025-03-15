@@ -50,11 +50,8 @@
         0% { 
           transform: translateY(0);
         }
-        50% {
-          transform: translateY(4px);
-        }
         100% { 
-          transform: translateY(calc(100% + 12px)); /* height + margin-bottom */
+          transform: translateY(12px); /* Just use the margin-bottom value */
         }
       }
 
