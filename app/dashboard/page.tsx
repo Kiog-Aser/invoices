@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -8,7 +7,6 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import ButtonCheckout from "@/components/ButtonCheckout";
 import ButtonAccount from "@/components/ButtonAccount";
-import { getToken } from "next-auth/jwt";
 import { refreshUserSession, setupStripeSuccessListener } from "@/libs/refreshSession";
 import LogoutCountdown from "@/components/LogoutCountdown";
 
@@ -17,10 +15,8 @@ export default function Page() {
   const userPlan = session?.user?.plan;
   const isPro = userPlan === 'pro';
   const planIsLoading = status === 'loading';
-
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [newWebsite, setNewWebsite] = useState("");
   const [websites, setWebsites] = useState<any[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -28,55 +24,6 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshingSession, setRefreshingSession] = useState(false);
   const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
-
-  const updateSession = async () => {
-    const response = await fetch('/api/auth/session?update');
-    if (!response.ok) {
-      throw new Error('Failed to update session');
-    }
-    return response.json();
-  };
-
-  // Add this helper function in the component
-  const refreshUserSession = async () => {
-    try {
-      // Fetch updated user data from our new endpoint
-      const response = await fetch('/api/auth/session?update');
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update session');
-      }
-      
-      const data = await response.json();
-      
-      // Force a session update by reloading the page
-      // This is more reliable than trying to update the session in-place
-      if (data.user?.plan === 'pro') {
-        console.log("Pro plan confirmed, refreshing page to update session");
-        window.location.reload();
-      } else {
-        // If the plan isn't pro yet, wait a few seconds and try again
-        // This handles the case where the webhook hasn't processed yet
-        console.log("Plan not updated yet, retrying in 3 seconds...");
-        return new Promise<void>((resolve) => {
-          setTimeout(async () => {
-            const retryResponse = await fetch('/api/auth/session?update');
-            const retryData = await retryResponse.json();
-            if (retryData.user?.plan === 'pro') {
-              window.location.reload();
-            } else {
-              // If it still doesn't work, we'll let the user know they may need to refresh
-              console.log("Plan still not updated after retry");
-            }
-            resolve();
-          }, 3000);
-        });
-      }
-    } catch (error) {
-      console.error("Failed to refresh user session:", error);
-      throw error;
-    }
-  };
 
   // Check for success parameter in URL - this happens after Stripe redirect
   useEffect(() => {
@@ -87,34 +34,47 @@ export default function Page() {
       url.searchParams.delete('success');
       window.history.replaceState({}, document.title, url.toString());
       
-      // Show logout countdown instead of refreshing session
+      // Show logout countdown instead of immediately refreshing
       setShowLogoutCountdown(true);
     }
   }, [searchParams]);
 
+  // Setup Stripe success listener only once when component mounts
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setupStripeSuccessListener();
+    }
+  }, [searchParams]);
+
+  // Fetch websites when session is loaded
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const websitesResponse = await fetch('/api/websites');
-        if (!websitesResponse.ok) {
-          throw new Error('Failed to fetch websites');
+      if (status === 'unauthenticated') {
+        // If not authenticated, let the layout handle redirect
+        return;
+      }
+
+      if (status !== 'loading') {
+        try {
+          const websitesResponse = await fetch('/api/websites');
+          if (!websitesResponse.ok) {
+            throw new Error('Failed to fetch websites');
+          }
+          const websitesData = await websitesResponse.json();
+          setWebsites(websitesData);
+          setShowOnboarding(websitesData.length === 0);
+          
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          toast.error('Failed to load data');
+          setIsLoading(false);
         }
-        const websitesData = await websitesResponse.json();
-        setWebsites(websitesData);
-        setShowOnboarding(websitesData.length === 0);
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
-        setIsLoading(false);
       }
     };
     
-    if (!planIsLoading) {
-      fetchData();
-    }
-  }, [planIsLoading]);
+    fetchData();
+  }, [status]);
 
   const handleAddWebsite = async () => {
     if (!newWebsite) {
@@ -133,7 +93,6 @@ export default function Page() {
       toast.error("Please enter a valid domain");
       return;
     }
-
     try {
       setIsSubmitting(true);
       const response = await fetch('/api/websites', {
@@ -166,12 +125,14 @@ export default function Page() {
 
   const isPageLoading = isLoading || planIsLoading || refreshingSession;
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('success') === 'true') {
-      setupStripeSuccessListener();
-    }
-  }, []);
+  // If authentication is still being determined, show a loading state
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-base-200 flex justify-center items-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -194,8 +155,8 @@ export default function Page() {
             <ButtonCheckout
                     priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
                     mode="payment"
-                    successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
-                    cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
+                    successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
+                    cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
                     className="btn btn-primary btn-block"
             />
           )}
@@ -266,6 +227,7 @@ export default function Page() {
               <div className="divider">How it works</div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                {/* ...existing code... */}
                 <div className="card bg-base-200">
                   <div className="card-body items-center">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -358,7 +320,6 @@ export default function Page() {
             )}
           </div>
         )}
-
       </main>
     </div>
     </>
