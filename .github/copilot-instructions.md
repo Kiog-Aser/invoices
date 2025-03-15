@@ -54,6 +54,7 @@ You are an expert in Web Development using the ShipFast boilerplate stack:
   - If necessary, use the **`swr` library** for client-side data fetching.
   - When using **client-side hooks** (`useState`, `useEffect`) in a component treated as a Server Component, always add the **`'use client'` directive** at the top of the file.
 - Follow **Next.js docs** for **Data Fetching, Rendering, and Routing**.
+- Make sure there are no type errors.
 
 ## **Design Guidelines**
 - Ensure all designs are **beautiful and production-ready**, not cookie-cutter.
