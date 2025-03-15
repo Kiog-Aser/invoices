@@ -38,7 +38,7 @@
       @keyframes poopup-slide {
         from { 
           opacity: 0; 
-          transform: translateY(-120px);
+          transform: translateY(-20px);
         }
         to { 
           opacity: 1; 
@@ -51,10 +51,10 @@
           transform: translateY(0);
         }
         50% {
-          transform: translateY(10px);
+          transform: translateY(4px);
         }
         100% { 
-          transform: translateY(76px); /* height of notification + margin */
+          transform: translateY(calc(100% + 12px)); /* height + margin-bottom */
         }
       }
 
@@ -63,19 +63,19 @@
         margin-bottom: 12px;
         padding: 14px;
         position: relative;
-        animation: poopup-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: poopup-slide 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         cursor: default;
         max-width: calc(100% - 20px);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .poopup.push-down {
-        animation: poopup-push 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: poopup-push 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
 
       @media (max-width: 768px) {
         .poopup {
-          animation-duration: 0.5s;
+          animation-duration: 0.7s;
           animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
       }

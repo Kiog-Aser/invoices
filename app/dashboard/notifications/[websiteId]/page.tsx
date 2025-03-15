@@ -1186,19 +1186,19 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
             transform: translateY(0);
           }
           50% {
-            transform: translateY(10px);
+            transform: translateY(4px);
           }
           100% { 
-            transform: translateY(76px);
+            transform: translateY(calc(100% + 12px));
           }
         }
 
         .animate-slide-in {
-          animation: slide-in 0.3s ease-out forwards;
+          animation: slide-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .animate-push-down {
-          animation: push-down 0.3s ease-out forwards;
+          animation: push-down 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         /* Hide spinner buttons for number inputs */
