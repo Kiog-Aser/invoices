@@ -201,7 +201,7 @@ export default function Page() {
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
                 <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
-                  Let's get started by setting up your first website. PoopUps will help you engage visitors 
+                  Let's get started by setting up your first website. NotiFasts will help you engage visitors 
                   with beautiful notifications that increase conversion and engagement.
                 </p>
               </div>
