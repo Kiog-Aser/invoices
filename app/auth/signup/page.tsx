@@ -109,11 +109,11 @@ function SignUpContent() {
   );
 }
 
-export default function SignUpPage() {
+export default function Page() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="loading loading-spinner"></div>
+      <div className="min-h-screen flex justify-center items-center">
+        <span className="loading loading-spinner loading-lg"></span>
       </div>
     }>
       <SignUpContent />

@@ -1,3 +1,7 @@
+'use client';
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSEOTags } from "@/libs/seo";
 import config from "@/config";
@@ -7,7 +11,9 @@ export const metadata = getSEOTags({
   canonicalUrlRelative: "/privacy-policy",
 });
 
-const PrivacyPolicy = () => {
+function PrivacyPolicyContent() {
+  const searchParams = useSearchParams();
+  
   return (
     <main className="max-w-xl mx-auto">
       <div className="p-5">
@@ -81,6 +87,16 @@ By using NotiFast, you consent to the terms of this Privacy Policy.`}
       </div>
     </main>
   );
-};
+}
 
-export default PrivacyPolicy;
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex justify-center items-center">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    }>
+      <PrivacyPolicyContent />
+    </Suspense>
+  );
+}
