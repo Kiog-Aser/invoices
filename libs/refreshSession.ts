@@ -1,5 +1,5 @@
 import { useSession } from "next-auth/react";
-import { getSession, signIn } from "next-auth/react"; // Add this import
+import { getSession, signIn } from "next-auth/react";
 
 export async function refreshUserSession() {
   // Check if we've already refreshed
@@ -9,26 +9,31 @@ export async function refreshUserSession() {
   }
   
   try {
-    // Fetch the latest user data
-    const response = await fetch('/api/refresh-session');
+    // Fetch the latest user data with plan information
+    const response = await fetch('/api/user');
     if (!response.ok) {
-      throw new Error('Failed to refresh session');
+      throw new Error('Failed to fetch user data');
     }
     
-    // Parse the response to get the updated user data
     const userData = await response.json();
     
     // Mark as refreshed
     sessionStorage.setItem('session_refreshed', 'true');
     
-    // Use signIn method to force session refresh
-    await signIn('credentials', { 
-      redirect: false,
-      email: userData.user.email,
-      callbackUrl: window.location.href
-    });
+    // Check if we need to update the session (if plan has changed)
+    const session = await getSession();
+    if (session?.user?.plan !== userData.plan) {
+      console.log('Plan changed, updating session...');
+      
+      // Use signIn method to force session refresh
+      await signIn('credentials', { 
+        redirect: false,
+        email: userData.email,
+        callbackUrl: window.location.href
+      });
+    }
     
-    return true;
+    return userData;
   } catch (error) {
     console.error('Error refreshing session:', error);
     return null;
@@ -47,7 +52,23 @@ export function setupStripeSuccessListener() {
     // Reset the session refresh flag to force a refresh
     sessionStorage.removeItem('session_refreshed');
     
-    // Force a hard reload to get the updated session
-    window.location.reload();
+    // Wait a moment for the webhook to process
+    setTimeout(async () => {
+      try {
+        // Explicitly fetch user data to get updated plan
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('Updated user data after payment:', userData);
+          
+          // If the user has been upgraded to pro, reload the page
+          if (userData.plan === 'pro') {
+            window.location.reload();
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error);
+      }
+    }, 2000);
   }
 }

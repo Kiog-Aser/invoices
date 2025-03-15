@@ -23,7 +23,6 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ 
     req, 
     secret: process.env.NEXTAUTH_SECRET,
-    cookieName: 'next-auth.session-token'
   });
 
   // Redirect to login if no token and requesting a protected route
@@ -36,6 +35,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Match all pages except static files, api routes, and other special paths
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)']
+  // Only run middleware on paths that aren't static files or api routes 
+  // that already handle their own authentication
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/webhook).*)',
+  ],
 };
