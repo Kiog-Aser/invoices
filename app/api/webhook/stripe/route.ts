@@ -13,12 +13,11 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    // Connect to database first
+    // Connect to database first to avoid timing issues
     await connectMongo();
     
     console.log("⚡️ Stripe webhook received");
     
-    // Get the raw request body and signature
     const payload = await req.text();
     const sig = req.headers.get("stripe-signature") || "";
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -55,34 +54,47 @@ export async function POST(req: NextRequest) {
           clientReferenceId,
           customerEmail: session.customer_email
         });
-        
-        // First try to find user by customerId
-        let user = await User.findOne({ customerId });
-        
-        // If not found and we have a client_reference_id, try finding by that
-        if (!user && clientReferenceId) {
-          user = await User.findById(clientReferenceId);
-        }
-        
-        // If still not found and we have a customer email, try finding by email
-        if (!user && session.customer_email) {
-          user = await User.findOne({ email: session.customer_email });
-        }
 
-        if (user) {
-          console.log(`📝 Found user ${user._id}, updating to pro plan...`);
+        try {
+          // First try to find user by customerId
+          let user = await User.findOne({ customerId });
+          
+          // If not found and we have a client_reference_id, try finding by that
+          if (!user && clientReferenceId) {
+            user = await User.findById(clientReferenceId);
+          }
+          
+          // If still not found and we have a customer email, try finding by email
+          if (!user && session.customer_email) {
+            user = await User.findOne({ email: session.customer_email });
+          }
+
+          if (!user) {
+            console.error("❌ Could not find user with any of the following:", {
+              customerId,
+              clientReferenceId,
+              customerEmail: session.customer_email
+            });
+            return NextResponse.json(
+              { error: "User not found" },
+              { status: 404 }
+            );
+          }
+
+          // Update user with pro plan and customerId if they don't have it
+          console.log(`📝 Updating user ${user._id} to pro plan...`);
           user.plan = "pro";
           if (!user.customerId) {
             user.customerId = customerId;
           }
           await user.save();
-          console.log(`✨ Updated user ${user._id} to pro plan successfully`);
-        } else {
-          console.error("❌ Could not find user with any of the following:", {
-            customerId,
-            clientReferenceId,
-            customerEmail: session.customer_email
-          });
+          console.log(`✨ Successfully updated user ${user._id} to pro plan`);
+        } catch (error) {
+          console.error("❌ Error updating user:", error);
+          return NextResponse.json(
+            { error: "Failed to update user" },
+            { status: 500 }
+          );
         }
         break;
       }

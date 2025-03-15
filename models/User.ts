@@ -34,8 +34,8 @@ const userSchema = new mongoose.Schema(
     // User's current plan (free or pro)
     plan: {
       type: String,
-      enum: ['', 'pro'],
-      default: ''
+      enum: ['free', 'pro'],
+      default: 'free'
     },
     provider: {
       type: String,
