@@ -980,10 +980,17 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         </div>
       </main>
 
-      {/* Stacked notifications preview */}
-      <div className="fixed top-24 right-8 max-w-xs w-full z-50 space-y-2">
+      {/* Stacked notifications preview - updated mobile styles */}
+      <div className="fixed top-24 md:right-8 max-w-xs w-full z-50 space-y-2 md:transform-none transform translate-x-[-50%] left-[50%] md:left-auto">
         {activeNotifications.map((notification, index) => (
-          <div key={notification.id} className="relative">
+          <div 
+            key={notification.id} 
+            className="relative" 
+            style={{
+              // On mobile, only show the first notification
+              display: window.innerWidth <= 768 && index > 0 ? 'none' : 'block'
+            }}
+          >
             {showCloseButton && (
               <button 
                 onClick={() => {
@@ -1012,9 +1019,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                   THEMES.find(t => t.id === selectedTheme)?.class || THEMES[0].class
                 }`}
                 style={{
-                  opacity: Math.max(0.85 - (index * 0.1), 0.6),
-                  transform: `scale(${Math.max(1 - (index * 0.05), 0.9)})`,
-                  transformOrigin: 'top right'
+                  opacity: window.innerWidth <= 768 ? 1 : Math.max(0.85 - (index * 0.1), 0.6),
+                  transform: window.innerWidth <= 768 
+                    ? 'none' 
+                    : `scale(${Math.max(1 - (index * 0.05), 0.9)})`,
+                  transformOrigin: 'top right',
+                  width: window.innerWidth <= 768 ? '90%' : 'auto',
+                  margin: window.innerWidth <= 768 ? '0 auto' : undefined
                 }}
               >
                 <div className="p-3.5 flex">
