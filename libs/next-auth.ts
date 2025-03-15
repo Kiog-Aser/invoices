@@ -6,11 +6,6 @@ import type { JWT } from "next-auth/jwt";
 import clientPromise from "@/libs/mongo";
 import config from "@/config";
 
-// Determine the base URL for cookies based on environment
-const useSecureCookies = process.env.VERCEL_URL || process.env.NEXTAUTH_URL?.startsWith('https://');
-const cookiePrefix = useSecureCookies ? '__Secure-' : '';
-const domain = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).hostname : undefined;
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -65,33 +60,12 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `${cookiePrefix}next-auth.session-token`,
+      name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: useSecureCookies,
-        domain: domain && domain !== 'localhost' ? '.' + domain : undefined
-      }
-    },
-    callbackUrl: {
-      name: `${cookiePrefix}next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-        domain: domain && domain !== 'localhost' ? '.' + domain : undefined
-      }
-    },
-    csrfToken: {
-      name: `${cookiePrefix}next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-        domain: domain && domain !== 'localhost' ? '.' + domain : undefined
+        secure: process.env.NODE_ENV === "production"
       }
     }
   },
