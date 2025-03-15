@@ -149,19 +149,35 @@ const GuideCTA = () => (
   </div>
 );
 
+// Helper function for proper title case
+function toTitleCase(str: string): string {
+  const minorWords = new Set(['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'with']);
+  return str.split(' ').map((word, index) => {
+    if (index === 0 || !minorWords.has(word.toLowerCase())) {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+    return word.toLowerCase();
+  }).join(' ');
+}
+
+// Helper function to capitalize segment names
+function formatSegmentName(segment: string): string {
+  return segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+}
+
 // Generate guides programmatically
 function generateGuides(): Guide[] {
   const guides: Guide[] = [];
 
-  // Generate industry-specific guides
   industries.forEach(industry => {
     industry.segments.forEach(segment => {
       roles.forEach(role => {
         topics.forEach(topic => {
+          const formattedSegment = formatSegmentName(segment);
           const guide: Guide = {
             slug: `${topic.id}-guide-${industry.id}-${segment}-${role.id}`.toLowerCase().replace(/\s+/g, '-'),
-            title: `${topic.name} Guide for ${segment} ${industry.name}s: A ${role.name}'s Perspective`,
-            excerpt: `Learn how to optimize ${topic.name.toLowerCase()} for your ${segment} ${industry.name.toLowerCase()} and achieve ${role.goals[0]}.`,
+            title: toTitleCase(`${topic.name} Guide for ${formattedSegment} ${industry.name}: A ${role.name}'s Perspective`),
+            excerpt: `Learn how to optimize ${topic.name.toLowerCase()} for your ${formattedSegment.toLowerCase()} ${industry.name.toLowerCase()} and achieve ${role.goals[0]}.`,
             category: 'strategy',
             tags: [industry.id, role.id, topic.id, segment],
             readingTime: "4 min read",
@@ -170,7 +186,12 @@ function generateGuides(): Guide[] {
               name: "NotiFast Team",
               role: "Conversion Strategy Team"
             },
-            content: generateGuideContent({ industry, segment, role, topic })
+            content: generateGuideContent({ 
+              industry, 
+              segment: formattedSegment, 
+              role, 
+              topic 
+            })
           };
           guides.push(guide);
         });

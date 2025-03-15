@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import guides from "./[slug]/guides-data";
 import GuidesWrapper from "@/components/GuidesWrapper";
-import { BsBook, BsBarChart, BsLightning } from "react-icons/bs";
+import { BsBook, BsBarChart, BsLightning, BsChevronLeft, BsChevronRight } from "react-icons/bs";
 
 // Define niches for the GuidesWrapper component
 const niches = [
@@ -33,6 +33,55 @@ type CategoryType = keyof typeof categories;
 type Guide = typeof guides[0];
 
 const GUIDES_PER_PAGE = 12;
+
+// Helper function for pagination display
+function getPaginationRange(currentPage: number, totalPages: number): number[] {
+  const delta = 2;
+  const range: number[] = [];
+  const rangeWithDots: number[] = [];
+
+  range.push(1);
+
+  if (totalPages <= 1) return range;
+
+  let left = currentPage - delta;
+  let right = currentPage + delta;
+
+  if (left <= 0) {
+    right = right - left + 1;
+    left = 1;
+  }
+
+  if (right > totalPages) {
+    left = Math.max(1, left - (right - totalPages));
+    right = totalPages;
+  }
+
+  for (let i = left; i <= right; i++) {
+    if (i !== 1 && i !== totalPages) {
+      range.push(i);
+    }
+  }
+
+  if (totalPages > 1) {
+    range.push(totalPages);
+  }
+
+  let l: number | undefined;
+  for (const i of range) {
+    if (l) {
+      if (i - l === 2) {
+        rangeWithDots.push(l + 1);
+      } else if (i - l !== 1) {
+        rangeWithDots.push(-1); // Represents dots
+      }
+    }
+    rangeWithDots.push(i);
+    l = i;
+  }
+
+  return rangeWithDots;
+}
 
 export default function GuidesPage({
   searchParams
@@ -152,22 +201,54 @@ export default function GuidesPage({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <Link
-                    key={pageNum}
-                    href={{
-                      pathname: '/guides',
-                      query: {
-                        ...searchParams,
-                        page: pageNum
-                      }
-                    }}
-                    className={`btn btn-circle btn-sm ${pageNum === page ? 'btn-primary' : 'btn-ghost'}`}
-                  >
-                    {pageNum}
-                  </Link>
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Link
+                  href={{
+                    pathname: '/guides',
+                    query: {
+                      ...searchParams,
+                      page: Math.max(1, page - 1)
+                    }
+                  }}
+                  className={`btn btn-sm ${page <= 1 ? 'btn-disabled' : 'btn-ghost'}`}
+                  aria-label="Previous page"
+                >
+                  <BsChevronLeft className="w-4 h-4" />
+                </Link>
+
+                {getPaginationRange(page, totalPages).map((pageNum, index) => (
+                  pageNum === -1 ? (
+                    <span key={`dots-${index}`} className="px-2">...</span>
+                  ) : (
+                    <Link
+                      key={pageNum}
+                      href={{
+                        pathname: '/guides',
+                        query: {
+                          ...searchParams,
+                          page: pageNum
+                        }
+                      }}
+                      className={`btn btn-sm ${pageNum === page ? 'btn-primary' : 'btn-ghost'}`}
+                    >
+                      {pageNum}
+                    </Link>
+                  )
                 ))}
+
+                <Link
+                  href={{
+                    pathname: '/guides',
+                    query: {
+                      ...searchParams,
+                      page: Math.min(totalPages, page + 1)
+                    }
+                  }}
+                  className={`btn btn-sm ${page >= totalPages ? 'btn-disabled' : 'btn-ghost'}`}
+                  aria-label="Next page"
+                >
+                  <BsChevronRight className="w-4 h-4" />
+                </Link>
               </div>
             )}
 
