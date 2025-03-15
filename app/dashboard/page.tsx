@@ -161,33 +161,33 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <header className="navbar bg-base-100 border-b border-base-300">
+      <header className="navbar bg-base-100 border-b border-base-300 flex-col sm:flex-row gap-2 p-4">
         <div className="flex-1">
           <div className="dropdown">
             <ButtonAccount />
           </div>
         </div>
         
-        <div className="flex-none gap-2">
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
           {!isPro && (
             <ButtonCheckout
               priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
               mode="payment"
               successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
               cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-              className="btn btn-primary"
+              className="btn btn-primary w-full sm:w-auto"
             />
           )}
           
           {isPro && (
-            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost w-full sm:w-auto">
               Feature Request
             </a>
           )}
         </div>
       </header>
       
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto p-4 py-8">
         {showOnboarding ? (
           <div className="card bg-base-100">
             <div className="card-body">
@@ -199,24 +199,24 @@ export default function Page() {
                 </p>
               </div>
               
-              <div className="max-w-md mx-auto">
+              <div className="max-w-md mx-auto w-full px-4 sm:px-0">
                 <div className="mb-6">
                   <label htmlFor="website" className="label">
                     <span className="label-text">What's your website domain?</span>
                   </label>
-                  <div className="join w-full">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                     <input
                       type="text"
                       id="website"
                       placeholder="example.com"
                       value={newWebsite}
                       onChange={(e) => setNewWebsite(e.target.value)}
-                      className="join-item input input-bordered flex-1"
+                      className="input input-bordered w-full sm:rounded-r-none"
                     />
                     <button
                       onClick={handleAddWebsite}
                       disabled={isSubmitting}
-                      className="join-item btn btn-primary"
+                      className="btn btn-primary w-full sm:w-auto sm:rounded-l-none"
                     >
                       {isSubmitting ? (
                         <span className="loading loading-spinner loading-sm"></span>
@@ -247,9 +247,9 @@ export default function Page() {
                 </div>
               </div>
               
-              <div className="divider">How it works</div>
+              <div className="divider my-8">How it works</div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center px-4 sm:px-0">
                 <div className="card bg-base-200">
                   <div className="card-body items-center">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -297,14 +297,14 @@ export default function Page() {
             </div>
             
             {websites.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {websites.map((website) => (
                   <div 
                     key={website._id} 
                     onClick={() => handleWebsiteClick(website._id)}
                     className="card bg-base-100 hover:shadow-md transition-shadow cursor-pointer"
                   >
-                    <div className="card-body">
+                    <div className="card-body p-4 sm:p-6">
                       <div className="flex items-center mb-3">
                         <div className="avatar placeholder">
                           <div className="w-10 h-10 rounded-lg bg-primary text-primary-content font-bold">

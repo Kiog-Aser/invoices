@@ -6,6 +6,7 @@ import { FaArrowLeft, FaPlus, FaCopy, FaImage, FaGripVertical, FaPlay, FaStop, F
 import { toast } from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import ButtonCheckout from "@/components/ButtonCheckout";
+import ButtonAccount from "@/components/ButtonAccount";
 import { useSession, signOut } from "next-auth/react";
 
 // Popular brand logos
@@ -39,6 +40,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]); 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [config, setConfig] = useState({
     startDelay: 500,
     displayDuration: 30000,
@@ -638,54 +640,45 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <header className="border-b border-base-200 bg-base-100">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-          <button
-            onClick={router.back}
-            className="btn btn-ghost btn-sm gap-2"
-          >
-            <FaArrowLeft className="text-base-content" size={12} /> <span>Back</span>
+    <div className="min-h-screen bg-base-200">
+      <header className="navbar bg-base-100 border-b border-base-300 flex-col sm:flex-row gap-2 p-4">
+        <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <button onClick={() => router.push('/dashboard')} className="btn btn-ghost btn-sm">
+            <FaArrowLeft /> <span className="ml-2">Back</span>
           </button>
-
-          <button
-            onClick={() => {
-              if (!isPro) {
-                setUpgradeFeature("custom themes");
-                setShowUpgradeModal(true);
-                return;
-              }
-              setThemeModalOpen(true);
-            }}
-            className="btn btn-ghost btn-sm gap-2"
-          >
-            <span>Theme</span>
-          </button>
-
-          <button
-            onClick={togglePlay}
-            className={`btn btn-sm gap-2 ${
-              isPlaying 
-                ? "btn-error" 
-                : "btn-primary"
-            }`}
-          >
-            {isPlaying ? (
-              <>
-                <FaStop size={12} /> Stop Preview
-              </>
-            ) : (
-              <>
-                <FaPlay size={12} /> Preview
-              </>
-            )}
-          </button>
+          <div className="flex items-center">
+            <div className="avatar placeholder mr-2">
+              <div className="w-8 h-8 rounded bg-primary text-primary-content">
+                <span>{website?.domain?.charAt(0).toUpperCase()}</span>
+              </div>
+            </div>
+            <h1 className="text-xl font-bold">{website?.domain}</h1>
+          </div>
+        </div>
+        
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <ButtonAccount />
         </div>
       </header>
-      
-      <main className="max-w-5xl mx-auto px-6 py-4">
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Left Column - Configuration */}
+
+      <main className="max-w-6xl mx-auto p-4 py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">Notifications</h2>
+            <p className="text-base-content/70">
+              Create and manage notifications for your website
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn btn-primary w-full sm:w-auto"
+          >
+            <FaPlus className="mr-2" /> New Notification
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="md:w-2/5">
             <div className="mb-6">
               <h2 className="text-primary font-medium text-sm mb-2">{website.domain}</h2>
@@ -980,14 +973,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         </div>
       </main>
 
-      {/* Stacked notifications preview - updated mobile styles */}
-      <div className="fixed top-24 md:right-8 max-w-xs w-full z-50 space-y-2 md:transform-none transform translate-x-[-50%] left-[50%] md:left-auto">
+      {/* Stacked notifications preview */}
+      <div className="fixed top-4 md:top-24 md:right-8 max-w-xs w-[calc(100%-2rem)] md:w-full mx-auto z-50 space-y-2 md:transform-none transform translate-x-[-50%] left-[50%] md:left-auto">
         {activeNotifications.map((notification, index) => (
           <div 
             key={notification.id} 
-            className="relative" 
+            className="relative px-4 md:px-0" 
             style={{
-              // On mobile, only show the first notification
               display: window.innerWidth <= 768 && index > 0 ? 'none' : 'block'
             }}
           >
