@@ -16,9 +16,9 @@ const config = {
   // REQUIRED: The OG image used when someone shares your website on social media
   ogImagePath: "/og-image.png",
   // Optional: The Google Analytics measurement ID
-  // googleAnalytics: {
-  //   measurementId: "G-XXXXXXXXXX",
-  // },
+  googleAnalytics: {
+     measurementId: "G-YZLD2B6FQ3",
+  },
 
   crisp: {
     // Optional Crisp chat widget configuration
