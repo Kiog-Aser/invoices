@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: 'shipfast',
+    databaseName: 'test',
     collections: {
       Users: 'users',
       Accounts: 'accounts',
