@@ -1,17 +1,8 @@
 import { useSession } from "next-auth/react";
-import { getSession, signIn } from "next-auth/react";
+import { getSession } from "next-auth/react";
 
 export async function refreshUserSession() {
-  // Check if we've already refreshed
-  const hasRefreshed = sessionStorage.getItem('session_refreshed');
-  if (hasRefreshed === 'true') {
-    return null;
-  }
-  
   try {
-    // Mark as refreshed early to prevent multiple simultaneous refreshes
-    sessionStorage.setItem('session_refreshed', 'true');
-    
     // Fetch the latest user data with plan information
     const response = await fetch('/api/user');
     if (!response.ok) {
@@ -19,28 +10,18 @@ export async function refreshUserSession() {
     }
     
     const userData = await response.json();
+    console.log('Refreshed user data:', userData);
     
-    // Check if we need to update the session
-    const session = await getSession();
-    if (session?.user?.plan !== userData.plan) {
-      console.log('Plan changed, updating session...');
-      await signIn('credentials', { 
-        redirect: false,
-        email: userData.email,
-        callbackUrl: window.location.href
-      });
-    }
+    // Force a revalidation of the session
+    await fetch('/api/auth/session?update=true');
     
     return userData;
   } catch (error) {
     console.error('Error refreshing session:', error);
-    // Clear the refresh flag on error so we can try again
-    sessionStorage.removeItem('session_refreshed');
     return null;
   }
 }
 
-// Add a function to handle Stripe success with retries
 export function setupStripeSuccessListener() {
   // Check URL on page load for success parameter
   const url = new URL(window.location.href);
@@ -48,9 +29,6 @@ export function setupStripeSuccessListener() {
     // Clear the success parameter to prevent reprocessing on refresh
     url.searchParams.delete('success');
     window.history.replaceState({}, document.title, url.toString());
-    
-    // Reset the session refresh flag
-    sessionStorage.removeItem('session_refreshed');
     
     let retryCount = 0;
     const maxRetries = 5;
@@ -68,9 +46,10 @@ export function setupStripeSuccessListener() {
         console.log('Checking user data after payment:', userData);
         
         if (userData.plan === 'pro') {
-          // Successfully upgraded to pro
+          // Successfully upgraded to pro, refresh the session
           console.log('Pro plan confirmed, refreshing session...');
           await refreshUserSession();
+          window.location.reload(); // Refresh to update UI
           return true;
         } else if (retryCount < maxRetries) {
           // Not pro yet, retry after delay

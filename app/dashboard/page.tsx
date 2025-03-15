@@ -1,14 +1,19 @@
-'use client'
+'use client';
+
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FaArrowRight, FaPlus } from "react-icons/fa";
 import toast from "react-hot-toast";
-import Link from "next/link";
 import ButtonCheckout from "@/components/ButtonCheckout";
 import ButtonAccount from "@/components/ButtonAccount";
-import { refreshUserSession, setupStripeSuccessListener } from "@/libs/refreshSession";
-import LogoutCountdown from "@/components/LogoutCountdown";
+import { setupStripeSuccessListener } from "@/libs/refreshSession";
+
+interface Website {
+  _id: string;
+  domain: string;
+  notificationCount?: number;
+}
 
 export default function Page() {
   const router = useRouter();
@@ -16,17 +21,17 @@ export default function Page() {
   const searchParams = useSearchParams();
   const [isPro, setIsPro] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
-  const [newWebsite, setNewWebsite] = useState("");
-  const [websites, setWebsites] = useState<any[]>([]);
+  const [websites, setWebsites] = useState<Website[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [refreshingSession, setRefreshingSession] = useState(false);
+  const [newWebsite, setNewWebsite] = useState("");
 
   // Check pro status whenever session changes
   useEffect(() => {
-    async function checkProStatus() {
-      if (status === "authenticated") {
+    const checkProStatus = async () => {
+      if (session?.user?.plan === 'pro') {
+        setIsPro(true);
+      } else if (status === 'authenticated') {
         try {
           const userResponse = await fetch('/api/user');
           if (userResponse.ok) {
@@ -39,13 +44,10 @@ export default function Page() {
         } catch (error) {
           console.error('Error checking pro status:', error);
           toast.error('Error loading user data. Please refresh the page.');
-        } finally {
-          setIsLoading(false);
         }
-      } else if (status === "unauthenticated") {
-        setIsLoading(false);
       }
-    }
+      setIsLoading(false);
+    };
     
     checkProStatus();
   }, [session, status]);
@@ -59,23 +61,15 @@ export default function Page() {
       url.searchParams.delete('success');
       window.history.replaceState({}, document.title, url.toString());
       
-      setShowLogoutCountdown(true);
       toast.success('Payment successful! Updating your account...');
-    }
-  }, [searchParams]);
-
-  // Setup Stripe success listener only once when component mounts
-  useEffect(() => {
-    if (searchParams.get('success') === 'true') {
       setupStripeSuccessListener();
     }
-  }, []);
+  }, [searchParams]);
 
   // Fetch websites when session is loaded
   useEffect(() => {
     const fetchData = async () => {
       if (status === 'unauthenticated') {
-        // If not authenticated, let the layout handle redirect
         return;
       }
 
@@ -88,12 +82,9 @@ export default function Page() {
           const websitesData = await websitesResponse.json();
           setWebsites(websitesData);
           setShowOnboarding(websitesData.length === 0);
-          
-          setIsLoading(false);
         } catch (error) {
           console.error('Error fetching data:', error);
           toast.error('Failed to load data');
-          setIsLoading(false);
         }
       }
     };
@@ -118,6 +109,7 @@ export default function Page() {
       toast.error("Please enter a valid domain");
       return;
     }
+
     try {
       setIsSubmitting(true);
       const response = await fetch('/api/websites', {
@@ -127,10 +119,12 @@ export default function Page() {
         },
         body: JSON.stringify({ domain }),
       });
+      
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to add website');
       }
+      
       const newSite = await response.json();
       setWebsites([...websites, newSite]);
       setNewWebsite('');
@@ -138,7 +132,11 @@ export default function Page() {
       toast.success('Website added successfully');
     } catch (error) {
       console.error('Error adding website:', error);
-      toast.error(error.message || 'Failed to add website');
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to add website');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +146,13 @@ export default function Page() {
     router.push(`/dashboard/notifications/${websiteId}`);
   };
 
-  const isPageLoading = isLoading || status === 'loading' || refreshingSession;
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="min-h-screen bg-base-200 flex justify-center items-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
 
   if (status === "unauthenticated") {
     router.push("/auth/signin");
@@ -156,18 +160,11 @@ export default function Page() {
   }
 
   return (
-    <>
-      {showLogoutCountdown && (
-        <LogoutCountdown 
-          onCancel={() => setShowLogoutCountdown(false)}
-        />
-      )}
-      <div className="min-h-screen bg-base-200">
-      {/* Header */}
+    <div className="min-h-screen bg-base-200">
       <header className="navbar bg-base-100 border-b border-base-300">
         <div className="flex-1">
           <div className="dropdown">
-              <ButtonAccount />
+            <ButtonAccount />
           </div>
         </div>
         
@@ -183,7 +180,7 @@ export default function Page() {
           )}
           
           {isPro && (
-            <a href="mailto:support@poopup.co" className="btn btn-ghost">
+            <a href="mailto:support@notifast.fun" className="btn btn-ghost">
               Feedback
             </a>
           )}
@@ -191,17 +188,13 @@ export default function Page() {
       </header>
       
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {isPageLoading ? (
-          <div className="flex justify-center py-20">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
-          </div>
-        ) : showOnboarding ? (
+        {showOnboarding ? (
           <div className="card bg-base-100">
             <div className="card-body">
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
                 <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
-                  Let's get started by setting up your first website. PoopUps will help you engage visitors 
+                  Let's get started by setting up your first website. NotiFast will help you engage visitors 
                   with beautiful notifications that increase conversion and engagement.
                 </p>
               </div>
@@ -257,7 +250,6 @@ export default function Page() {
               <div className="divider">How it works</div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                {/* ...existing code... */}
                 <div className="card bg-base-200">
                   <div className="card-body items-center">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -352,6 +344,5 @@ export default function Page() {
         )}
       </main>
     </div>
-    </>
   );
 }
