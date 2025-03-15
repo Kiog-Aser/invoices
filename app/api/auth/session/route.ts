@@ -4,7 +4,7 @@ import { authOptions } from "@/libs/next-auth";
 import connectMongo from "@/libs/mongoose";
 import User from "@/models/User";
 
-// Mark route as dynamic
+// Mark route as dynamic to prevent caching
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       const session = await getServerSession(authOptions);
       
       if (!session || !session.user?.email) {
-        return NextResponse.json({ user: null }); // Return a valid JSON response
+        return NextResponse.json({ user: null });
       }
       
       // Connect to MongoDB and fetch fresh user data
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       const user = await User.findOne({ email: session.user.email });
       
       if (!user) {
-        return NextResponse.json({ user: null }); // Return a valid JSON response
+        return NextResponse.json({ user: null });
       }
       
       // Return the updated user data
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           email: user.email,
           image: user.image,
           plan: user.plan || "",
-          customerId: user.customerId || "", // Include customerId needed by NextAuth
+          customerId: user.customerId || "",
           createdAt: user.createdAt
         }
       });
@@ -45,10 +45,10 @@ export async function GET(req: NextRequest) {
     // If not a manual update request, just return the current session
     const session = await getServerSession(authOptions);
     
-    // Always return a properly structured JSON object, even when session is null
+    // Always return a properly structured response
     return NextResponse.json(session || { user: null });
   } catch (error) {
     console.error("Error updating session:", error);
-    return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
+    return NextResponse.json({ user: null });
   }
 }

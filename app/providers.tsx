@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
+    <SessionProvider refetchInterval={0}>
       <Toaster position="bottom-center" />
       {children}
     </SessionProvider>

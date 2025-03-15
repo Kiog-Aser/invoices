@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: 'shipfast', // Make sure this matches your database name
+    databaseName: 'shipfast',
     collections: {
       Users: 'users',
       Accounts: 'accounts',
@@ -40,7 +40,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async jwt({ token, user, trigger, session }) {
-      // Keep JWT callback lightweight
       if (user) {
         token.plan = user.plan;
         token.customerId = user.customerId;
@@ -69,6 +68,8 @@ export const authOptions: NextAuthOptions = {
       }
     }
   },
+  // Trust the reverse proxy and use secure cookies in production
+  useSecureCookies: process.env.NODE_ENV === "production",
   secret: process.env.NEXTAUTH_SECRET,
   jwt: {
     maxAge: 24 * 60 * 60, // 24 hours

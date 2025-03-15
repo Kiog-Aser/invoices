@@ -12,10 +12,9 @@ declare global {
 const uri = process.env.MONGODB_URI;
 const options = {
   maxPoolSize: 10,
-  connectTimeoutMS: 5000, // Reduced from 10000
-  socketTimeoutMS: 10000,  // Reduced from 20000
-  serverSelectionTimeoutMS: 5000, // Reduced from 10000
-  waitQueueTimeoutMS: 5000 // Reduced from 10000
+  connectTimeoutMS: 5000,
+  socketTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 5000
 };
 
 if (!uri) {
@@ -25,12 +24,13 @@ if (!uri) {
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-// Use a cached connection in both development and production
+// Use cached connection in both development and production
 if (!global._mongoClientPromise) {
   client = new MongoClient(uri, options);
   global._mongoClientPromise = client.connect();
 }
-clientPromise = global._mongoClientPromise!;
+
+clientPromise = global._mongoClientPromise;
 
 export async function connectToDatabase() {
   try {
