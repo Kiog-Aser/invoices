@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       const session = await getServerSession(authOptions);
       
       if (!session || !session.user?.email) {
-        return NextResponse.json({ error: "No active session" }, { status: 401 });
+        return NextResponse.json({ user: null }); // Return a valid JSON response
       }
       
       // Connect to MongoDB and fetch fresh user data
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       const user = await User.findOne({ email: session.user.email });
       
       if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+        return NextResponse.json({ user: null }); // Return a valid JSON response
       }
       
       // Return the updated user data
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
           email: user.email,
           image: user.image,
           plan: user.plan || "",
+          customerId: user.customerId || "", // Include customerId needed by NextAuth
           createdAt: user.createdAt
         }
       });
@@ -43,7 +44,9 @@ export async function GET(req: NextRequest) {
     
     // If not a manual update request, just return the current session
     const session = await getServerSession(authOptions);
-    return NextResponse.json(session);
+    
+    // Always return a properly structured JSON object, even when session is null
+    return NextResponse.json(session || { user: null });
   } catch (error) {
     console.error("Error updating session:", error);
     return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
