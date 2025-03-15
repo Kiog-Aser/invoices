@@ -1,73 +1,80 @@
-import { useSession } from "next-auth/react";
 import { getSession, signIn } from "next-auth/react";
 
 export async function refreshUserSession() {
-  // Check if we've already refreshed
-  const hasRefreshed = sessionStorage.getItem('session_refreshed');
-  if (hasRefreshed === 'true') {
-    return null;
-  }
-  
   try {
     // Fetch the latest user data with plan information
-    const response = await fetch('/api/user');
+    const response = await fetch('/api/auth/session?update=true');
     if (!response.ok) {
       throw new Error('Failed to fetch user data');
     }
     
-    const userData = await response.json();
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
     
-    // Mark as refreshed
-    sessionStorage.setItem('session_refreshed', 'true');
+    // Get current session
+    const session = await getSession();
     
     // Check if we need to update the session (if plan has changed)
-    const session = await getSession();
-    if (session?.user?.plan !== userData.plan) {
+    if (session?.user?.plan !== data.user?.plan) {
       console.log('Plan changed, updating session...');
       
-      // Use signIn method to force session refresh
+      // Force session refresh
       await signIn('credentials', { 
         redirect: false,
-        email: userData.email,
+        email: data.user.email,
         callbackUrl: window.location.href
       });
     }
     
-    return userData;
+    return data.user;
   } catch (error) {
     console.error('Error refreshing session:', error);
-    return null;
+    throw error;
   }
 }
 
-// Add a function to handle Stripe success
+// Function to handle Stripe success
 export function setupStripeSuccessListener() {
-  // Check URL on page load for success parameter
+  // Remove any existing success parameter from URL
   const url = new URL(window.location.href);
-  if (url.searchParams.get('success') === 'true') {
-    // Clear the success parameter to prevent reprocessing on refresh
+  const success = url.searchParams.get('success');
+  
+  if (success === 'true') {
     url.searchParams.delete('success');
     window.history.replaceState({}, document.title, url.toString());
     
-    // Reset the session refresh flag to force a refresh
-    sessionStorage.removeItem('session_refreshed');
-    
-    // Wait a moment for the webhook to process
+    // Wait a moment for webhook to process
     setTimeout(async () => {
       try {
-        // Explicitly fetch user data to get updated plan
-        const response = await fetch('/api/user');
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('Updated user data after payment:', userData);
+        // Try to refresh session a few times to ensure webhook has processed
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        const tryRefresh = async () => {
+          const userData = await refreshUserSession();
+          console.log('Refreshed user data:', userData);
           
-          // If the user has been upgraded to pro, reload the page
-          if (userData.plan === 'pro') {
-            window.location.reload();
+          if (userData?.plan === 'pro') {
+            return true;
           }
+          
+          if (attempts < maxAttempts) {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return tryRefresh();
+          }
+          
+          return false;
+        };
+        
+        const success = await tryRefresh();
+        if (!success) {
+          console.warn('Failed to confirm pro status after multiple attempts');
         }
       } catch (error) {
-        console.error('Error checking user status:', error);
+        console.error('Error handling Stripe success:', error);
       }
     }, 2000);
   }

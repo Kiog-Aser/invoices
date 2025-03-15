@@ -23,28 +23,17 @@ const ButtonCheckout = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePayment = async () => {
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
 
-      const response = await fetch("/api/stripe/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          priceId,
-          mode: "payment",
-          successUrl: window.location.origin + "/dashboard?success=true",
-          cancelUrl: cancelUrl || window.location.href + "?canceled=true",
-          // Pass the user ID in the request so it can be included in client_reference_id
-          userId: session?.user?.id
-        }),
+      const response = await apiClient.post('/stripe/create-checkout', {
+        priceId,
+        successUrl: successUrl || window.location.href + "?success=true",
+        cancelUrl: cancelUrl || window.location.href + "?canceled=true",
+        userId: session?.user?.id // Ensure we're passing the user ID
       });
 
       const data = await response.json();
-      
-      console.log("Checkout API response:", data);
       
       if (!response.ok) {
         throw new Error(data.error || "Failed to create checkout session");
@@ -58,6 +47,7 @@ const ButtonCheckout = ({
       window.location.href = data.url;
     } catch (error) {
       console.error("Payment error:", error);
+      toast.error("Failed to initiate checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }
