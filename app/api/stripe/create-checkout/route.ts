@@ -29,14 +29,11 @@ export async function POST(req: NextRequest) {
     console.log("Creating checkout for user:", user?._id?.toString() || "anonymous");
     console.log("User ID from request:", body.userId);
 
-    const { priceId } = body;
-
     const stripeSessionURL = await createCheckout({
-      mode: "payment",
-      priceId,
+      mode: body.mode || "payment",
+      priceId: body.priceId,
       successUrl: body.successUrl,
       cancelUrl: body.cancelUrl,
-      // Use userId from body if available, otherwise use the user ID from database
       clientReferenceId: body.userId || user?._id?.toString(),
       user: user ? {
         email: user.email,
