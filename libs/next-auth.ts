@@ -6,6 +6,9 @@ import type { JWT } from "next-auth/jwt";
 import clientPromise from "@/libs/mongo";
 import config from "@/config";
 
+// Get the domain from NEXTAUTH_URL
+const domain = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).hostname : undefined;
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
