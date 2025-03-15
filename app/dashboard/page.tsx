@@ -302,7 +302,7 @@ export default function Page() {
                     onClick={() => handleWebsiteClick(website._id)}
                     className="card bg-base-100 hover:shadow-md transition-shadow cursor-pointer"
                   >
-                    <div className="card-body border border-base-200 rounded-lg">
+                    <div className="card-body border border-base-300 rounded-lg">
                       <div className="flex items-center mb-3">
                         <div className="avatar placeholder">
                           <div className="w-10 h-10 rounded-lg bg-primary text-primary-content font-bold">
