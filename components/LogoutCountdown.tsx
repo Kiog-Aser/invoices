@@ -8,7 +8,8 @@ interface LogoutCountdownProps {
 }
 
 export default function LogoutCountdown({ onCancel }: LogoutCountdownProps) {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(10);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   useEffect(() => {
     // Start countdown
@@ -16,8 +17,14 @@ export default function LogoutCountdown({ onCancel }: LogoutCountdownProps) {
       setCountdown(prevCount => {
         if (prevCount <= 1) {
           clearInterval(timer);
-          // Log user out when countdown reaches 0
-          signOut({ callbackUrl: "/auth/signin?message=Please sign in again to access your Pro features" });
+          if (!isRefreshing) {
+            setIsRefreshing(true);
+            // Log user out when countdown reaches 0
+            signOut({ 
+              callbackUrl: "/auth/signin?message=Please sign in again to access your Pro features",
+              redirect: true
+            });
+          }
           return 0;
         }
         return prevCount - 1;
@@ -26,7 +33,7 @@ export default function LogoutCountdown({ onCancel }: LogoutCountdownProps) {
     
     // Cleanup on unmount
     return () => clearInterval(timer);
-  }, []);
+  }, [isRefreshing]);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -39,22 +46,40 @@ export default function LogoutCountdown({ onCancel }: LogoutCountdownProps) {
         </h3>
         <p className="py-4">
           Your account has been upgraded to Pro! To access your new features, you need to refresh your session.
+          {countdown > 0 ? (
+            <>
+              <br /><br />
+              Signing out in {countdown} seconds...
+            </>
+          ) : (
+            <>
+              <br /><br />
+              Refreshing your session...
+            </>
+          )}
         </p>
-        <p className="py-2 font-medium">
-          You will be logged out in {countdown} seconds...
-        </p>
-        <div className="modal-action flex justify-center gap-4">
+        <div className="modal-action">
+          {countdown > 0 && (
+            <button onClick={onCancel} className="btn">
+              Cancel
+            </button>
+          )}
           <button 
-            className="btn btn-outline"
-            onClick={onCancel}
+            onClick={() => {
+              setIsRefreshing(true);
+              signOut({ 
+                callbackUrl: "/auth/signin?message=Please sign in again to access your Pro features",
+                redirect: true
+              });
+            }} 
+            className="btn btn-primary"
+            disabled={isRefreshing}
           >
-            Cancel
-          </button>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => signOut({ callbackUrl: "/auth/signin?message=Please sign in again to access your Pro features" })}
-          >
-            Log out now
+            {isRefreshing ? (
+              <span className="loading loading-spinner loading-sm"></span>
+            ) : (
+              'Sign out now'
+            )}
           </button>
         </div>
       </div>

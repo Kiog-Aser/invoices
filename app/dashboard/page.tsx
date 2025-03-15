@@ -11,37 +11,41 @@ import { refreshUserSession, setupStripeSuccessListener } from "@/libs/refreshSe
 import LogoutCountdown from "@/components/LogoutCountdown";
 
 export default function Page() {
-  const { data: session, status } = useSession();
-  const [isPro, setIsPro] = useState(false); // Changed from const to state
-  const planIsLoading = status === 'loading';
   const router = useRouter();
+  const { data: session, status } = useSession();
   const searchParams = useSearchParams();
+  const [isPro, setIsPro] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
   const [newWebsite, setNewWebsite] = useState("");
   const [websites, setWebsites] = useState<any[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshingSession, setRefreshingSession] = useState(false);
-  const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
 
-  // Effect to check pro status
+  // Check pro status whenever session changes
   useEffect(() => {
-    const checkProStatus = async () => {
-      if (session?.user?.plan === 'pro') {
-        setIsPro(true);
-      } else if (status === 'authenticated') {
-        // Fallback to API check
+    async function checkProStatus() {
+      if (status === "authenticated") {
         try {
           const userResponse = await fetch('/api/user');
           if (userResponse.ok) {
             const userData = await userResponse.json();
             setIsPro(userData.plan === 'pro');
+          } else {
+            console.error('Failed to fetch user data:', await userResponse.text());
+            toast.error('Failed to load user data. Please refresh the page.');
           }
         } catch (error) {
           console.error('Error checking pro status:', error);
+          toast.error('Error loading user data. Please refresh the page.');
+        } finally {
+          setIsLoading(false);
         }
+      } else if (status === "unauthenticated") {
+        setIsLoading(false);
       }
-    };
+    }
     
     checkProStatus();
   }, [session, status]);
@@ -55,8 +59,8 @@ export default function Page() {
       url.searchParams.delete('success');
       window.history.replaceState({}, document.title, url.toString());
       
-      // Show logout countdown instead of immediately refreshing
       setShowLogoutCountdown(true);
+      toast.success('Payment successful! Updating your account...');
     }
   }, [searchParams]);
 
@@ -65,7 +69,7 @@ export default function Page() {
     if (searchParams.get('success') === 'true') {
       setupStripeSuccessListener();
     }
-  }, [searchParams]);
+  }, []);
 
   // Fetch websites when session is loaded
   useEffect(() => {
@@ -144,15 +148,11 @@ export default function Page() {
     router.push(`/dashboard/notifications/${websiteId}`);
   };
 
-  const isPageLoading = isLoading || planIsLoading || refreshingSession;
+  const isPageLoading = isLoading || status === 'loading' || refreshingSession;
 
-  // If authentication is still being determined, show a loading state
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-base-200 flex justify-center items-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    );
+  if (status === "unauthenticated") {
+    router.push("/auth/signin");
+    return null;
   }
 
   return (
