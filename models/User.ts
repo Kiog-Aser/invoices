@@ -34,8 +34,15 @@ const userSchema = new mongoose.Schema(
     // User's current plan (free or pro)
     plan: {
       type: String,
-      enum: ['', 'pro'],
-      default: ''
+      enum: {
+        values: ['', 'pro'],
+        message: 'Plan must be either empty (free) or "pro"'
+      },
+      default: '',
+      set: function(val: string) {
+        // Ensure null or undefined becomes empty string
+        return val || '';
+      }
     },
     provider: {
       type: String,
@@ -47,6 +54,17 @@ const userSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
   }
 );
+
+// Middleware to ensure plan is always set before saving
+userSchema.pre('save', function(next) {
+  if (this.isModified('customerId') && this.customerId && !this.plan) {
+    this.plan = 'pro';
+  }
+  if (!this.plan) {
+    this.plan = '';
+  }
+  next();
+});
 
 // add plugin that converts mongoose to json
 userSchema.plugin(toJSON);
