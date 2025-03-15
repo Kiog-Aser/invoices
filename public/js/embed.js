@@ -51,7 +51,7 @@
           transform: translateY(0);
         }
         100% { 
-          transform: translateY(12px); /* Just use the margin-bottom value */
+          transform: translateY(2px); /* Just use the margin-bottom value */
         }
       }
 

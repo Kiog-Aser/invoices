@@ -1186,7 +1186,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
             transform: translateY(0);
           }
           100% { 
-            transform: translateY(12px);
+            transform: translateY(2px);
           }
         }
 
