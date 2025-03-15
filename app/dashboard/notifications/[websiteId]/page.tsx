@@ -42,7 +42,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   const [config, setConfig] = useState({
     startDelay: 500,
     displayDuration: 30000,
-    cycleDuration: 3000
+    cycleDuration: 3000,
+    maxVisibleNotifications: 5
   });
   
   // Add looping state (add this with the other state declarations)
@@ -135,6 +136,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               startDelay: data.config.startDelay || 500,
               displayDuration: data.config.displayDuration || 30000,
               cycleDuration: data.config.cycleDuration || 3000,
+              maxVisibleNotifications: data.config.maxVisibleNotifications || 5
             });
             // Only handle config settings when in pro
             if (session?.user?.plan === 'pro') {
@@ -445,8 +447,9 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     
     // Add new notification to the beginning of the array (top of stack)
     setActiveNotifications(prev => {
-      // Limit the number of visible notifications
-      const limitedPrev = prev.slice(0, MAX_VISIBLE_NOTIFICATIONS - 1);
+      // Respect maxVisibleNotifications setting for desktop, but always 1 for mobile
+      const maxVisible = window.innerWidth <= 768 ? 1 : (isPro ? config.maxVisibleNotifications : 1);
+      const limitedPrev = prev.slice(0, maxVisible - 1);
       return [notification, ...limitedPrev];
     });
     
@@ -736,6 +739,33 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                   />
                 </div>
                 
+                <div>
+                  <label htmlFor="maxVisibleNotifications" className="label">
+                    <span className="label-text flex items-center">
+                      Max visible notifications
+                      {!isPro && (
+                        <span className="ml-2 badge badge-sm badge-outline badge-primary">PRO</span>
+                      )}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    id="maxVisibleNotifications"
+                    name="maxVisibleNotifications"
+                    value={isPro ? config.maxVisibleNotifications : 1}
+                    onChange={handleConfigChange}
+                    className="input input-bordered w-full"
+                    min="1"
+                    max="10"
+                    disabled={!isPro}
+                  />
+                  <label className="label">
+                    <span className="label-text-alt text-base-content/70">Mobile devices will always show 1 notification</span>
+                  </label>
+                </div>
+
                 <div className="flex items-center space-x-2 mt-4">
                   <label htmlFor="loopToggle" className="flex-1 label-text flex items-center">
                     Loop notifications
@@ -923,13 +953,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         {/* Bottom Section - Embed Script */}
         <div className="divider"></div>
         <div className="text-center">
-          <h3 className="text-lg font-medium mb-1">Make your notifications live ✌️</h3>
+          <h3 className="text-lg font-medium mb-1">Make your NotiFast live ✌️</h3>
           <p className="text-base-content/70 text-sm mb-4">Paste this snippet in the &lt;head&gt; of your website.</p>
           
           <div className="max-w-sm mx-auto">
             <div className="relative bg-base-200/50 rounded-2xl overflow-hidden group h-[72px] flex items-center">
               <pre className="px-4 text-left text-sm font-mono w-full">
-                <code>{`<script defer data-website-id="${websiteId}" src="https://poopup.co/js/embed.js"></script>`}</code>
+                <code>{`<script defer data-website-id="${websiteId}" src="https://www.notifast.fun/js/embed.js"></script>`}</code>
               </pre>
               <button
                 onClick={copyEmbedCode}
@@ -943,7 +973,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
             {notifications.length === 0 && (
               <div className="alert alert-warning mt-3 text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>Add at least one message to make your PoopUp live</span>
+                <span>Add at least one message to make your NotiFast live</span>
               </div>
             )}
           </div>

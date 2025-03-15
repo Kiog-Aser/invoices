@@ -248,10 +248,16 @@
     let index = 0;
 
     function showNotification(notification) {
-      // On mobile, remove existing notification before showing new one
+      // On mobile, only show one notification
       if (window.innerWidth <= 768) {
         while (container.firstChild) {
           container.removeChild(container.firstChild);
+        }
+      } else {
+        // On desktop, respect maxVisibleNotifications setting
+        const maxNotifications = data.config.maxVisibleNotifications || 5;
+        while (container.children.length >= maxNotifications) {
+          container.removeChild(container.lastChild);
         }
       }
 

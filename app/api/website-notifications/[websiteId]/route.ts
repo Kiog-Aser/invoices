@@ -11,7 +11,8 @@ const DEFAULT_CONFIG = {
   cycleDuration: 3000,
   loop: false,
   showCloseButton: false,
-  theme: "ios"
+  theme: "ios",
+  maxVisibleNotifications: 5
 };
 
 export async function GET(req: NextRequest, { params }: { params: { websiteId: string } }) {
@@ -122,6 +123,19 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
     
     const websiteIdStr = website._id.toString();
     
+    // Validate the config - ensure proper types and defaults
+    const sanitizedConfig = {
+      ...DEFAULT_CONFIG,
+      ...config,
+      startDelay: parseInt(config.startDelay) || DEFAULT_CONFIG.startDelay,
+      displayDuration: parseInt(config.displayDuration) || DEFAULT_CONFIG.displayDuration,
+      cycleDuration: parseInt(config.cycleDuration) || DEFAULT_CONFIG.cycleDuration,
+      maxVisibleNotifications: parseInt(config.maxVisibleNotifications) || DEFAULT_CONFIG.maxVisibleNotifications,
+      loop: Boolean(config.loop),
+      showCloseButton: Boolean(config.showCloseButton),
+      theme: config.theme || DEFAULT_CONFIG.theme
+    };
+
     // Update website config in websiteConfigs collection
     if (config) {
       // Merge with default config to ensure all fields exist
