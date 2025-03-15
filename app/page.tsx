@@ -17,7 +17,6 @@ import WithWithout from "@/components/WithWithout";
 import Problem from "@/components/Problem";
 import ButtonPopover from "@/components/ButtonPopover";
 import Modal from "@/components/Modal";
-import LogoutCountdownWrapper from '@/components/LogoutCountdownWrapper';
 import TestimonialRating from "@/components/TestimonialRating";
 
 function PricingSection() {
@@ -142,7 +141,6 @@ export default function Page() {
           <div className="loading loading-spinner"></div>
         </div>
       }>
-        <LogoutCountdownWrapper />
         <Header />
         
         <main className="overflow-hidden">
