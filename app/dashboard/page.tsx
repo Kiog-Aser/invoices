@@ -12,8 +12,7 @@ import LogoutCountdown from "@/components/LogoutCountdown";
 
 export default function Page() {
   const { data: session, status } = useSession();
-  const userPlan = session?.user?.plan;
-  const isPro = userPlan === 'pro';
+  const [isPro, setIsPro] = useState(false); // Changed from const to state
   const planIsLoading = status === 'loading';
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,6 +23,28 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshingSession, setRefreshingSession] = useState(false);
   const [showLogoutCountdown, setShowLogoutCountdown] = useState(false);
+
+  // Effect to check pro status
+  useEffect(() => {
+    const checkProStatus = async () => {
+      if (session?.user?.plan === 'pro') {
+        setIsPro(true);
+      } else if (status === 'authenticated') {
+        // Fallback to API check
+        try {
+          const userResponse = await fetch('/api/user');
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            setIsPro(userData.plan === 'pro');
+          }
+        } catch (error) {
+          console.error('Error checking pro status:', error);
+        }
+      }
+    };
+    
+    checkProStatus();
+  }, [session, status]);
 
   // Check for success parameter in URL - this happens after Stripe redirect
   useEffect(() => {
@@ -82,7 +103,7 @@ export default function Page() {
       return;
     }
     
-    if (userPlan === "" && websites.length >= 1) {
+    if (!isPro && websites.length >= 1) {
       toast.error("Free plan limited to 1 website. Please upgrade to Pro.");
       router.push("/pricing");
       return;
@@ -151,19 +172,21 @@ export default function Page() {
         </div>
         
         <div className="flex-none gap-2">
-          {userPlan === "" && (
+          {!isPro && (
             <ButtonCheckout
-                    priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
-                    mode="payment"
-                    successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
-                    cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-                    className="btn btn-primary btn-block"
+              priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+              mode="payment"
+              successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
+              cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
+              className="btn btn-primary"
             />
           )}
           
-          <a href="mailto:support@poopup.co" className="btn btn-ghost">
-            Feedback
-          </a>
+          {isPro && (
+            <a href="mailto:support@poopup.co" className="btn btn-ghost">
+              Feedback
+            </a>
+          )}
         </div>
       </header>
       
