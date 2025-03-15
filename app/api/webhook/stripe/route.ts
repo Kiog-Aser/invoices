@@ -10,20 +10,37 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60; // Extend timeout to 60 seconds
+
+function logWebhookDebug(message: string, data?: any) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    message,
+    ...(data && { data })
+  };
+  console.log("🔍 Stripe Webhook Debug:", JSON.stringify(logData, null, 2));
+}
 
 export async function POST(req: NextRequest) {
   try {
+    logWebhookDebug("Webhook received", {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
     // Connect to database first to avoid timing issues
     await connectMongo();
-    
-    console.log("⚡️ Stripe webhook received");
     
     const payload = await req.text();
     const sig = req.headers.get("stripe-signature") || "";
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     
     if (!webhookSecret) {
-      console.error("❌ No webhook secret configured");
+      logWebhookDebug("Missing webhook secret", {
+        webhookSecretExists: false,
+        envVars: Object.keys(process.env)
+      });
       return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
     }
 
@@ -31,37 +48,39 @@ export async function POST(req: NextRequest) {
     
     try {
       event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
+      logWebhookDebug("Event constructed successfully", {
+        type: event.type,
+        id: event.id
+      });
     } catch (err) {
-      console.error("❌ Error verifying webhook signature:", err);
+      logWebhookDebug("Signature verification failed", {
+        error: err instanceof Error ? err.message : "Unknown error",
+        sigHeaderReceived: sig,
+        webhookSecretLength: webhookSecret.length
+      });
       return NextResponse.json(
         { error: "Webhook signature verification failed" },
         { status: 400 }
       );
     }
 
-    console.log(`✅ Processing Stripe event: ${event.type}`);
-
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log("💰 Processing checkout completion for session:", session.id);
-
-        const customerId = session.customer as string;
-        const clientReferenceId = session.client_reference_id;
-        
-        console.log("📋 Session details:", {
-          customerId,
-          clientReferenceId,
+        logWebhookDebug("Processing checkout completion", {
+          sessionId: session.id,
+          customerId: session.customer,
+          clientReferenceId: session.client_reference_id,
           customerEmail: session.customer_email
         });
 
         try {
           // First try to find user by customerId
-          let user = await User.findOne({ customerId });
+          let user = await User.findOne({ customerId: session.customer });
           
           // If not found and we have a client_reference_id, try finding by that
-          if (!user && clientReferenceId) {
-            user = await User.findById(clientReferenceId);
+          if (!user && session.client_reference_id) {
+            user = await User.findById(session.client_reference_id);
           }
           
           // If still not found and we have a customer email, try finding by email
@@ -70,9 +89,9 @@ export async function POST(req: NextRequest) {
           }
 
           if (!user) {
-            console.error("❌ Could not find user with any of the following:", {
-              customerId,
-              clientReferenceId,
+            logWebhookDebug("User not found", {
+              customerId: session.customer,
+              clientReferenceId: session.client_reference_id,
               customerEmail: session.customer_email
             });
             return NextResponse.json(
@@ -82,27 +101,45 @@ export async function POST(req: NextRequest) {
           }
 
           // Update user with pro plan and customerId if they don't have it
-          console.log(`📝 Updating user ${user._id} to pro plan...`);
+          logWebhookDebug("Updating user", {
+            userId: user._id,
+            previousPlan: user.plan,
+            previousCustomerId: user.customerId
+          });
+
           user.plan = "pro";
-          if (!user.customerId) {
-            user.customerId = customerId;
+          if (!user.customerId && session.customer) {
+            user.customerId = session.customer as string;
           }
           await user.save();
-          console.log(`✨ Successfully updated user ${user._id} to pro plan`);
+
+          logWebhookDebug("User updated successfully", {
+            userId: user._id,
+            newPlan: user.plan,
+            newCustomerId: user.customerId
+          });
+
+          return NextResponse.json({ success: true });
         } catch (error) {
-          console.error("❌ Error updating user:", error);
+          logWebhookDebug("Error updating user", {
+            error: error instanceof Error ? error.message : "Unknown error",
+            stack: error instanceof Error ? error.stack : undefined
+          });
           return NextResponse.json(
             { error: "Failed to update user" },
             { status: 500 }
           );
         }
-        break;
       }
     }
 
+    // Respond with 200 for other event types
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("❌ Error in Stripe webhook handler:", error);
+    logWebhookDebug("Unhandled error in webhook", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       { error: "Error processing webhook" },
       { status: 500 }

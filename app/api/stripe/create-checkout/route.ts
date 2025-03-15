@@ -22,25 +22,27 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     await connectMongo();
 
+    // Get user from database to ensure we have all fields
     const user = session?.user?.email 
-      ? await User.findOne({ email: session.user.email }).select('+plan')
+      ? await User.findOne({ email: session.user.email })
       : null;
       
-    console.log("Creating checkout for user:", user?._id?.toString() || "anonymous");
-    console.log("User ID from request:", body.userId);
-
-    const { priceId } = body;
+    console.log("Creating checkout for user:", {
+      userId: user?._id?.toString() || "anonymous",
+      email: user?.email,
+      customerId: user?.customerId
+    });
 
     const stripeSessionURL = await createCheckout({
       mode: "payment",
-      priceId,
+      priceId: body.priceId,
       successUrl: body.successUrl,
       cancelUrl: body.cancelUrl,
-      // Use userId from body if available, otherwise use the user ID from database
-      clientReferenceId: body.userId || user?._id?.toString(),
+      // Ensure we always pass the user ID if available
+      clientReferenceId: user?._id?.toString() || body.userId,
       user: user ? {
         email: user.email,
-        customerId: user.customerId,
+        customerId: user.customerId
       } : undefined,
     });
 
@@ -51,7 +53,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Checkout session created successfully");
     return NextResponse.json({ url: stripeSessionURL });
   } catch (e) {
     console.error("Create checkout error:", e);
