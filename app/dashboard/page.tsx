@@ -238,9 +238,16 @@ export default function Page() {
                   <p>You'll be able to add {isPro ? "unlimited" : "up to 1"} website{isPro ? "s" : ""}.</p>
                   {!isPro && (
                     <p className="mt-1">
-                      <Link href="/pricing" className="link link-primary">
+                      <ButtonCheckout
+                        priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                        mode="payment"
+                        successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
+                        cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
+                        asLink={true}
+                        className="link link-primary"
+                      >
                         Upgrade to Pro
-                      </Link>
+                      </ButtonCheckout>
                       {" "}for unlimited websites.
                     </p>
                   )}

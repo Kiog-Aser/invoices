@@ -9,13 +9,17 @@ const ButtonCheckout = ({
   mode = "payment", 
   successUrl, 
   cancelUrl, 
-  className = "btn btn-primary btn-wide" 
+  className = "btn btn-primary btn-wide",
+  children,
+  asLink = false
 }: { 
   priceId: string;
   mode?: "payment" | "subscription";
   successUrl?: string;
   cancelUrl?: string;
   className?: string;
+  children?: React.ReactNode;
+  asLink?: boolean;
 }) => {
 
   const router = useRouter();
@@ -35,7 +39,7 @@ const ButtonCheckout = ({
         body: JSON.stringify({
           priceId,
           mode: "payment",
-          successUrl: window.location.origin + "/dashboard?success=true",
+          successUrl: successUrl || window.location.origin + "/dashboard?success=true",
           cancelUrl: cancelUrl || window.location.href + "?canceled=true",
           // Pass the user ID in the request so it can be included in client_reference_id
           userId: session?.user?.id
@@ -63,6 +67,25 @@ const ButtonCheckout = ({
     }
   };
 
+  if (asLink) {
+    return (
+      <a 
+        href="#" 
+        className={className} 
+        onClick={(e) => {
+          e.preventDefault();
+          handlePayment();
+        }}
+      >
+        {isLoading ? (
+          <span className="loading loading-spinner loading-sm"></span>
+        ) : (
+          children || "Upgrade to Pro"
+        )}
+      </a>
+    );
+  }
+
   return (
     <button
       className={className}
@@ -72,7 +95,7 @@ const ButtonCheckout = ({
       {isLoading ? (
         <span className="loading loading-spinner loading-md"></span>
       ) : (
-        "Get Pro Lifetime"
+        children || "Get Pro Lifetime"
       )}
     </button>
   );
