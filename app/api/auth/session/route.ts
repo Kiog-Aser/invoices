@@ -9,46 +9,48 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    // Get current session first
+    const session = await getServerSession(authOptions);
+    
     // Check if this is a manual update request
     const shouldUpdate = req.nextUrl.searchParams.has('update');
     
-    if (shouldUpdate) {
-      // Get the current session
-      const session = await getServerSession(authOptions);
-      
-      if (!session || !session.user?.email) {
-        return NextResponse.json({ user: null }); // Return a valid JSON response
-      }
+    if (shouldUpdate && session?.user?.email) {
+      console.log("Updating session for user:", session.user.email);
       
       // Connect to MongoDB and fetch fresh user data
       await connectMongo();
       const user = await User.findOne({ email: session.user.email });
       
       if (!user) {
-        return NextResponse.json({ user: null }); // Return a valid JSON response
+        console.warn("User not found in database:", session.user.email);
+        return NextResponse.json({ user: null });
       }
+      
+      console.log("Found user data:", {
+        id: user._id,
+        plan: user.plan,
+        customerId: user.customerId
+      });
       
       // Return the updated user data
       return NextResponse.json({ 
         user: {
           id: user._id.toString(),
-          name: user.name,
+          name: user.name || session.user.name,
           email: user.email,
-          image: user.image,
+          image: user.image || session.user.image,
           plan: user.plan || "",
-          customerId: user.customerId || "", // Include customerId needed by NextAuth
+          customerId: user.customerId || "",
           createdAt: user.createdAt
         }
       });
     }
     
-    // If not a manual update request, just return the current session
-    const session = await getServerSession(authOptions);
-    
-    // Always return a properly structured JSON object, even when session is null
+    // Always return a properly structured JSON object
     return NextResponse.json(session || { user: null });
   } catch (error) {
-    console.error("Error updating session:", error);
-    return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
+    console.error("Error in session route:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

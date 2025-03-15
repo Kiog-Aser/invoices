@@ -10,7 +10,6 @@ export async function middleware(req: NextRequest) {
   const isPublicPath = 
     path === '/' || 
     path.startsWith('/auth') || 
-    path.startsWith('/api') || 
     path === '/privacy-policy' || 
     path === '/tos';
 

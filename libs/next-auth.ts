@@ -62,17 +62,35 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `__Secure-next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === "production"
+        secure: true,
+        domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
+      }
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
+      }
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true
       }
     }
   },
-  // Trust the reverse proxy and use secure cookies in production
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: true,
   secret: process.env.NEXTAUTH_SECRET,
   jwt: {
     maxAge: 24 * 60 * 60, // 24 hours
