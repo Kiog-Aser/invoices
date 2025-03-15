@@ -961,13 +961,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               <pre className="px-4 text-left text-sm font-mono w-full">
                 <code>{`<script defer data-website-id="${websiteId}" src="https://www.notifast.fun/js/embed.js"></script>`}</code>
               </pre>
-              <button
+                <button
                 onClick={copyEmbedCode}
-                className="absolute right-3 btn btn-primary btn-sm normal-case opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-y-0 hover:translate-y-0"
+                className="absolute right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Copy to clipboard"
-              >
-                <FaCopy size={15} className="mr-2"/>
-              </button>
+                >
+                <FaCopy size={15} />
+                </button>
             </div>
             
             {notifications.length === 0 && (
