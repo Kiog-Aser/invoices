@@ -465,7 +465,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
 
   // Add this function to generate the embed code
   const generateEmbedScript = () => {
-    return `<script defer data-website-id="${websiteId}" src="/js/embed.js"></script>`;
+    return `<script defer data-website-id="${websiteId}" src="https://www.notifast.fun/js/embed.js"></script>`;
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
