@@ -100,7 +100,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     { 
       id: "dark", 
       name: "Modern Dark", 
-      class: "rounded-xl bg-neutral text-neutral-content shadow-lg border border-white/10" 
+      class: "rounded-xl bg-neutral text-white shadow-lg border border-white/10" 
     },
     { 
       id: "minimal", 
