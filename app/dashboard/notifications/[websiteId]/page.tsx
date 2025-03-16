@@ -33,6 +33,13 @@ interface Notification {
   pushDown?: boolean;  // Add this property for animation support
 }
 
+interface Config {
+  startDelay: number | '';
+  displayDuration: number | '';
+  cycleDuration: number | '';
+  maxVisibleNotifications: number | '';
+}
+
 export default function NotificationSettings({ params }: { params: { websiteId: string } }) {
   const { data: session } = useSession();
   const websiteId = params.websiteId;
@@ -42,7 +49,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]); 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<Config>({
     startDelay: 500,
     displayDuration: 30000,
     cycleDuration: 3000,
@@ -253,8 +260,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   }, [notifications, params.websiteId, hasSeenTour]);
 
   // Convert ms to s for display
-  const msToS = (ms: number) => ms / 1000;
+  const msToS = (ms: number | '') => typeof ms === 'number' ? ms / 1000 : '';
   const sToMs = (s: number) => s * 1000;
+
+  // Helper to get numeric value from config, using default if empty
+  const getConfigValue = (value: number | '', defaultValue: number): number => {
+    return value === '' ? defaultValue : value;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -324,6 +336,14 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
 
   const saveNotifications = async () => {
     try {
+      // Validate config values before saving, using type-safe checks
+      const validatedConfig = {
+        startDelay: config.startDelay === '' ? 500 : config.startDelay,
+        displayDuration: config.displayDuration === '' ? 30000 : config.displayDuration,
+        cycleDuration: config.cycleDuration === '' ? 3000 : config.cycleDuration,
+        maxVisibleNotifications: config.maxVisibleNotifications === '' ? 5 : config.maxVisibleNotifications
+      };
+
       const response = await fetch(`/api/website-notifications/${params.websiteId}`, {
         method: 'PUT',
         headers: {
@@ -335,7 +355,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
             url: note.url || ""
           })),
           config: {
-            ...config,
+            ...validatedConfig,
             loop: isPro ? loopNotifications : false,
             showCloseButton: isPro ? showCloseButton : false,
             theme: isPro ? selectedTheme : "ios"
@@ -348,6 +368,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         throw new Error(error.error || 'Failed to save notifications');
       }
 
+      // Update config with validated values
+      setConfig(validatedConfig);
       toast.success('Notifications saved successfully');
       setHasChanges(false);
       setConfigChanged(false);
@@ -363,12 +385,18 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   const handleConfigChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    // Update local state
+    // Handle empty field
+    if (value === '') {
+      setConfig({
+        ...config,
+        [name]: ''
+      });
+      setConfigChanged(true);
+      return;
+    }
+    
+    // Parse and validate numeric value
     if (name === 'maxVisibleNotifications') {
-      if (value === '') {
-        e.target.value = '';
-        return;
-      }
       const numValue = parseInt(value);
       if (!isNaN(numValue)) {
         const clampedValue = Math.min(Math.max(numValue, 1), 10);
@@ -378,10 +406,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         });
       }
     } else {
-      setConfig({
-        ...config,
-        [name]: sToMs(parseFloat(value) || 0)
-      });
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        setConfig({
+          ...config,
+          [name]: sToMs(numValue)
+        });
+      }
     }
     setConfigChanged(true);
   };
@@ -572,12 +603,12 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         // Set interval to cycle through notifications
         playerInterval.current = setInterval(() => {
           displayNextNotification();
-        }, config.cycleDuration);
-      }, config.startDelay);
+        }, getConfigValue(config.cycleDuration, 3000));
+      }, getConfigValue(config.startDelay, 500));
     }
   };
 
-  // Updated to add notifications to a stack instead of replacing
+  // Updated to handle empty string values
   const displayNextNotification = () => {
     if (notifications.length === 0) return;
     
@@ -608,8 +639,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       }));
       
       // Respect maxVisibleNotifications setting for desktop, but always 1 for mobile
-      const maxVisible = window.innerWidth <= 768 ? 1 : (isPro ? config.maxVisibleNotifications : 1);
-      const limitedPrev = existingWithPushDown.slice(0, maxVisible - 1);
+      const maxVisible = window.innerWidth <= 768 ? 1 : (isPro ? getConfigValue(config.maxVisibleNotifications, 5) : 1);
+      const limitedPrev = existingWithPushDown.slice(0, Number(maxVisible) - 1);
       
       // Add new notification at the beginning
       return [{...notification, pushDown: false}, ...limitedPrev];
@@ -622,7 +653,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         // Remove push-down class from remaining notifications
         return filtered.map(n => ({...n, pushDown: false}));
       });
-    }, config.displayDuration);
+    }, getConfigValue(config.displayDuration, 30000));
     
     notificationIndex.current += 1;
   };
