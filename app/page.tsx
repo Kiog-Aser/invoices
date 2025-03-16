@@ -180,31 +180,22 @@ export default function Page() {
                   </div>
                 </div>
                 <div className="lg:w-1/2 w-full px-4 sm:px-0">
-                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-base-300">
-                    <picture>
-                      <source srcSet="/notifast-demo.webp" type="image/webp" />
-                      <img 
-                        src="/notifast-demo.jpg" 
-                        alt="NotiFast Demo"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        loading="eager"
-                      />
-                    </picture>
-                    <video
-                      className="absolute inset-0 w-full h-full object-cover"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      preload="none"
-                      poster="/notifast-demo.jpg"
-                      onError={(e) => {
-                        console.error('Error loading video:', e);
-                      }}
-                    >
-                      <source src="/notifast-demo.mp4" type="video/mp4" />
-                    </video>
-                  </div>
+
+                  <video
+              className="rounded-2xl w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster="/notifast-demo.webm"
+              onError={(e) => {
+                console.error('Error loading video:', e);
+              }}
+            >
+              <source src="/notifast-demo.webm" type="video/webm" />
+            </video>
+
                 </div>
               </div>
             </div>
@@ -217,7 +208,6 @@ export default function Page() {
           </Suspense>
           
           <FAQ />
-          <Testimonials3 />
           <section className="py-24 bg-base-300">
             <div className="max-w-4xl mx-auto px-8 text-center">
               <h2 className="text-3xl font-bold mb-8">Ready to boost engagement?</h2>

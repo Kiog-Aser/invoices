@@ -46,70 +46,44 @@ export default function FeaturesAccordion() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Media column with optimized loading */}
+          {/* Media column */}
           <div className="relative aspect-video rounded-2xl overflow-hidden bg-base-300">
             {activeIndex === 0 ? (
-              <div className="relative w-full h-full">
-                <picture>
-                  <source srcSet="/notifast-demo.webp" type="image/webp" />
-                  <img 
-                    src="/notifast-demo.jpg" 
-                    alt="Instant Setup Demo"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </picture>
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="none"
-                  poster="/notifast-demo.jpg"
-                  onError={(e) => {
-                    console.error('Error loading video:', e);
-                  }}
-                >
-                  <source src="/notifast-demo.mp4" type="video/mp4" />
-                </video>
-              </div>
+              <video
+                className="rounded-2xl w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/notifast-demo.jpg"
+                onError={(e) => {
+                  console.error('Error loading video:', e);
+                }}
+              >
+                <source src="/notifast-demo.webm" type="video/webm" />
+              </video>
             ) : activeIndex === 1 ? (
-              <picture>
-                <source srcSet="/feature2.webp" type="image/webp" />
-                <img
-                  src="/feature2.png"
-                  alt="Beautiful & Customizable Notifications"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </picture>
+              <img
+                src="/feature2.png"
+                alt="Beautiful & Customizable Notifications"
+                className="rounded-2xl w-full h-full object-cover"
+              />
             ) : (
-              <div className="relative w-full h-full">
-                <picture>
-                  <source srcSet="/noti-demo.webp" type="image/webp" />
-                  <img 
-                    src="/noti-demo.jpg" 
-                    alt="Notification Demo"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </picture>
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="none"
-                  poster="/noti-demo.jpg"
-                  onError={(e) => {
-                    console.error('Error loading video:', e);
-                  }}
-                >
-                  <source src="/noti-demo.mp4" type="video/mp4" />
-                </video>
-              </div>
+              <video
+                className="rounded-2xl w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/noti-demo.webm"
+                onError={(e) => {
+                  console.error('Error loading video:', e);
+                }}
+              >
+                <source src="/noti-demo.webm" type="video/webm" />
+              </video>
             )}
           </div>
           

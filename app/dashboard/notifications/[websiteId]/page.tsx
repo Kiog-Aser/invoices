@@ -1096,7 +1096,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                 onClick={handleAddNotification}
                 className="btn btn-primary w-full btn-add-notification"
               >
-                <FaPlus size={12} className="mr-1.5" /> Message
+                <FaPlus size={12} className="mr-1.5" /> New Notification
               </button>
               
               {notifications.length > 0 && (
