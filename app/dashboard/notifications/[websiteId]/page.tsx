@@ -132,60 +132,111 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       const tour = new Shepherd.Tour({
         useModalOverlay: true,
         defaultStepOptions: {
-          classes: 'card bg-base-100 shadow-lg border border-base-300',
+          classes: 'shadow-xl bg-base-100 rounded-lg',
+          modalOverlayOpeningPadding: 4,
           arrow: false,
-          scrollTo: false,
           cancelIcon: {
             enabled: false
           },
-          buttons: [{
-            text: 'Next',
-            classes: 'btn btn-sm btn-primary',
-            action() {
-              return this.next();
+          when: {
+            show: () => {
+              // Apply DaisyUI styling to tour elements
+              document.querySelectorAll('.shepherd-modal-overlay').forEach(overlay => {
+                overlay.classList.add('bg-base-content/20', 'backdrop-blur-sm');
+              });
+
+              document.querySelectorAll('.shepherd-element').forEach(element => {
+                element.classList.add('bg-base-100', 'shadow-xl', 'rounded-lg', 'border', 'border-base-300');
+              });
+
+              document.querySelectorAll('.shepherd-content').forEach(content => {
+                content.classList.add('bg-base-100', 'rounded-lg');
+              });
+
+              document.querySelectorAll('.shepherd-text').forEach(text => {
+                text.classList.add('p-6', 'text-base-content', 'prose', 'prose-sm', 'max-w-none');
+              });
+
+              document.querySelectorAll('.shepherd-footer').forEach(footer => {
+                footer.classList.add('p-4', 'border-t', 'border-base-200', 'flex', 'justify-end', 'gap-2', 'bg-base-200/50');
+              });
+
+              document.querySelectorAll('.shepherd-button').forEach(button => {
+                button.classList.add('btn', 'btn-sm');
+                if (button.textContent?.includes('Next') || button.textContent?.includes('Finish')) {
+                  button.classList.add('btn-primary');
+                } else {
+                  button.classList.add('btn-ghost');
+                }
+              });
             }
-          }]
+          }
         }
       });
 
       tour.addStep({
         id: 'welcome',
         text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
-        attachTo: { element: 'main', on: 'top' }
+        attachTo: { element: 'main', on: 'top' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'add-notification',
         text: 'Start by adding your first notification here',
-        attachTo: { element: '.btn-add-notification', on: 'bottom' }
+        attachTo: { element: '.btn-add-notification', on: 'bottom' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'theme',
         text: 'Customize the look of your notifications with different themes',
-        attachTo: { element: '.btn-theme', on: 'bottom' }
+        attachTo: { element: '.btn-theme', on: 'bottom' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'settings',
         text: 'Configure timing and behavior settings here',
-        attachTo: { element: '.settings-panel', on: 'right' }
+        attachTo: { element: '.settings-panel', on: 'right' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'preview',
         text: 'Preview your notifications before going live',
-        attachTo: { element: '.btn-preview', on: 'bottom' }
+        attachTo: { element: '.btn-preview', on: 'bottom' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'integration',
         text: 'Finally, copy this code to add notifications to your website',
         attachTo: { element: '.integration-code', on: 'top' },
-        buttons: [{
+        buttons: [{ 
           text: 'Finish',
-          classes: 'btn btn-sm btn-primary',
-          action() {
+          classes: 'btn btn-primary btn-sm',
+          action: () => {
             tour.complete();
             setHasSeenTour(true);
             localStorage.setItem(`tour-seen-${params.websiteId}`, 'true');
@@ -1300,44 +1351,6 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         
         .notification-item:active {
           cursor: grabbing;
-        }
-
-        /* Shepherd.js Tour Styling */
-        .shepherd-modal-overlay {
-          background: hsl(var(--b1) / 0.8) !important;
-          backdrop-filter: blur(4px);
-        }
-
-        .shepherd-element {
-          background: hsl(var(--b1)) !important;
-          color: hsl(var(--bc)) !important;
-          border: 1px solid hsl(var(--b3)) !important;
-          border-radius: var(--rounded-box, 1rem) !important;
-          box-shadow: var(--tw-shadow-xl) !important;
-        }
-
-        .shepherd-text {
-          padding: 1.5rem !important;
-          color: hsl(var(--bc)) !important;
-        }
-
-        .shepherd-footer {
-          padding: 0.75rem 1.5rem 1.5rem !important;
-          border-bottom-left-radius: var(--rounded-box, 1rem) !important;
-          border-bottom-right-radius: var(--rounded-box, 1rem) !important;
-        }
-
-        .shepherd-button {
-          margin: 0 0.5rem !important;
-          border-radius: var(--rounded-btn, 0.5rem) !important;
-          height: 2rem !important;
-          min-height: 2rem !important;
-          padding-left: 0.75rem !important;
-          padding-right: 0.75rem !important;
-          font-size: 0.875rem !important;
-          line-height: 1em !important;
-          background: hsl(var(--p)) !important;
-          color: hsl(var(--pc)) !important;
         }
       `}</style>
 
