@@ -34,7 +34,7 @@ export const createCheckout = async ({
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-08-16",
+      apiVersion: "2025-02-24.acacia",
       typescript: true,
     });
 
@@ -102,7 +102,7 @@ export const createCustomerPortal = async ({
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-08-16",
+      apiVersion: "2025-02-24.acacia",
       typescript: true,
     });
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -124,7 +124,7 @@ export const findCheckoutSession = async (sessionId: string) => {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-08-16",
+      apiVersion: "2025-02-24.acacia",
       typescript: true,
     });
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
