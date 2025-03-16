@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { FaArrowLeft, FaVideo, FaImage, FaTwitter, FaLinkedin } from "react-icons/fa";
 
-type Step = "welcome" | "personal" | "social" | "profileImage" | "impact" | "review";
+type Step = "welcome" | "personal" | "social" | "profileImage" | "review";
 
 interface FormData {
   name: string;
@@ -28,7 +28,7 @@ type ActiveInputRefType = HTMLInputElement | HTMLTextAreaElement | HTMLButtonEle
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
-const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "impact", "review"];
+const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "review"];
 
 export default function NewTestimonialPage() {
   const router = useRouter();
@@ -60,8 +60,6 @@ export default function NewTestimonialPage() {
         return true; // Optional
       case "profileImage":
         return true; // Optional
-      case "impact":
-        return !!formData.howHelped && !!formData.beforeChallenge && !!formData.afterSolution;
       case "review":
         return (formData.reviewType === "text" && !!formData.textReview) ||
                (formData.reviewType === "video" && !!formData.videoUrl);
@@ -406,75 +404,7 @@ export default function NewTestimonialPage() {
                 <FaArrowLeft /> Back
               </button>
               <button
-                onClick={() => setCurrentStep("impact")}
-                className="btn btn-primary"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        );
-
-      case "impact":
-        return (
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Tell us about your experience</h2>
-              <p className="text-base-content/70">
-                These questions will help you structure your review
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">How has NotiFast helped you?</span>
-                </label>
-                <textarea
-                  value={formData.howHelped || ""}
-                  onChange={(e) => updateFormData("howHelped", e.target.value)}
-                  placeholder="NotiFast helped me..."
-                  className="textarea textarea-bordered min-h-[100px]"
-                  ref={setActiveRef}
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">What was challenging before NotiFast?</span>
-                </label>
-                <textarea
-                  value={formData.beforeChallenge || ""}
-                  onChange={(e) => updateFormData("beforeChallenge", e.target.value)}
-                  placeholder="Before NotiFast..."
-                  className="textarea textarea-bordered min-h-[100px]"
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">How has NotiFast solved this?</span>
-                </label>
-                <textarea
-                  value={formData.afterSolution || ""}
-                  onChange={(e) => updateFormData("afterSolution", e.target.value)}
-                  placeholder="Now with NotiFast..."
-                  className="textarea textarea-bordered min-h-[100px]"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => setCurrentStep("profileImage")}
-                className="btn btn-ghost gap-2"
-              >
-                <FaArrowLeft /> Back
-              </button>
-              <button
                 onClick={() => setCurrentStep("review")}
-                disabled={!formData.howHelped || !formData.beforeChallenge || !formData.afterSolution}
                 className="btn btn-primary"
               >
                 Continue
@@ -527,7 +457,7 @@ export default function NewTestimonialPage() {
                 <textarea
                   value={formData.textReview || ""}
                   onChange={(e) => updateFormData("textReview", e.target.value)}
-                  placeholder={`Here's a suggested structure for your review:\n\n${formData.howHelped || ""}\n\nBefore using NotiFast, ${(formData.beforeChallenge || "").toLowerCase()}\n\nNow, ${(formData.afterSolution || "").toLowerCase()}`}
+                  placeholder={`Here's a suggested structure for your review:\n\n ""}\n\nBefore using NotiFast, [describe your situation before]\n\nNow, with NotiFast, [describe how your situation has improved and the impact NotiFast had]\n\n[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]`}
                   className="textarea textarea-bordered w-full min-h-[200px]"
                   ref={activeInputRef as any}
                   autoFocus
