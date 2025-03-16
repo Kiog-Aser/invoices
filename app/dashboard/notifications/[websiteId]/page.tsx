@@ -119,41 +119,56 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     }
   ];
 
-  const [hasSeenTour, setHasSeenTour] = useState(false);
-  
-  // Check localStorage on mount
-  useEffect(() => {
-    const hasSeenTourBefore = localStorage.getItem(`tour-seen-${params.websiteId}`);
-    if (hasSeenTourBefore) {
-      setHasSeenTour(true);
+  const [hasSeenTour, setHasSeenTour] = useState(() => {
+    // Initialize state with localStorage value if available
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`tour-seen-${params.websiteId}`) === 'true';
     }
-  }, [params.websiteId]);
+    return false;
+  });
   
   useEffect(() => {
     if (!hasSeenTour && notifications.length === 0) {
       const tour = new Shepherd.Tour({
         useModalOverlay: true,
         defaultStepOptions: {
-          classes: 'shadow-lg rounded-lg border border-base-300',
+          classes: 'shadow-xl bg-base-100 rounded-lg',
           modalOverlayOpeningPadding: 4,
+          arrow: false,
+          cancelIcon: {
+            enabled: false
+          },
           when: {
             show: () => {
-              const content = document.querySelector('.shepherd-content');
-              if (content) {
-                content.className = 'shepherd-content bg-base-100 rounded-lg';
-              }
-              const text = document.querySelector('.shepherd-text');
-              if (text) {
-                text.className = 'shepherd-text p-4 text-base-content';
-              }
-              const header = document.querySelector('.shepherd-header');
-              if (header) {
-                header.className = 'shepherd-header bg-base-200 p-4 rounded-t-lg';
-              }
-              const footer = document.querySelector('.shepherd-footer');
-              if (footer) {
-                footer.className = 'shepherd-footer p-4 flex justify-end gap-2';
-              }
+              // Apply DaisyUI styling to tour elements
+              document.querySelectorAll('.shepherd-modal-overlay').forEach(overlay => {
+                overlay.classList.add('bg-base-content/20', 'backdrop-blur-sm');
+              });
+
+              document.querySelectorAll('.shepherd-element').forEach(element => {
+                element.classList.add('bg-base-100', 'shadow-xl', 'rounded-lg', 'border', 'border-base-300');
+              });
+
+              document.querySelectorAll('.shepherd-content').forEach(content => {
+                content.classList.add('bg-base-100', 'rounded-lg');
+              });
+
+              document.querySelectorAll('.shepherd-text').forEach(text => {
+                text.classList.add('p-6', 'text-base-content', 'prose', 'prose-sm', 'max-w-none');
+              });
+
+              document.querySelectorAll('.shepherd-footer').forEach(footer => {
+                footer.classList.add('p-4', 'border-t', 'border-base-200', 'flex', 'justify-end', 'gap-2', 'bg-base-200/50');
+              });
+
+              document.querySelectorAll('.shepherd-button').forEach(button => {
+                button.classList.add('btn', 'btn-sm');
+                if (button.textContent?.includes('Next') || button.textContent?.includes('Finish')) {
+                  button.classList.add('btn-primary');
+                } else {
+                  button.classList.add('btn-ghost');
+                }
+              });
             }
           }
         }
@@ -230,8 +245,12 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       });
 
       tour.start();
+      
+      // Set hasSeenTour in localStorage only after tour starts
+      localStorage.setItem(`tour-seen-${params.websiteId}`, 'true');
+      setHasSeenTour(true);
     }
-  }, [hasSeenTour, notifications, params.websiteId]);
+  }, [notifications, params.websiteId, hasSeenTour]);
 
   // Convert ms to s for display
   const msToS = (ms: number) => ms / 1000;
