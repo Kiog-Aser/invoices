@@ -59,10 +59,10 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col justify-center items-center md:items-start gap-2 mb-10 text-sm">
-                <Link href="/tos" className="link link-hover">
+                <Link href="/tos" target="_blank" className="link link-hover">
                   Terms of services
                 </Link>
-                <Link href="/privacy-policy" className="link link-hover">
+                <Link href="/privacy-policy" target="_blank" className="link link-hover">
                   Privacy policy
                 </Link>
               </div>
@@ -73,13 +73,13 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col justify-center items-center md:items-start gap-2 mb-10 text-sm">
-                <Link href="https://medium.com/@milhoornaert" className="link link-hover">
+                <Link href="https://medium.com/@milhoornaert" target="_blank" className="link link-hover">
                   Medium
                 </Link>
-                <Link href="https://x.com/MilHoornaert" className="link link-hover">
+                <Link href="https://x.com/MilHoornaert" target="_blank" className="link link-hover">
                   𝕏
                 </Link>
-                <Link href="http://news.milh.tech" className="link link-hover">
+                <Link href="http://news.milh.tech" target="_blank" className="link link-hover">
                   Newsletter
                 </Link>
               </div>
