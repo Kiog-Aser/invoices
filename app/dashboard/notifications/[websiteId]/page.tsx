@@ -158,11 +158,11 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               });
 
               document.querySelectorAll('.shepherd-footer').forEach(footer => {
-                footer.classList.add('p-4', 'border-t', 'border-base-200', 'flex', 'justify-end', 'gap-2', 'bg-base-200/50');
+                footer.classList.add('p-4', 'border-t', 'border-base-200', 'flex', 'justify-end', 'gap-2', 'bg-base-100');
               });
 
               document.querySelectorAll('.shepherd-button').forEach(button => {
-                button.classList.add('btn', 'btn-sm');
+                button.classList.add('btn', 'btn-primary');
                 if (button.textContent?.includes('Next') || button.textContent?.includes('Finish')) {
                   button.classList.add('btn-primary');
                 } else {
@@ -175,23 +175,12 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       });
 
       tour.addStep({
-        id: 'welcome',
-        text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
-        attachTo: { element: 'main', on: 'top' },
-        buttons: [{ 
-          text: 'Next',
-          classes: 'btn btn-primary btn-sm',
-          action: () => tour.next()
-        }]
-      });
-
-      tour.addStep({
         id: 'add-notification',
         text: 'Start by adding your first notification here',
         attachTo: { element: '.btn-add-notification', on: 'bottom' },
         buttons: [{ 
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
+          classes: 'btn btn-primary',
           action: () => tour.next()
         }]
       });
