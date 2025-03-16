@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import ButtonCheckout from "@/components/ButtonCheckout";
 import { useSession, signOut } from "next-auth/react";
+import { useShepherd } from 'react-shepherd';
 
 // Popular brand logos
 const POPULAR_LOGOS = [
@@ -116,6 +117,65 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       class: "rounded-xl bg-gradient-to-r from-primary to-secondary text-primary-content shadow-lg" 
     }
   ];
+
+  const [hasSeenTour, setHasSeenTour] = useState(false);
+  const tour = useShepherd();
+
+  useEffect(() => {
+    if (!hasSeenTour && notifications.length === 0) {
+      const steps = [
+        {
+          id: 'welcome',
+          text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
+          attachTo: { element: 'main', on: 'top' as const },
+          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
+        },
+        {
+          id: 'add-notification',
+          text: 'Start by adding your first notification here',
+          attachTo: { element: '.btn-add-notification', on: 'bottom' as const },
+          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
+        },
+        {
+          id: 'theme',
+          text: 'Customize the look of your notifications with different themes',
+          attachTo: { element: '.btn-theme', on: 'bottom' as const },
+          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
+        },
+        {
+          id: 'settings',
+          text: 'Configure timing and behavior settings here',
+          attachTo: { element: '.settings-panel', on: 'right' as const },
+          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
+        },
+        {
+          id: 'preview',
+          text: 'Preview your notifications before going live',
+          attachTo: { element: '.btn-preview', on: 'bottom' as const },
+          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
+        },
+        {
+          id: 'integration',
+          text: 'Finally, copy this code to add notifications to your website',
+          attachTo: { element: '.integration-code', on: 'top' as const },
+          buttons: [{ 
+            text: 'Finish', 
+            action: () => { 
+              (tour as any).complete();
+              setHasSeenTour(true); 
+            } 
+          }]
+        }
+      ];
+
+      (tour as any).addSteps(steps);
+      (tour as any).start();
+    }
+  }, [hasSeenTour, notifications, tour]);
+
+  // Convert ms to s for display
+  const msToS = (ms: number) => ms / 1000;
+  const sToMs = (s: number) => s * 1000;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -228,7 +288,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     const { name, value } = e.target;
     setConfig({
       ...config,
-      [name]: parseInt(value)
+      [name]: sToMs(parseFloat(value))
     });
     setConfigChanged(true);
   };
@@ -668,14 +728,14 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               }
               setThemeModalOpen(true);
             }}
-            className="btn btn-ghost btn-sm gap-2"
+            className="btn btn-ghost btn-sm gap-2 btn-theme"
           >
             <span>Theme</span>
           </button>
 
           <button
             onClick={togglePlay}
-            className={`btn btn-sm gap-2 ${
+            className={`btn btn-sm gap-2 btn-preview ${
               isPlaying 
                 ? "btn-error" 
                 : "btn-primary"
@@ -697,22 +757,21 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       <main className="max-w-5xl mx-auto px-6 py-4">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Left Column - Configuration */}
-          <div className="md:w-2/5">
+          <div className="md:w-2/5 settings-panel">
             <div className="mb-6">
               <h2 className="text-primary font-medium text-sm mb-2">{website.domain}</h2>
               
               <div className="space-y-4">
                 <div>
                   <label htmlFor="startDelay" className="label">
-                    <span className="label-text">Start notifications after (ms)</span>
+                    <span className="label-text">Start notifications after (seconds)</span>
                   </label>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d*"
+                    type="number"
+                    step="0.1"
                     id="startDelay"
                     name="startDelay"
-                    value={config.startDelay}
+                    value={msToS(config.startDelay)}
                     onChange={handleConfigChange}
                     className="input input-bordered w-full"
                   />
@@ -720,15 +779,14 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                 
                 <div>
                   <label htmlFor="cycleDuration" className="label">
-                    <span className="label-text">Send message every (ms)</span>
+                    <span className="label-text">Send message every (seconds)</span>
                   </label>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d*"
+                    type="number"
+                    step="0.1"
                     id="cycleDuration"
                     name="cycleDuration"
-                    value={config.cycleDuration}
+                    value={msToS(config.cycleDuration)}
                     onChange={handleConfigChange}
                     className="input input-bordered w-full"
                   />
@@ -736,15 +794,14 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                 
                 <div>
                   <label htmlFor="displayDuration" className="label">
-                    <span className="label-text">Hide message after (ms)</span>
+                    <span className="label-text">Hide message after (seconds)</span>
                   </label>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d*"
+                    type="number"
+                    step="0.1"
                     id="displayDuration"
                     name="displayDuration"
-                    value={config.displayDuration}
+                    value={msToS(config.displayDuration)}
                     onChange={handleConfigChange}
                     className="input input-bordered w-full"
                   />
@@ -943,7 +1000,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               
               <button
                 onClick={handleAddNotification}
-                className="btn btn-primary w-full"
+                className="btn btn-primary w-full btn-add-notification"
               >
                 <FaPlus size={12} className="mr-1.5" /> Message
               </button>
@@ -968,7 +1025,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
           <p className="text-base-content/70 text-sm mb-4">Paste this snippet in the &lt;head&gt; of your website.</p>
           
           <div className="max-w-sm mx-auto">
-            <div className="relative bg-base-200/50 rounded-2xl overflow-hidden group h-[72px] flex items-center">
+            <div className="relative bg-base-200/50 rounded-2xl overflow-hidden group h-[72px] flex items-center integration-code">
               <pre className="px-4 text-left text-sm font-mono w-full">
                 <code>{`<script defer data-website-id="${websiteId}" src="https://www.notifast.fun/js/embed.js"></script>`}</code>
               </pre>
