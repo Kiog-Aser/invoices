@@ -39,6 +39,7 @@ const ButtonAccount = () => {
   };
 
   const user = session?.user;
+  const isPro = user?.plan === 'pro';
 
   // Don't show anything if not authenticated (we don't have any info about the user)
   if (status === "unauthenticated") return null;
@@ -47,7 +48,7 @@ const ButtonAccount = () => {
     <Popover className="relative z-10">
       {({ open }) => (
         <>
-          <Popover.Button className="btn btn-ghost btn-circle avatar">
+          <Popover.Button className="btn btn-ghost btn-circle avatar relative">
             <div className="w-8 rounded-full ring ring-primary ring-offset-2">
               <img
                 src={session?.user?.image || "https://i.pravatar.cc/300"}
@@ -61,6 +62,9 @@ const ButtonAccount = () => {
                 {session?.user?.name || "Account"}
               </span>
             </div>
+            {isPro && (
+              <span className="absolute -top-1 -right-1 badge badge-sm badge-primary">PRO</span>
+            )}
           </Popover.Button>
           <Transition
             enter="transition duration-100 ease-out"
