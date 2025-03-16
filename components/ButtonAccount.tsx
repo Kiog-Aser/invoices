@@ -47,14 +47,14 @@ const ButtonAccount = () => {
     <Popover className="relative z-10">
       {({ open }) => (
         <>
-          <Popover.Button className="flex items-center justify-center w-10 h-10 rounded-full ring ring-primary ring-offset-2 overflow-hidden">
+          <Popover.Button className="flex items-center justify-center w-8 h-8 rounded-full ring ring-primary ring-offset-2 overflow-hidden">
             <img
               src={session?.user?.image || "https://i.pravatar.cc/300"}
               alt={session?.user?.name || "Account"}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
-              width={24}
-              height={24}
+              width={32}
+              height={32}
             />
           </Popover.Button>
           <Transition
