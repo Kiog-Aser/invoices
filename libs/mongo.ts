@@ -15,10 +15,14 @@ if (!process.env.MONGODB_URI) {
 
 const uri = process.env.MONGODB_URI;
 const options = {
-  maxPoolSize: 10,
-  connectTimeoutMS: 5000,
-  socketTimeoutMS: 10000,
-  serverSelectionTimeoutMS: 5000
+  maxPoolSize: 20,
+  minPoolSize: 5,
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  serverSelectionTimeoutMS: 10000,
+  heartbeatFrequencyMS: 1000,
+  retryWrites: true,
+  retryReads: true,
 };
 
 let client: MongoClient;
@@ -26,18 +30,25 @@ let clientPromise: Promise<MongoClient>;
 
 async function connect() {
   try {
-    client = new MongoClient(uri, options);
-    console.log("🔄 Attempting MongoDB connection...");
-    const connection = await client.connect();
-    console.log("✅ MongoDB connection established");
-    return connection;
+    if (!client) {
+      client = new MongoClient(uri, options);
+    }
+
+    // Check if client is connected using proper method
+    if (!client.db().command) {
+      console.log("🔄 Attempting MongoDB connection...");
+      await client.connect();
+      console.log("✅ MongoDB connection established");
+    }
+
+    return client;
   } catch (e) {
     console.error("❌ MongoDB connection error:", e instanceof Error ? e.message : e);
     throw e;
   }
 }
 
-// Use cached connection in both development and production
+// Use cached connection for better performance and connection management
 if (!global._mongoClientPromise) {
   global._mongoClientPromise = connect();
 }
@@ -46,11 +57,27 @@ clientPromise = global._mongoClientPromise;
 
 export async function connectToDatabase() {
   try {
-    const client = await clientPromise;
-    const db = client.db();
-    return { db, client };
+    const connectedClient = await clientPromise;
+    
+    // Check connection status using proper method
+    try {
+      await connectedClient.db().command({ ping: 1 });
+    } catch (e) {
+      // Reset the promise to force a new connection attempt
+      global._mongoClientPromise = connect();
+      clientPromise = global._mongoClientPromise;
+      return connectToDatabase();
+    }
+    
+    const db = connectedClient.db();
+    return { db, client: connectedClient };
   } catch (error) {
     console.error('❌ Failed to connect to database:', error instanceof Error ? error.message : error);
+    
+    // Reset connection promise on error to force a fresh connection attempt
+    global._mongoClientPromise = connect();
+    clientPromise = global._mongoClientPromise;
+    
     throw error;
   }
 }

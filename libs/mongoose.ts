@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import User from "@/models/User";
+
+let isConnected = false;
 
 const connectMongo = async () => {
   if (!process.env.MONGODB_URI) {
@@ -8,19 +9,48 @@ const connectMongo = async () => {
     );
   }
 
+  if (isConnected) {
+    return;
+  }
+
   const opts = {
-    maxPoolSize: 10,
-    connectTimeoutMS: 5000,
-    socketTimeoutMS: 10000,
-    serverSelectionTimeoutMS: 5000
+    maxPoolSize: 20,
+    minPoolSize: 5,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 10000,
+    heartbeatFrequencyMS: 1000,
+    retryWrites: true,
+    retryReads: true,
+    autoIndex: true
   };
 
   try {
-    await mongoose
-      .connect(process.env.MONGODB_URI, opts);
-    console.log("🔌 MongoDB connected successfully");
+    // Handle initial connection
+    mongoose.connection.on('connected', () => {
+      isConnected = true;
+      console.log('🔌 Mongoose connected successfully');
+    });
+
+    // Handle disconnection
+    mongoose.connection.on('disconnected', () => {
+      isConnected = false;
+      console.log('❗ Mongoose disconnected, will auto-reconnect');
+    });
+
+    // Handle errors
+    mongoose.connection.on('error', (err) => {
+      isConnected = false;
+      console.error('❌ Mongoose connection error:', err);
+    });
+
+    if (!isConnected) {
+      await mongoose.connect(process.env.MONGODB_URI, opts);
+    }
   } catch (e) {
     console.error("❌ MongoDB connection error:", e.message);
+    // Add delay before retrying
+    await new Promise(resolve => setTimeout(resolve, 2000));
     throw e;
   }
 };
