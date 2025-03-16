@@ -118,9 +118,6 @@ function PricingSection() {
                 Get Pro Access
               </ButtonCheckout>
               
-              <p className="text-center text-sm text-base-content/70 mt-3">
-                One-time payment, no recurring fees
-              </p>
             </div>
           </div>
         </div>

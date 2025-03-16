@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import ButtonCheckout from "@/components/ButtonCheckout";
 import ButtonAccount from "@/components/ButtonAccount";
 import { setupStripeSuccessListener } from "@/libs/refreshSession";
+import TestimonialRequestModal from "@/components/TestimonialRequestModal";
 
 interface Website {
   _id: string;
@@ -25,6 +26,7 @@ export default function Page() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newWebsite, setNewWebsite] = useState("");
+  const [showTestimonialRequest, setShowTestimonialRequest] = useState(false);
 
   // Check pro status whenever session changes
   useEffect(() => {
@@ -145,6 +147,31 @@ export default function Page() {
   const handleWebsiteClick = (websiteId: string) => {
     router.push(`/dashboard/notifications/${websiteId}`);
   };
+
+  useEffect(() => {
+    if (session?.user) {
+      // Check if user is eligible for testimonial request
+      const checkTestimonialEligibility = async () => {
+        try {
+          const response = await fetch('/api/user');
+          const userData = await response.json();
+
+          // Show testimonial request if user is pro and meets criteria
+          if (
+            userData.plan === 'pro' &&
+            !userData.hasGivenTestimonial && // Add this field to your user model
+            userData.createdAt < Date.now() - 7 * 24 * 60 * 60 * 1000 // User for > 7 days
+          ) {
+            setShowTestimonialRequest(true);
+          }
+        } catch (error) {
+          console.error('Error checking testimonial eligibility:', error);
+        }
+      };
+
+      checkTestimonialEligibility();
+    }
+  }, [session]);
 
   if (status === "loading" || isLoading) {
     return (
@@ -344,6 +371,10 @@ export default function Page() {
           </div>
         )}
       </main>
+      <TestimonialRequestModal
+        isOpen={showTestimonialRequest}
+        onClose={() => setShowTestimonialRequest(false)}
+      />
     </div>
   );
 }

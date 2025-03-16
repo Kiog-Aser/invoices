@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false, // Make it optional for backward compatibility
     },
+    hasGivenTestimonial: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
