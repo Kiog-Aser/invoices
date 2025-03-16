@@ -74,6 +74,23 @@ const Footer = () => {
                 </Link>
               </div>
             </div>
+            <div className="lg:w-1/3 md:w-1/2 w-full px-4">
+              <div className="footer-title font-semibold text-base-content tracking-widest text-sm md:text-left mb-3">
+                FOLLOW ME
+              </div>
+
+              <div className="flex flex-col justify-center items-center md:items-start gap-2 mb-10 text-sm">
+                <Link href="https://medium.com/@milhoornaert" className="link link-hover">
+                  Medium
+                </Link>
+                <Link href="https://x.com/MilHoornaert" className="link link-hover">
+                  𝕏
+                </Link>
+                <Link href="http://news.milh.tech" className="link link-hover">
+                  Newsletter
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
