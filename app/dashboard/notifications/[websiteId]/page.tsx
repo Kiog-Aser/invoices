@@ -1301,6 +1301,44 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         .notification-item:active {
           cursor: grabbing;
         }
+
+        /* Shepherd.js Tour Styling */
+        .shepherd-modal-overlay {
+          background: hsl(var(--b1) / 0.8) !important;
+          backdrop-filter: blur(4px);
+        }
+
+        .shepherd-element {
+          background: hsl(var(--b1)) !important;
+          color: hsl(var(--bc)) !important;
+          border: 1px solid hsl(var(--b3)) !important;
+          border-radius: var(--rounded-box, 1rem) !important;
+          box-shadow: var(--tw-shadow-xl) !important;
+        }
+
+        .shepherd-text {
+          padding: 1.5rem !important;
+          color: hsl(var(--bc)) !important;
+        }
+
+        .shepherd-footer {
+          padding: 0.75rem 1.5rem 1.5rem !important;
+          border-bottom-left-radius: var(--rounded-box, 1rem) !important;
+          border-bottom-right-radius: var(--rounded-box, 1rem) !important;
+        }
+
+        .shepherd-button {
+          margin: 0 0.5rem !important;
+          border-radius: var(--rounded-btn, 0.5rem) !important;
+          height: 2rem !important;
+          min-height: 2rem !important;
+          padding-left: 0.75rem !important;
+          padding-right: 0.75rem !important;
+          font-size: 0.875rem !important;
+          line-height: 1em !important;
+          background: hsl(var(--p)) !important;
+          color: hsl(var(--pc)) !important;
+        }
       `}</style>
 
       {showUpgradeModal && (
