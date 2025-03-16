@@ -2,12 +2,41 @@
   try {
     const scriptTag = document.currentScript;
     const websiteId = scriptTag.getAttribute('data-website-id');
+    let config = null;
+    let notifications = [];
 
     if (!websiteId) {
       console.error('PoopUp: No website ID provided');
       return;
     }
 
+    // Function to fetch notifications and config
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch(`/api/website-notifications/${websiteId}/public`);
+        if (!response.ok) throw new Error('Failed to load notifications');
+        const data = await response.json();
+        notifications = data.notifications || [];
+        config = data.config || {
+          startDelay: 500,
+          displayDuration: 30000,
+          cycleDuration: 3000,
+          maxVisibleNotifications: 5,
+          theme: 'ios',
+          loop: false,
+          showCloseButton: false
+        };
+        return true;
+      } catch (error) {
+        console.error('PoopUp:', error);
+        return false;
+      }
+    };
+
+    // Initial fetch
+    await fetchNotifications();
+
+    // Create container and setup styles
     const container = document.createElement('div');
     container.style.cssText = `
       position: fixed;
@@ -267,13 +296,8 @@
     `;
     document.head.appendChild(style);
 
-    const response = await fetch(`/api/website-notifications/${websiteId}/public`);
-    if (!response.ok) throw new Error('Failed to load notifications');
-
-    const data = await response.json();
-    if (!data.notifications?.length) return;
-
     let index = 0;
+    let playerInterval = null;
 
     function showNotification(notification) {
       // On mobile, only show one notification
@@ -283,7 +307,7 @@
         }
       } else {
         // On desktop, respect maxVisibleNotifications setting
-        const maxNotifications = data.config.maxVisibleNotifications || 5;
+        const maxNotifications = config.maxVisibleNotifications || 5;
         while (container.children.length >= maxNotifications) {
           container.removeChild(container.lastChild);
         }
@@ -295,7 +319,7 @@
       }
 
       const el = document.createElement('div');
-      el.className = `poopup theme-${data.config.theme || 'ios'}`;
+      el.className = `poopup theme-${config.theme || 'ios'}`;
       el.style.width = '100%'; // Ensure each notification takes full width
 
       let contentHtml = '<div class="poopup-content">';
@@ -315,7 +339,7 @@
 
       el.innerHTML = contentHtml;
 
-      if (data.config.showCloseButton) {
+      if (config.showCloseButton) {
         const closeBtn = document.createElement('span');
         closeBtn.className = 'poopup-close';
         closeBtn.textContent = '×';
@@ -337,7 +361,7 @@
       // Set timeout to close notification
       setTimeout(() => {
         removeNotification(el);
-      }, data.config.displayDuration);
+      }, config.displayDuration);
     }
 
     function removeNotification(el) {
@@ -358,22 +382,47 @@
 
     // Show first notification after initial delay
     setTimeout(() => {
-      showNotification(data.notifications[0]);
-      index = 1;
+      if (notifications.length > 0) {
+        showNotification(notifications[0]);
+        index = 1;
 
-      // Setup interval for remaining notifications
-      const interval = setInterval(() => {
-        if (index >= data.notifications.length) {
-          if (data.config.loop) {
-            index = 0;
-          } else {
-            clearInterval(interval);
-            return;
+        // Setup interval for remaining notifications
+        playerInterval = setInterval(() => {
+          if (index >= notifications.length) {
+            if (config.loop) {
+              index = 0;
+            } else {
+              clearInterval(playerInterval);
+              return;
+            }
           }
-        }
-        showNotification(data.notifications[index++]);
-      }, data.config.cycleDuration);
-    }, data.config.startDelay);
+          showNotification(notifications[index++]);
+        }, config.cycleDuration);
+      }
+    }, config.startDelay);
+
+    // Re-fetch notifications periodically to get updates
+    setInterval(async () => {
+      const success = await fetchNotifications();
+      if (success && playerInterval) {
+        // Reset the interval with new config
+        clearInterval(playerInterval);
+        index = 0;
+        showNotification(notifications[0]);
+        index = 1;
+        playerInterval = setInterval(() => {
+          if (index >= notifications.length) {
+            if (config.loop) {
+              index = 0;
+            } else {
+              clearInterval(playerInterval);
+              return;
+            }
+          }
+          showNotification(notifications[index++]);
+        }, config.cycleDuration);
+      }
+    }, 300000); // Check for updates every 5 minutes
 
   } catch (error) {
     console.error('PoopUp:', error);

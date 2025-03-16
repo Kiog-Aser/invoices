@@ -1449,9 +1449,9 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                   <div className={`p-3 mb-2 ${theme.class}`}>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-primary/20" />
-                      <div>
-                        <div className="font-medium text-sm">Sample Title</div>
-                        <div className={`text-xs ${theme.id === 'dark' ? 'text-white/70' : 'opacity-70'}`}>Sample notification message</div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium text-sm ${theme.id === 'dark' ? 'text-white' : ''}`}>Sample Title</div>
+                        <div className={`text-xs ${theme.id === 'dark' ? 'text-white' : 'opacity-70'}`}>Sample notification message</div>
                       </div>
                     </div>
                   </div>
