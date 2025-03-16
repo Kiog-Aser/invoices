@@ -355,10 +355,13 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     
     // Special handling for maxVisibleNotifications
     if (name === 'maxVisibleNotifications') {
-      const numValue = value === '' ? undefined : Math.min(Math.max(parseInt(value), 1), 10);
+      // If empty, use empty string, otherwise validate the number
+      const numValue = value === '' ? '' : (parseInt(value) || '');
+      // Only clamp if we have a number
+      const clampedValue = typeof numValue === 'number' ? Math.min(Math.max(numValue, 1), 10) : numValue;
       setConfig({
         ...config,
-        [name]: numValue ?? config.maxVisibleNotifications // Use existing value if undefined
+        [name]: clampedValue || config.maxVisibleNotifications
       });
     } else {
       setConfig({
