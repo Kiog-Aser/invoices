@@ -457,7 +457,7 @@ export default function NewTestimonialPage() {
                 <textarea
                   value={formData.textReview || ""}
                   onChange={(e) => updateFormData("textReview", e.target.value)}
-                  placeholder={`Here's a suggested structure for your review:\n\n ""}\n\nBefore using NotiFast, [describe your situation before]\n\nNow, with NotiFast, [describe how your situation has improved and the impact NotiFast had]\n\n[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]`}
+                  placeholder={`Here's a suggested structure for your review:\n\nBefore using NotiFast, [describe your situation before]\n\nNow, with NotiFast, [describe how your situation has improved and the impact NotiFast had]\n\n[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]`}
                   className="textarea textarea-bordered w-full min-h-[200px]"
                   ref={activeInputRef as any}
                   autoFocus
@@ -490,8 +490,9 @@ export default function NewTestimonialPage() {
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-base-content/70">
                   <li>{formData.howHelped || ""}</li>
-                  <li>Before: {formData.beforeChallenge || ""}</li>
-                  <li>After: {formData.afterSolution || ""}</li>
+                  <li>Before using NotiFast, [describe your situation before]</li>
+                  <li>Now, with NotiFast, [describe how your situation has improved and the impact NotiFast had]</li>
+                <li>[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]</li>
                 </ul>
 
                 {formData.videoUrl ? (
