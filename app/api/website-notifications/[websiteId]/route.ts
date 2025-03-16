@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
     const { websiteId } = params;
     const { db } = await connectToDatabase();
     
-    // Verify website ownership
+    // Verify website ownership and get website data
     let website;
     if (ObjectId.isValid(websiteId)) {
       website = await db.collection("websites").findOne({
@@ -47,33 +47,15 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
       return NextResponse.json({ error: "Website not found" }, { status: 404 });
     }
 
-    // Get config from websiteConfigs collection
-    const config = await db.collection("websiteConfigs").findOne({
-      websiteId,
-      userId: session.user.email
-    });
-
-    // Get notifications for this website
-    const websiteIdStr = website._id.toString();
-    const notifications = await db
-      .collection("notifications")
-      .find({ websiteId: websiteIdStr })
-      .toArray();
-
-    // Add null check before accessing website properties
-    if (!website) {
-      return NextResponse.json({ error: "Website not found" }, { status: 404 });
-    }
-
-    // Return with merged default config
+    // Return with merged default config and notifications from website document
     return NextResponse.json({ 
       website,
       config: {
         ...DEFAULT_CONFIG,
-        ...(config || {}),
+        ...(website.config || {}),
       },
-      notifications: notifications.map(n => ({
-        id: n._id.toString(),
+      notifications: (website.notifications || []).map((n: any) => ({
+        id: n.id || n._id?.toString(),
         title: n.title || "",
         message: n.message || "",
         image: n.image || "",
