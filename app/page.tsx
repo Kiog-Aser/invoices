@@ -155,6 +155,19 @@ export default function Page() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col lg:flex-row items-center">
                 <div className="lg:w-1/2 mb-8 lg:mb-0 text-center lg:text-left">
+                  <a
+                    href="https://www.producthunt.com/posts/notifast?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-notifast"
+                    target="_blank"
+                    className="inline-block mb-6"
+                  >
+                    <img 
+                      src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=942782&theme=light&t=1742162935954" 
+                      alt="NotiFast - Increase conversions with user engagement!" 
+                      style={{ width: "250px", height: "54px" }}
+                      width="250" 
+                      height="54" 
+                    />
+                  </a>
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
                     Stop losing visitors to <span className="text-primary">poor engagement</span>
                   </h1>
