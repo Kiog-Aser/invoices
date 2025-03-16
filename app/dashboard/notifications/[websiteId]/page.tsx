@@ -175,6 +175,17 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       });
 
       tour.addStep({
+        id: 'welcome',
+        text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
+        attachTo: { element: 'main', on: 'top' },
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary',
+          action: () => tour.next()
+        }]
+      });
+
+      tour.addStep({
         id: 'add-notification',
         text: 'Start by adding your first notification here',
         attachTo: { element: '.btn-add-notification', on: 'bottom' },
