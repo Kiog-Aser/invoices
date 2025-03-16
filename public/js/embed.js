@@ -370,15 +370,11 @@
         el.appendChild(closeBtn);
       }
 
-      // Add click handler - for free users always link to notifast.fun
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', () => {
-        if (notification.url) {
-          window.open(notification.url, '_blank');
-        } else {
-          window.open('https://www.notifast.fun', '_blank');
-        }
-      });
+      // Only make clickable if there's a URL
+      if (notification.url) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => window.open(notification.url, '_blank'));
+      }
 
       // Insert at the beginning of the container
       container.insertBefore(el, container.firstChild);
