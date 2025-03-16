@@ -1202,7 +1202,11 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                         {notification.timestamp || "now"}
                       </span>
                     </div>
-                    <p className="text-xs text-base-content/70 truncate">
+                    <p className={`text-xs ${
+                      selectedTheme === "dark" 
+                      ? "text-white/80" 
+                      : "text-base-content/70"
+                    } truncate`}>
                       {notification.message || "Your message here"}
                     </p>
                   </div>

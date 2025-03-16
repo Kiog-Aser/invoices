@@ -128,22 +128,19 @@
       .poopup.theme-dark {
       border-radius: 0.75rem;
       background-color: #1f2937;
-      color: #f3f4f6;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       border: 1px solid rgba(255,255,255,0.1);
       }
 
+      .poopup.theme-dark, 
       .poopup.theme-dark .poopup-message,
-      .poopup.theme-dark .poopup-title {
-      color: #f3f4f6;
+      .poopup.theme-dark .poopup-title,
+      .poopup.theme-dark .poopup-timestamp {
+        color: #f3f4f6 !important;
       }
 
       .poopup.theme-dark .poopup-message {
-      opacity: 0.8;
-      }
-
-      .poopup.theme-dark .poopup-timestamp {
-      color: rgba(255, 255, 255, 0.7);
+        opacity: 0.8;
       }
 
       /* Minimal Theme */

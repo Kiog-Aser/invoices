@@ -44,6 +44,6 @@ export const config = {
   // Only run middleware on paths that aren't static files or api routes 
   // that already handle their own authentication
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/webhook).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/webhook|dashboard/notifications).*)',
   ],
 };
