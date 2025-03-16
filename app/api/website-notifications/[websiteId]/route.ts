@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { connectToDatabase } from "@/libs/mongo";
 import { authOptions } from "@/libs/next-auth";
 import { ObjectId } from "mongodb";
+import { Notification } from "@/models/Notification";
 
 // Default config that should be used consistently
 const DEFAULT_CONFIG = {
@@ -105,7 +106,12 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
     const user = await db.collection("users").findOne({
       email: session.user.email
     });
-    const isPro = user?.plan === 'pro';
+    
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    
+    const isPro = user.plan === 'pro';
     
     // Verify website ownership
     let website;
@@ -127,68 +133,45 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
       return NextResponse.json({ error: "Website not found" }, { status: 404 });
     }
 
-    const websiteIdStr = website._id.toString();
-    
-    // Validate and sanitize the config
+    // Validate notification count for free users
+    if (!isPro && notifications?.length > 5) {
+      return NextResponse.json({ 
+        error: "Free users are limited to 5 notifications" 
+      }, { status: 403 });
+    }
+
+    // Validate and sanitize config based on user's plan
     const sanitizedConfig = {
-      startDelay: parseInt(config?.startDelay) || DEFAULT_CONFIG.startDelay,
-      displayDuration: parseInt(config?.displayDuration) || DEFAULT_CONFIG.displayDuration,
-      cycleDuration: parseInt(config?.cycleDuration) || DEFAULT_CONFIG.cycleDuration,
-      maxVisibleNotifications: parseInt(config?.maxVisibleNotifications) || DEFAULT_CONFIG.maxVisibleNotifications,
+      startDelay: config?.startDelay || 500,
+      displayDuration: config?.displayDuration || 30000,
+      cycleDuration: config?.cycleDuration || 3000,
+      maxVisibleNotifications: config?.maxVisibleNotifications || 5,
+      theme: isPro ? (config?.theme || 'ios') : 'ios',
       loop: isPro ? Boolean(config?.loop) : false,
-      showCloseButton: isPro ? Boolean(config?.showCloseButton) : false,
-      theme: isPro ? (config?.theme || DEFAULT_CONFIG.theme) : DEFAULT_CONFIG.theme
+      showCloseButton: isPro ? Boolean(config?.showCloseButton) : false
     };
 
-    // Update website config in websiteConfigs collection
-    if (config) {
-      await db.collection("websiteConfigs").updateOne(
-        { 
-          websiteId: websiteIdStr,
-          userId: session.user.email 
-        },
-        {
-          $set: {
-            ...sanitizedConfig,
-            updatedAt: new Date()
-          }
-        },
-        { upsert: true }
-      );
-    }
-    
-    // Update notifications if provided
-    if (notifications && Array.isArray(notifications)) {
-      // First remove existing notifications
-      await db.collection("notifications").deleteMany({
-        websiteId: websiteIdStr
-      });
-      
-      // Then insert new ones
-      if (notifications.length > 0) {
-        const notificationsToInsert = notifications.map(notification => ({
-          title: notification.title || "",
-          message: notification.message || "",
-          image: notification.image || "",
-          timestamp: notification.timestamp || "now",
-          delay: notification.delay || 0,
-          url: isPro ? (notification.url || "") : "https://www.notifast.fun",
-          websiteId: websiteIdStr,
-          userId: session.user.email,
-          createdAt: new Date()
-        }));
-        
-        await db.collection("notifications").insertMany(notificationsToInsert);
+    // Sanitize notifications
+    const sanitizedNotifications = notifications?.map((notification: Partial<Notification>) => ({
+      ...notification,
+      url: isPro ? notification.url : '', // Remove URLs for free users
+    })) || [];
+
+    // Update in database
+    await db.collection("websites").updateOne(
+      { _id: website._id },
+      {
+        $set: {
+          notifications: sanitizedNotifications,
+          config: sanitizedConfig,
+          updatedAt: new Date()
+        }
       }
-    }
-    
-    return NextResponse.json({ 
-      success: true,
-      message: "Website notifications updated successfully"
-    });
-    
+    );
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating website notifications:", error);
-    return NextResponse.json({ error: "Failed to update website notifications" }, { status: 500 });
+    console.error('Error updating notifications:', error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
