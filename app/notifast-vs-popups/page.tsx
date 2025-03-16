@@ -316,7 +316,7 @@ export default function ComparisonPage() {
               <p>
                 NotiFast offers more features at a better price point, including a free plan for single websites.
                 You get advanced features like custom themes, URL support, and advanced targeting that aren't
-                available with Poopup, plus unlimited websites for just $9/mo compared to Poopup's $19/mo plan.
+                available with Poopup, plus unlimited websites for just $10 compared to Poopup's $19 plan.
               </p>
             </div>
           </div>
