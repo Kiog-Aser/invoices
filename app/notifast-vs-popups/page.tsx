@@ -20,19 +20,12 @@ const features = {
     { name: "Social Proof", notifast: true, Poopup: true },
     { name: "Custom Text", notifast: true, Poopup: true },
     { name: "Mobile Responsive", notifast: true, Poopup: true },
-    { name: "Analytics Dashboard", notifast: true, Poopup: true }
   ],
   advanced: [
     { name: "Custom Themes", notifast: true, Poopup: false },
     { name: "URL Support", notifast: true, Poopup: false },
     { name: "Close Button", notifast: true, Poopup: false },
     { name: "Loop Functionality", notifast: true, Poopup: false },
-    { name: "Dynamic Content", notifast: true, Poopup: false },
-    { name: "A/B Testing", notifast: true, Poopup: false },
-    { name: "Multiple Positions", notifast: true, Poopup: false },
-    { name: "Unlimited Notifications", notifast: true, Poopup: false },
-    { name: "Custom JavaScript Events", notifast: true, Poopup: false },
-    { name: "Advanced Targeting", notifast: true, Poopup: false }
   ],
   pricing: [
     { name: "Free Plan", notifast: "✓ One Website", Poopup: "✕ Not Available" },
