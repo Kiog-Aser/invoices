@@ -121,13 +121,41 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
 
   const [hasSeenTour, setHasSeenTour] = useState(false);
   
+  // Check localStorage on mount
+  useEffect(() => {
+    const hasSeenTourBefore = localStorage.getItem(`tour-seen-${params.websiteId}`);
+    if (hasSeenTourBefore) {
+      setHasSeenTour(true);
+    }
+  }, [params.websiteId]);
+  
   useEffect(() => {
     if (!hasSeenTour && notifications.length === 0) {
       const tour = new Shepherd.Tour({
         useModalOverlay: true,
         defaultStepOptions: {
-          classes: 'shadow-md bg-base-100',
-          scrollTo: true
+          classes: 'shadow-lg rounded-lg border border-base-300',
+          modalOverlayOpeningPadding: 4,
+          when: {
+            show: () => {
+              const content = document.querySelector('.shepherd-content');
+              if (content) {
+                content.className = 'shepherd-content bg-base-100 rounded-lg';
+              }
+              const text = document.querySelector('.shepherd-text');
+              if (text) {
+                text.className = 'shepherd-text p-4 text-base-content';
+              }
+              const header = document.querySelector('.shepherd-header');
+              if (header) {
+                header.className = 'shepherd-header bg-base-200 p-4 rounded-t-lg';
+              }
+              const footer = document.querySelector('.shepherd-footer');
+              if (footer) {
+                footer.className = 'shepherd-footer p-4 flex justify-end gap-2';
+              }
+            }
+          }
         }
       });
 
@@ -135,35 +163,55 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'welcome',
         text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
         attachTo: { element: 'main', on: 'top' },
-        buttons: [{ text: 'Next', action: () => tour.next() }]
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'add-notification',
         text: 'Start by adding your first notification here',
         attachTo: { element: '.btn-add-notification', on: 'bottom' },
-        buttons: [{ text: 'Next', action: () => tour.next() }]
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'theme',
         text: 'Customize the look of your notifications with different themes',
         attachTo: { element: '.btn-theme', on: 'bottom' },
-        buttons: [{ text: 'Next', action: () => tour.next() }]
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'settings',
         text: 'Configure timing and behavior settings here',
         attachTo: { element: '.settings-panel', on: 'right' },
-        buttons: [{ text: 'Next', action: () => tour.next() }]
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
         id: 'preview',
         text: 'Preview your notifications before going live',
         attachTo: { element: '.btn-preview', on: 'bottom' },
-        buttons: [{ text: 'Next', action: () => tour.next() }]
+        buttons: [{ 
+          text: 'Next',
+          classes: 'btn btn-primary btn-sm',
+          action: () => tour.next()
+        }]
       });
 
       tour.addStep({
@@ -171,17 +219,19 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         text: 'Finally, copy this code to add notifications to your website',
         attachTo: { element: '.integration-code', on: 'top' },
         buttons: [{ 
-          text: 'Finish', 
+          text: 'Finish',
+          classes: 'btn btn-primary btn-sm',
           action: () => {
             tour.complete();
             setHasSeenTour(true);
+            localStorage.setItem(`tour-seen-${params.websiteId}`, 'true');
           }
         }]
       });
 
       tour.start();
     }
-  }, [hasSeenTour, notifications]);
+  }, [hasSeenTour, notifications, params.websiteId]);
 
   // Convert ms to s for display
   const msToS = (ms: number) => ms / 1000;
