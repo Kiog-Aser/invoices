@@ -44,6 +44,9 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col justify-center items-center md:items-start gap-2 mb-10 text-sm">
+                <Link href="https://www.notifast.fun/testimonial/new" target="_blank" className="link link-hover">
+                  Leave A Testimonial
+                </Link>
                 <Link href="https://insigh.to/b/notifast" target="_blank" className="link link-hover">
                   Feature Request
                 </Link>
