@@ -53,8 +53,8 @@ const ButtonAccount = () => {
               alt={session?.user?.name || "Account"}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
-              width={40}
-              height={40}
+              width={24}
+              height={24}
             />
           </Popover.Button>
           <Transition
