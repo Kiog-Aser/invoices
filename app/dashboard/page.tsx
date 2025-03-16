@@ -162,11 +162,11 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-base-100/50">
       <header className="bg-base-100 border-b border-base-200">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ButtonAccount />
             {isPro && (
-              <span className="badge badge-sm badge-primary">PRO</span>
+              <span className="badge badge-sm badge-outline badge-primary">PRO</span>
             )}
           </div>
           
