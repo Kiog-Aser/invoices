@@ -109,7 +109,7 @@ function PricingSection() {
               </div>
               
               <ButtonCheckout
-                priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                priceId="price_1R0h7qE9pBPkT56e79CYuP3r"
                 mode="payment"
                 successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
                 cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}

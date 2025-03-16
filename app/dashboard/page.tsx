@@ -200,7 +200,7 @@ export default function Page() {
           <div className="flex gap-2">
             {!isPro && (
               <ButtonCheckout
-                priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                priceId="price_1R0h7qE9pBPkT56e79CYuP3r"
                 mode="payment"
                 successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
                 cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
@@ -261,7 +261,7 @@ export default function Page() {
                 {!isPro && (
                   <p className="mt-1">
                     <ButtonCheckout
-                      priceId="price_1R0PNQIpDPy0JgwZ33p7CznT"
+                      priceId="price_1R0h7qE9pBPkT56e79CYuP3r"
                       mode="payment"
                       successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
                       cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}

@@ -44,7 +44,7 @@ const config = {
       {
         name: "Pro Lifetime",
         price: 10,
-        priceId: "price_1R0PNQIpDPy0JgwZ33p7CznT",
+        priceId: "price_1R0h7qE9pBPkT56e79CYuP3r",
         description: "One-time payment, lifetime access",
         isFeatured: true,
         features: [
