@@ -47,15 +47,15 @@ const ButtonAccount = () => {
     <Popover className="relative z-10">
       {({ open }) => (
         <>
-          <Popover.Button className="btn btn-ghost btn-circle avatar">
-            <div className="w-8 rounded-full ring ring-primary ring-offset-2">
+          <Popover.Button className="btn btn-ghost btn-circle avatar h-10 w-10 p-0">
+            <div className="w-full h-full rounded-full ring ring-primary ring-offset-2 flex items-center justify-center overflow-hidden">
               <img
                 src={session?.user?.image || "https://i.pravatar.cc/300"}
                 alt={session?.user?.name || "Account"}
-                className="w-6 h-6 rounded-full shrink-0"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
-                width={24}
-                height={24}
+                width={40}
+                height={40}
               />
               <span className="tooltip tooltip-bottom tooltip-primary">
                 {session?.user?.name || "Account"}
