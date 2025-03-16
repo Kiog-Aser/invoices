@@ -24,9 +24,9 @@ function PricingSection() {
     <section id="pricing" className="py-20">
       <div className="max-w-5xl mx-auto px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
+          <h2 className="text-3xl font-bold mb-4">Pay Once, Use Forever</h2>
           <p className="text-xl text-base-content/70 max-w-2xl mx-auto">
-            Start with our free plan forever or upgrade to unlock unlimited websites
+            Start with our free plan or upgrade anytime to unlock unlimited websites for life
           </p>
         </div>
         
@@ -37,7 +37,7 @@ function PricingSection() {
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-2">Free Forever</h3>
                 <div className="text-4xl font-bold mb-2">$0</div>
-                <p className="text-base-content/70">Perfect for individuals</p>
+                <p className="text-base-content/70">Perfect for trying NotiFast</p>
               </div>
               
               <div className="mb-8 flex-grow">
@@ -62,7 +62,7 @@ function PricingSection() {
               </div>
               
               <Link href="/dashboard" className="btn btn-outline btn-block">
-                Get Started Free
+                Start Free
               </Link>
             </div>
           </div>
@@ -70,14 +70,17 @@ function PricingSection() {
           {/* Pro Plan */}
           <div className="card bg-primary/5 shadow-lg relative overflow-hidden border border-primary/20">
             <div className="absolute top-0 right-0 bg-primary text-primary-content px-4 py-1 font-medium">
-              MOST POPULAR
+              50% OFF
             </div>
             
             <div className="card-body">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-2">Pro Lifetime</h3>
-                <div className="text-4xl font-bold mb-2">$10</div>
-                <p className="text-base-content/70">One-time payment, lifetime access</p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-base-content/50 line-through">$20</span>
+                  <span className="text-4xl font-bold">$10</span>
+                </div>
+                <p className="text-base-content/70">One-time payment, lifetime updates</p>
               </div>
               
               <div className="mb-8 flex-grow">
@@ -111,7 +114,13 @@ function PricingSection() {
                 successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
                 cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
                 className="btn btn-primary btn-block"
-              />
+              >
+                Get Pro Access
+              </ButtonCheckout>
+              
+              <p className="text-center text-sm text-base-content/70 mt-3">
+                One-time payment, no recurring fees
+              </p>
             </div>
           </div>
         </div>
@@ -149,20 +158,16 @@ export default function Page() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col lg:flex-row items-center">
                 <div className="lg:w-1/2 mb-8 lg:mb-0 text-center lg:text-left">
-                 {/* <Suspense fallback={<div className="loading loading-spinner"></div>}>
-                    <TestimonialRating />
-                  </Suspense> */} 
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
-                    Notifications that <span className="text-primary">convert visitors</span>
+                    Stop losing visitors to <span className="text-primary">poor engagement</span>
                   </h1>
                   <p className="text-lg sm:text-xl mb-6 sm:mb-8 text-base-content/80 max-w-xl mx-auto lg:mx-0">
-                    NotiFast helps you engage visitors with elegant notifications
-                    that increase conversions and improve user engagement.
+                    Beautiful iOS-style notifications that boost conversions up to 37%. Add one line of code and start converting more visitors today.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link href="/dashboard" className="btn btn-primary btn-lg w-full sm:w-auto">
-                      Get Started — Free Forever
+                      Try Free Forever
                     </Link>
                     <a href="#pricing" className="btn btn-outline btn-lg w-full sm:w-auto">
                       View Pricing
@@ -171,7 +176,7 @@ export default function Page() {
                   
                   <div className="mt-6 sm:mt-8 flex items-center justify-center lg:justify-start text-sm text-base-content/60">
                     <FaCheckCircle className="text-success mr-2" />
-                    No credit card required for free plan
+                    No credit card required
                   </div>
                 </div>
                 <div className="lg:w-1/2 w-full px-4 sm:px-0">
