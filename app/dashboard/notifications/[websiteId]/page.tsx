@@ -261,37 +261,47 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       try {
         setIsLoading(true);
         
-        // Fetch from database
-        const response = await fetch(`/api/website-notifications/${params.websiteId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setWebsite(data.website);
-          
-          setNotifications(data.notifications?.map((notification: Notification) => ({
-            ...notification,
-            url: notification.url || ""
-          })) || []);
-          
-          // Update config and pro settings
-          if (data.config) {
-            setConfig({
-              startDelay: data.config.startDelay,
-              displayDuration: data.config.displayDuration,
-              cycleDuration: data.config.cycleDuration,
-              maxVisibleNotifications: data.config.maxVisibleNotifications
-            });
+        // Fetch both user data and website notifications in parallel
+        const [userResponse, notificationsResponse] = await Promise.all([
+          fetch('/api/user'),
+          fetch(`/api/website-notifications/${params.websiteId}`)
+        ]);
 
-            // Handle pro features
-            const isUserPro = session?.user?.plan === 'pro';
-            setSelectedTheme(isUserPro ? (data.config.theme || "ios") : "ios");
-            setLoopNotifications(isUserPro ? Boolean(data.config.loop) : false);
-            setShowCloseButton(isUserPro ? Boolean(data.config.showCloseButton) : false);
-            setIsPro(isUserPro);
-          }
-        } else {
-          toast.error("Failed to load notifications");
+        if (!userResponse.ok) {
+          throw new Error('Failed to fetch user data');
         }
 
+        if (!notificationsResponse.ok) {
+          throw new Error('Failed to fetch notifications');
+        }
+
+        const userData = await userResponse.json();
+        const notificationsData = await notificationsResponse.json();
+
+        // Set website and notifications data
+        setWebsite(notificationsData.website);
+        setNotifications(notificationsData.notifications?.map((notification: Notification) => ({
+          ...notification,
+          url: notification.url || ""
+        })) || []);
+        
+        // Update config and pro settings based on user plan
+        const isUserPro = userData.plan === 'pro';
+        if (notificationsData.config) {
+          setConfig({
+            startDelay: notificationsData.config.startDelay,
+            displayDuration: notificationsData.config.displayDuration,
+            cycleDuration: notificationsData.config.cycleDuration,
+            maxVisibleNotifications: notificationsData.config.maxVisibleNotifications
+          });
+
+          // Handle pro features
+          setSelectedTheme(isUserPro ? (notificationsData.config.theme || "ios") : "ios");
+          setLoopNotifications(isUserPro ? Boolean(notificationsData.config.loop) : false);
+          setShowCloseButton(isUserPro ? Boolean(notificationsData.config.showCloseButton) : false);
+          setIsPro(isUserPro);
+        }
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -301,7 +311,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     };
     
     fetchData();
-  }, [params.websiteId, session]);
+  }, [params.websiteId]); // Remove session dependency since we're fetching user data directly
 
   useEffect(() => {
     // Clean up interval when component unmounts
