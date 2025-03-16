@@ -163,8 +163,11 @@ export default function Page() {
     <div className="min-h-screen bg-base-100/50">
       <header className="bg-base-100 border-b border-base-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             <ButtonAccount />
+            {isPro && (
+              <span className="badge badge-sm badge-primary">PRO</span>
+            )}
           </div>
           
           <div className="flex gap-2">
