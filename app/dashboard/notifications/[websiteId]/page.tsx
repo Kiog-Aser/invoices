@@ -132,21 +132,24 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       const tour = new Shepherd.Tour({
         useModalOverlay: true,
         defaultStepOptions: {
-          classes: 'shadow-lg border border-base-300',
+          classes: 'card bg-base-100 shadow-lg border border-base-300',
           modalOverlayOpeningPadding: 4,
           arrow: false,
+          scrollTo: false,
           cancelIcon: {
             enabled: false
           },
+          buttons: [{
+            classes: 'btn btn-sm btn-primary',
+            text: 'Next',
+            action: function() {
+              return this.next();
+            }
+          }],
           when: {
             show: () => {
-              // Apply DaisyUI styling to tour elements
               document.querySelectorAll('.shepherd-modal-overlay').forEach(overlay => {
-                overlay.classList.add('bg-base-300/50', 'backdrop-blur-sm');
-              });
-
-              document.querySelectorAll('.shepherd-element').forEach(element => {
-                element.classList.add('card', 'bg-base-100', 'shadow-lg', 'border', 'border-base-300');
+                overlay.classList.add('bg-black/50', 'backdrop-blur-sm');
               });
 
               document.querySelectorAll('.shepherd-content').forEach(content => {
@@ -154,20 +157,11 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               });
 
               document.querySelectorAll('.shepherd-text').forEach(text => {
-                text.classList.add('p-6', 'text-base-content', 'prose', 'prose-sm', 'max-w-none');
+                text.classList.add('p-6', 'text-base-content');
               });
 
               document.querySelectorAll('.shepherd-footer').forEach(footer => {
-                footer.classList.add('card-actions', 'justify-end', 'px-6', 'pb-6', 'pt-0', 'gap-2');
-              });
-
-              document.querySelectorAll('.shepherd-button').forEach(button => {
-                button.classList.add('btn', 'btn-sm');
-                if (button.textContent?.includes('Next') || button.textContent?.includes('Finish')) {
-                  button.classList.add('btn-primary');
-                } else {
-                  button.classList.add('btn-ghost');
-                }
+                footer.classList.add('p-4', 'flex', 'justify-end', 'gap-2');
               });
             }
           }
@@ -178,9 +172,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'welcome',
         text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
         attachTo: { element: 'main', on: 'top' },
-        buttons: [{ 
+        buttons: [{
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
           action: () => tour.next()
         }]
       });
@@ -189,9 +182,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'add-notification',
         text: 'Start by adding your first notification here',
         attachTo: { element: '.btn-add-notification', on: 'bottom' },
-        buttons: [{ 
+        buttons: [{
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
           action: () => tour.next()
         }]
       });
@@ -200,9 +192,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'theme',
         text: 'Customize the look of your notifications with different themes',
         attachTo: { element: '.btn-theme', on: 'bottom' },
-        buttons: [{ 
+        buttons: [{
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
           action: () => tour.next()
         }]
       });
@@ -211,9 +202,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'settings',
         text: 'Configure timing and behavior settings here',
         attachTo: { element: '.settings-panel', on: 'right' },
-        buttons: [{ 
+        buttons: [{
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
           action: () => tour.next()
         }]
       });
@@ -222,9 +212,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'preview',
         text: 'Preview your notifications before going live',
         attachTo: { element: '.btn-preview', on: 'bottom' },
-        buttons: [{ 
+        buttons: [{
           text: 'Next',
-          classes: 'btn btn-primary btn-sm',
           action: () => tour.next()
         }]
       });
@@ -233,9 +222,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         id: 'integration',
         text: 'Finally, copy this code to add notifications to your website',
         attachTo: { element: '.integration-code', on: 'top' },
-        buttons: [{ 
+        buttons: [{
           text: 'Finish',
-          classes: 'btn btn-primary btn-sm',
           action: () => {
             tour.complete();
             setHasSeenTour(true);
