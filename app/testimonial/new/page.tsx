@@ -1,18 +1,34 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { FaArrowLeft, FaVideo, FaImage, FaTwitter, FaLinkedin } from "react-icons/fa";
-import { ITestimonial } from "@/models/Testimonial";
 
 type Step = "welcome" | "personal" | "social" | "profileImage" | "impact" | "review";
-type FormData = Omit<ITestimonial, "userId" | "status" | "createdAt" | "updatedAt">;
+
+interface FormData {
+  name: string;
+  socialHandle?: string;
+  socialPlatform?: "twitter" | "linkedin";
+  profileImage?: string;
+  howHelped: string;
+  beforeChallenge: string;
+  afterSolution: string;
+  reviewType?: "text" | "video";
+  textReview?: string;
+  videoUrl?: string;
+}
+
+// Add a more specific ref type
+type ActiveInputRefType = HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "impact", "review"];
 
 export default function NewTestimonialPage() {
   const router = useRouter();
@@ -24,6 +40,77 @@ export default function NewTestimonialPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Use MutableRefObject for a ref we want to update
+  const activeInputRef = useRef<HTMLElement | null>(null);
+
+  // Create a type-safe ref setter
+  const setActiveRef = useCallback((element: HTMLElement | null) => {
+    if (element) {
+      activeInputRef.current = element;
+    }
+  }, []);
+
+  const canProceed = useCallback(() => {
+    switch (currentStep) {
+      case "welcome":
+        return true;
+      case "personal":
+        return !!formData.name;
+      case "social":
+        return true; // Optional
+      case "profileImage":
+        return true; // Optional
+      case "impact":
+        return !!formData.howHelped && !!formData.beforeChallenge && !!formData.afterSolution;
+      case "review":
+        return (formData.reviewType === "text" && !!formData.textReview) ||
+               (formData.reviewType === "video" && !!formData.videoUrl);
+      default:
+        return false;
+    }
+  }, [currentStep, formData]);
+
+  const goToNextStep = useCallback(() => {
+    const currentIndex = STEPS.indexOf(currentStep);
+    if (currentIndex < STEPS.length - 1) {
+      setCurrentStep(STEPS[currentIndex + 1]);
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    // Focus the active input when step changes
+    if (activeInputRef.current) {
+      activeInputRef.current.focus();
+    }
+
+    // Add keyboard navigation with type guards
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      // Allow cmd/ctrl + enter to proceed
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (canProceed()) {
+          goToNextStep();
+        }
+      }
+      // Allow enter to proceed on single-line inputs only
+      else if (e.key === 'Enter' && 
+               target instanceof HTMLInputElement && 
+               target.type !== 'textarea' && 
+               !target.readOnly && 
+               !target.disabled) {
+        e.preventDefault();
+        if (canProceed()) {
+          goToNextStep();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentStep, formData, goToNextStep, canProceed]);
 
   if (status === "loading") {
     return (
@@ -38,7 +125,7 @@ export default function NewTestimonialPage() {
     return null;
   }
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormData = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -73,13 +160,12 @@ export default function NewTestimonialPage() {
           body: formData,
         });
 
+        const data = await response.json();
         if (!response.ok) {
-          const data = await response.json();
           throw new Error(data.error || 'Upload failed');
         }
         
-        const { url } = await response.json();
-        updateFormData('profileImage', url);
+        updateFormData('profileImage', data.url);
       } catch (error) {
         console.error('Error uploading file:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to upload image');
@@ -100,13 +186,12 @@ export default function NewTestimonialPage() {
           body: formData,
         });
 
+        const data = await response.json();
         if (!response.ok) {
-          const data = await response.json();
           throw new Error(data.error || 'Upload failed');
         }
         
-        const { url } = await response.json();
-        updateFormData('videoUrl', url);
+        updateFormData('videoUrl', data.url);
       } catch (error) {
         console.error('Error uploading video:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to upload video');
@@ -117,6 +202,16 @@ export default function NewTestimonialPage() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+
+      // Combine howHelped, beforeChallenge, and afterSolution into the review
+      let finalReview = "";
+      if (formData.reviewType === "text" && formData.howHelped && formData.beforeChallenge && formData.afterSolution) {
+        finalReview = `How NotiFast helped me:\n${formData.howHelped}\n\n` +
+                     `Before NotiFast:\n${formData.beforeChallenge}\n\n` +
+                     `After NotiFast:\n${formData.afterSolution}\n\n` +
+                     `${formData.textReview || ""}`;
+        updateFormData("textReview", finalReview);
+      }
 
       const response = await fetch('/api/testimonial', {
         method: 'POST',
@@ -134,8 +229,14 @@ export default function NewTestimonialPage() {
     } catch (error) {
       console.error('Error submitting testimonial:', error);
       toast.error('Failed to submit testimonial');
-    } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const goToPrevStep = () => {
+    const currentIndex = STEPS.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(STEPS[currentIndex - 1]);
     }
   };
 
@@ -151,6 +252,7 @@ export default function NewTestimonialPage() {
             <button 
               onClick={() => setCurrentStep("personal")} 
               className="btn btn-primary btn-lg"
+              ref={setActiveRef}
             >
               Let's Begin
             </button>
@@ -161,24 +263,21 @@ export default function NewTestimonialPage() {
         return (
           <div className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Tell us about yourself</h2>
+              <h2 className="text-2xl font-bold">What's your name?</h2>
               <p className="text-base-content/70">
-                This information will appear with your testimonial
+                This will appear with your testimonial
               </p>
             </div>
             
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Your name</span>
-              </label>
-              <input
-                type="text"
-                value={formData.name || ""}
-                onChange={(e) => updateFormData("name", e.target.value)}
-                placeholder="John Smith"
-                className="input input-bordered"
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.name || ""}
+              onChange={(e) => updateFormData("name", e.target.value)}
+              placeholder="Your name"
+              className="input input-bordered w-full text-lg"
+              ref={setActiveRef}
+              autoFocus
+            />
 
             <div className="flex justify-between">
               <button
@@ -231,6 +330,8 @@ export default function NewTestimonialPage() {
                   onChange={(e) => updateFormData("socialHandle", e.target.value)}
                   placeholder={`Your ${formData.socialPlatform} handle`}
                   className="input input-bordered w-full"
+                  ref={setActiveRef}
+                  autoFocus
                 />
               )}
             </div>
@@ -283,6 +384,7 @@ export default function NewTestimonialPage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="btn btn-outline btn-lg gap-2"
+                  ref={setActiveRef}
                 >
                   <FaImage /> Choose Image
                 </button>
@@ -317,9 +419,9 @@ export default function NewTestimonialPage() {
         return (
           <div className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Your NotiFast Experience</h2>
+              <h2 className="text-2xl font-bold">Tell us about your experience</h2>
               <p className="text-base-content/70">
-                Tell us how NotiFast helped your business
+                These questions will help you structure your review
               </p>
             </div>
 
@@ -333,6 +435,8 @@ export default function NewTestimonialPage() {
                   onChange={(e) => updateFormData("howHelped", e.target.value)}
                   placeholder="NotiFast helped me..."
                   className="textarea textarea-bordered min-h-[100px]"
+                  ref={setActiveRef}
+                  autoFocus
                 />
               </div>
 
@@ -394,6 +498,7 @@ export default function NewTestimonialPage() {
                 <button
                   onClick={() => updateFormData("reviewType", "text")}
                   className="card bg-base-200 hover:bg-base-300 transition-colors p-8 text-center"
+                  ref={setActiveRef}
                 >
                   <div className="text-4xl mb-4">✍️</div>
                   <h3 className="font-bold mb-2">Written Review</h3>
@@ -415,11 +520,17 @@ export default function NewTestimonialPage() {
               </div>
             ) : formData.reviewType === "text" ? (
               <div className="space-y-4">
+                <p className="text-base-content/70 italic">
+                  Based on your answers above, we've prepared some points to help you write your review.
+                  Feel free to expand on them or write your own review from scratch.
+                </p>
                 <textarea
                   value={formData.textReview || ""}
                   onChange={(e) => updateFormData("textReview", e.target.value)}
-                  placeholder="Share your experience with NotiFast..."
+                  placeholder={`Here's a suggested structure for your review:\n\n${formData.howHelped || ""}\n\nBefore using NotiFast, ${(formData.beforeChallenge || "").toLowerCase()}\n\nNow, ${(formData.afterSolution || "").toLowerCase()}`}
                   className="textarea textarea-bordered w-full min-h-[200px]"
+                  ref={activeInputRef as any}
+                  autoFocus
                 />
 
                 <div className="flex justify-between">
@@ -444,6 +555,15 @@ export default function NewTestimonialPage() {
               </div>
             ) : (
               <div className="space-y-6">
+                <p className="text-base-content/70 italic">
+                  Consider including these points in your video:
+                </p>
+                <ul className="list-disc list-inside space-y-2 text-base-content/70">
+                  <li>{formData.howHelped || ""}</li>
+                  <li>Before: {formData.beforeChallenge || ""}</li>
+                  <li>After: {formData.afterSolution || ""}</li>
+                </ul>
+
                 {formData.videoUrl ? (
                   <div className="space-y-4">
                     <video
@@ -479,6 +599,7 @@ export default function NewTestimonialPage() {
                         videoInput.onchange = (e) => handleVideoUpload(e as any);
                         videoInput.click();
                       }}
+                      ref={setActiveRef}
                     >
                       <FaVideo /> Upload Video
                     </button>
@@ -512,41 +633,16 @@ export default function NewTestimonialPage() {
   };
 
   return (
-    <main className="min-h-screen bg-base-100">
-      <div className="container mx-auto px-4 py-12">
-        {/* Progress indicator */}
-        <div className="max-w-xl mx-auto mb-12">
-          <div className="flex justify-between">
-            {["welcome", "personal", "social", "profileImage", "impact", "review"].map((step, index) => (
-              <div
-                key={step}
-                className={`flex items-center ${currentStep === step ? "text-primary" : "text-base-content/40"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep === step
-                      ? "bg-primary text-primary-content"
-                      : step === "welcome"
-                      ? "bg-base-content/20"
-                      : "bg-base-200"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                {index < 5 && (
-                  <div
-                    className={`w-full h-1 ${
-                      index < ["welcome", "personal", "social", "profileImage", "impact", "review"].indexOf(currentStep)
-                        ? "bg-base-content/20"
-                        : "bg-base-200"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+    <main className="min-h-screen bg-base-100 flex flex-col">
+      {/* Progress indicator */}
+      <div className="h-1 bg-base-200">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${((STEPS.indexOf(currentStep) + 1) / STEPS.length) * 100}%` }}
+        />
+      </div>
 
+      <div className="flex-1 flex items-center justify-center p-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -554,11 +650,16 @@ export default function NewTestimonialPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="max-w-xl mx-auto"
+            className="w-full max-w-lg mx-auto"
           >
             {renderStep()}
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      {/* Keyboard shortcut hint */}
+      <div className="fixed bottom-4 right-4 text-sm text-base-content/40">
+        Press <kbd className="kbd kbd-sm">Enter</kbd> or <kbd className="kbd kbd-sm">⌘</kbd> + <kbd className="kbd kbd-sm">Enter</kbd> to continue
       </div>
     </main>
   );

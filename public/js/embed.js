@@ -13,7 +13,7 @@
     // Function to fetch notifications and config
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(`/api/website-notifications/${websiteId}/public`);
+        const response = await fetch(`https://www.notifast.fun/api/website-notifications/${websiteId}/public`);
         if (!response.ok) throw new Error('Failed to load notifications');
         const data = await response.json();
         notifications = data.notifications || [];

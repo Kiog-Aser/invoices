@@ -26,11 +26,11 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file');
     const type = formData.get('type') as string;
     
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: "No valid file provided" }, { status: 400 });
     }
 
     // Validate file size
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Ensure directories exist
     const publicDir = path.join(process.cwd(), 'public');
     const uploadsDir = path.join(publicDir, 'uploads', fileType);
-    await createDirIfNotExists(uploadsDir);
+    await mkdir(uploadsDir, { recursive: true });
 
     try {
       // Convert File to Buffer and save
@@ -84,16 +84,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       error: "Failed to handle file upload" 
     }, { status: 500 });
-  }
-}
-
-async function createDirIfNotExists(dir: string) {
-  try {
-    await mkdir(dir, { recursive: true });
-  } catch (error) {
-    // Ignore error if directory already exists
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-      throw error;
-    }
   }
 }
