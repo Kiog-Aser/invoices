@@ -162,7 +162,7 @@ export default function Page() {
                     Stop losing visitors to <span className="text-primary">poor engagement</span>
                   </h1>
                   <p className="text-lg sm:text-xl mb-6 sm:mb-8 text-base-content/80 max-w-xl mx-auto lg:mx-0">
-                    Beautiful iOS-style notifications that boost conversions up to 37%. Add one line of code and start converting more visitors today.
+                    Add one line of code and start converting more visitors today.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
