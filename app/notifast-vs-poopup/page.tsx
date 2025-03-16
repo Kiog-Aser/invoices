@@ -30,7 +30,7 @@ const features = {
   pricing: [
     { name: "Free Plan", notifast: "✓ One Website", Poopup: "✕ Not Available" },
     { name: "Basic Plan", notifast: "$10 - Unlimited", Poopup: "$9 - One Site" },
-    { name: "Pro Plan", notifast: "No cheaper plan", Poopup: "$19 - Unlimited" }
+    { name: "Pro Plan", notifast: "No extra plan", Poopup: "$19 - Unlimited" }
   ]
 };
 
@@ -76,18 +76,14 @@ export default function ComparisonPage() {
       </header>
 
       <div className="prose prose-lg max-w-none mb-16">
-        <h2>Why Choose NotiFast?</h2>
-        <p>
-          While both NotiFast and Poopup offer website notification solutions, NotiFast provides a more
-          comprehensive set of features at a better price point. Let's break down the key differences:
-        </p>
+        <div className="card bg-base-200 p-8">
+          <h2 className="text-2xl font-bold mb-6">Why Choose NotiFast?</h2>
+          <p>
+            While both NotiFast and Poopup offer website notification solutions, NotiFast provides a more
+            comprehensive set of features at a better price point. Let's break down the key differences:
+          </p>
 
-        <div className="card bg-primary/5 border border-primary/10 p-6 my-8">
-          <h3 className="flex items-center gap-2 text-2xl font-bold mb-4">
-            <BsLightningCharge className="text-primary" />
-            Key Advantages of NotiFast
-          </h3>
-          <ul className="grid gap-3">
+          <ul className="grid gap-3 mt-6">
             <li className="flex items-start gap-3">
               <BsCheckCircleFill className="w-5 h-5 text-success mt-1" />
               <div>
@@ -105,8 +101,8 @@ export default function ComparisonPage() {
             <li className="flex items-start gap-3">
               <BsCheckCircleFill className="w-5 h-5 text-success mt-1" />
               <div>
-                <span className="font-semibold">Advanced Features</span> - Enjoy custom themes,
-                URL support, and advanced targeting options not available in Poopup
+                <span className="font-semibold">More Features</span> - Enjoy custom themes,
+                URL support, and loop functionality not available in Poopup
               </div>
             </li>
           </ul>
@@ -169,65 +165,10 @@ export default function ComparisonPage() {
       </section>
 
       <section className="mb-16">
-        <h2 className="text-3xl font-bold mb-8">Advanced Features Deep Dive</h2>
-        
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body">
-              <h3 className="card-title mb-4">Custom Themes</h3>
-              <p className="mb-4">
-                NotiFast offers fully customizable themes to match your brand identity.
-                Choose from pre-built themes or create your own with custom CSS.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  Custom colors and fonts
-                </li>
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  Pre-built templates
-                </li>
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  CSS customization
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body">
-              <h3 className="card-title mb-4">Advanced Targeting</h3>
-              <p className="mb-4">
-                Target specific user segments with NotiFast's advanced targeting options.
-                Show the right message to the right people at the right time.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  Page-specific triggers
-                </li>
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  Time-based display
-                </li>
-                <li className="flex items-center gap-2">
-                  <BsCheckCircleFill className="text-success" />
-                  User behavior targeting
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mb-16">
         <h2 className="text-3xl font-bold mb-8">Integration & Setup</h2>
         <div className="prose prose-lg max-w-none">
           <p>
-            Both NotiFast and Poopup offer simple integration processes, but NotiFast goes the extra mile
-            with additional customization options and developer-friendly features:
+            Both NotiFast and Poopup offer simple integration processes:
           </p>
           
           <div className="grid md:grid-cols-2 gap-8 not-prose my-8">
@@ -241,15 +182,11 @@ export default function ComparisonPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <BsCheckCircleFill className="text-success" />
-                    Custom event triggers
+                    Simple dashboard setup
                   </li>
                   <li className="flex items-center gap-2">
                     <BsCheckCircleFill className="text-success" />
-                    API access
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <BsCheckCircleFill className="text-success" />
-                    Developer documentation
+                    Quick start guide
                   </li>
                 </ul>
               </div>
@@ -265,15 +202,11 @@ export default function ComparisonPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <BsXCircleFill className="text-error" />
-                    No custom event support
+                    Limited customization options
                   </li>
                   <li className="flex items-center gap-2">
                     <BsXCircleFill className="text-error" />
-                    Limited API functionality
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <BsXCircleFill className="text-error" />
-                    Basic documentation
+                    Basic setup guide
                   </li>
                 </ul>
               </div>
