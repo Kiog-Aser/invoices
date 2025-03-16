@@ -365,10 +365,20 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
 
   const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setConfig({
-      ...config,
-      [name]: sToMs(parseFloat(value))
-    });
+    
+    // Special handling for maxVisibleNotifications
+    if (name === 'maxVisibleNotifications') {
+      const numValue = Math.min(Math.max(parseInt(value) || 1, 1), 10); // Clamp between 1 and 10
+      setConfig({
+        ...config,
+        [name]: numValue
+      });
+    } else {
+      setConfig({
+        ...config,
+        [name]: sToMs(parseFloat(value))
+      });
+    }
     setConfigChanged(true);
   };
 

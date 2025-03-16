@@ -41,9 +41,16 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Only run middleware on paths that aren't static files or api routes 
-  // that already handle their own authentication
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/webhook|dashboard/notifications).*)',
+    /*
+     * Match all request paths except for:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, manifest.json, robots.txt (public files)
+     * - notifications (exclude entire notifications section)
+     * - Auth-related paths
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|robots.txt|notifications|auth).*)',
   ],
 };
