@@ -7,7 +7,8 @@ import { toast } from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import ButtonCheckout from "@/components/ButtonCheckout";
 import { useSession, signOut } from "next-auth/react";
-import { useShepherd } from 'react-shepherd';
+import Shepherd from 'shepherd.js';
+import 'shepherd.js/dist/css/shepherd.css';
 
 // Popular brand logos
 const POPULAR_LOGOS = [
@@ -119,59 +120,68 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   ];
 
   const [hasSeenTour, setHasSeenTour] = useState(false);
-  const tour = useShepherd();
-
+  
   useEffect(() => {
     if (!hasSeenTour && notifications.length === 0) {
-      const steps = [
-        {
-          id: 'welcome',
-          text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
-          attachTo: { element: 'main', on: 'top' as const },
-          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
-        },
-        {
-          id: 'add-notification',
-          text: 'Start by adding your first notification here',
-          attachTo: { element: '.btn-add-notification', on: 'bottom' as const },
-          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
-        },
-        {
-          id: 'theme',
-          text: 'Customize the look of your notifications with different themes',
-          attachTo: { element: '.btn-theme', on: 'bottom' as const },
-          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
-        },
-        {
-          id: 'settings',
-          text: 'Configure timing and behavior settings here',
-          attachTo: { element: '.settings-panel', on: 'right' as const },
-          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
-        },
-        {
-          id: 'preview',
-          text: 'Preview your notifications before going live',
-          attachTo: { element: '.btn-preview', on: 'bottom' as const },
-          buttons: [{ text: 'Next', action: () => (tour as any).next() }]
-        },
-        {
-          id: 'integration',
-          text: 'Finally, copy this code to add notifications to your website',
-          attachTo: { element: '.integration-code', on: 'top' as const },
-          buttons: [{ 
-            text: 'Finish', 
-            action: () => { 
-              (tour as any).complete();
-              setHasSeenTour(true); 
-            } 
-          }]
+      const tour = new Shepherd.Tour({
+        useModalOverlay: true,
+        defaultStepOptions: {
+          classes: 'shadow-md bg-base-100',
+          scrollTo: true
         }
-      ];
+      });
 
-      (tour as any).addSteps(steps);
-      (tour as any).start();
+      tour.addStep({
+        id: 'welcome',
+        text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
+        attachTo: { element: 'main', on: 'top' },
+        buttons: [{ text: 'Next', action: () => tour.next() }]
+      });
+
+      tour.addStep({
+        id: 'add-notification',
+        text: 'Start by adding your first notification here',
+        attachTo: { element: '.btn-add-notification', on: 'bottom' },
+        buttons: [{ text: 'Next', action: () => tour.next() }]
+      });
+
+      tour.addStep({
+        id: 'theme',
+        text: 'Customize the look of your notifications with different themes',
+        attachTo: { element: '.btn-theme', on: 'bottom' },
+        buttons: [{ text: 'Next', action: () => tour.next() }]
+      });
+
+      tour.addStep({
+        id: 'settings',
+        text: 'Configure timing and behavior settings here',
+        attachTo: { element: '.settings-panel', on: 'right' },
+        buttons: [{ text: 'Next', action: () => tour.next() }]
+      });
+
+      tour.addStep({
+        id: 'preview',
+        text: 'Preview your notifications before going live',
+        attachTo: { element: '.btn-preview', on: 'bottom' },
+        buttons: [{ text: 'Next', action: () => tour.next() }]
+      });
+
+      tour.addStep({
+        id: 'integration',
+        text: 'Finally, copy this code to add notifications to your website',
+        attachTo: { element: '.integration-code', on: 'top' },
+        buttons: [{ 
+          text: 'Finish', 
+          action: () => {
+            tour.complete();
+            setHasSeenTour(true);
+          }
+        }]
+      });
+
+      tour.start();
     }
-  }, [hasSeenTour, notifications, tour]);
+  }, [hasSeenTour, notifications]);
 
   // Convert ms to s for display
   const msToS = (ms: number) => ms / 1000;
