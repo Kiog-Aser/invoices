@@ -265,6 +265,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         const response = await fetch(`/api/website-notifications/${params.websiteId}`);
         if (response.ok) {
           const data = await response.json();
+          setWebsite(data.website);
+          
           setNotifications(data.notifications?.map((notification: Notification) => ({
             ...notification,
             url: notification.url || ""
@@ -273,38 +275,23 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
           // Update config and pro settings
           if (data.config) {
             setConfig({
-              startDelay: data.config.startDelay || 500,
-              displayDuration: data.config.displayDuration || 30000,
-              cycleDuration: data.config.cycleDuration || 3000,
-              maxVisibleNotifications: data.config.maxVisibleNotifications || 5
+              startDelay: data.config.startDelay,
+              displayDuration: data.config.displayDuration,
+              cycleDuration: data.config.cycleDuration,
+              maxVisibleNotifications: data.config.maxVisibleNotifications
             });
-            // Only handle config settings when in pro
-            if (session?.user?.plan === 'pro') {
-              setSelectedTheme(data.config.theme || "ios");
-              setLoopNotifications(data.config.loop === true);
-              setShowCloseButton(data.config.showCloseButton === true);
-            } else {
-              setSelectedTheme("ios");
-              setLoopNotifications(false);
-              setShowCloseButton(false);
-            }
+
+            // Handle pro features
+            const isUserPro = session?.user?.plan === 'pro';
+            setSelectedTheme(isUserPro ? (data.config.theme || "ios") : "ios");
+            setLoopNotifications(isUserPro ? Boolean(data.config.loop) : false);
+            setShowCloseButton(isUserPro ? Boolean(data.config.showCloseButton) : false);
+            setIsPro(isUserPro);
           }
         } else {
           toast.error("Failed to load notifications");
         }
 
-        // Check if user is on a Pro plan
-        if (session?.user?.plan === 'pro') {
-          setIsPro(true);
-        } else {
-          // Fallback to API check
-          const userResponse = await fetch('/api/user');
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            setIsPro(userData.plan === 'pro');
-          }
-        }
-        
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -368,15 +355,15 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     
     // Special handling for maxVisibleNotifications
     if (name === 'maxVisibleNotifications') {
-      const numValue = Math.min(Math.max(parseInt(value) || 1, 1), 10); // Clamp between 1 and 10
+      const numValue = value === '' ? undefined : Math.min(Math.max(parseInt(value), 1), 10);
       setConfig({
         ...config,
-        [name]: numValue
+        [name]: numValue ?? config.maxVisibleNotifications // Use existing value if undefined
       });
     } else {
       setConfig({
         ...config,
-        [name]: sToMs(parseFloat(value))
+        [name]: sToMs(parseFloat(value) || 0)
       });
     }
     setConfigChanged(true);

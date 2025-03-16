@@ -129,34 +129,29 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
 
     const websiteIdStr = website._id.toString();
     
-    // Validate the config - ensure proper types and defaults
+    // Validate and sanitize the config
     const sanitizedConfig = {
-      ...DEFAULT_CONFIG,
-      ...config,
-      startDelay: parseInt(config.startDelay) || DEFAULT_CONFIG.startDelay,
-      displayDuration: parseInt(config.displayDuration) || DEFAULT_CONFIG.displayDuration,
-      cycleDuration: parseInt(config.cycleDuration) || DEFAULT_CONFIG.cycleDuration,
-      maxVisibleNotifications: parseInt(config.maxVisibleNotifications) || DEFAULT_CONFIG.maxVisibleNotifications,
-      loop: isPro ? Boolean(config.loop) : false,
-      showCloseButton: isPro ? Boolean(config.showCloseButton) : false,
-      theme: isPro ? (config.theme || DEFAULT_CONFIG.theme) : "ios"
+      startDelay: parseInt(config?.startDelay) || DEFAULT_CONFIG.startDelay,
+      displayDuration: parseInt(config?.displayDuration) || DEFAULT_CONFIG.displayDuration,
+      cycleDuration: parseInt(config?.cycleDuration) || DEFAULT_CONFIG.cycleDuration,
+      maxVisibleNotifications: parseInt(config?.maxVisibleNotifications) || DEFAULT_CONFIG.maxVisibleNotifications,
+      loop: isPro ? Boolean(config?.loop) : false,
+      showCloseButton: isPro ? Boolean(config?.showCloseButton) : false,
+      theme: isPro ? (config?.theme || DEFAULT_CONFIG.theme) : DEFAULT_CONFIG.theme
     };
 
     // Update website config in websiteConfigs collection
     if (config) {
-      const mergedConfig = {
-        ...DEFAULT_CONFIG,
-        ...sanitizedConfig,
-        updatedAt: new Date()
-      };
-
       await db.collection("websiteConfigs").updateOne(
         { 
-          websiteId,
+          websiteId: websiteIdStr,
           userId: session.user.email 
         },
         {
-          $set: mergedConfig
+          $set: {
+            ...sanitizedConfig,
+            updatedAt: new Date()
+          }
         },
         { upsert: true }
       );
@@ -177,7 +172,7 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
           image: notification.image || "",
           timestamp: notification.timestamp || "now",
           delay: notification.delay || 0,
-          url: isPro ? (notification.url || "") : "https://www.notifast.fun", // Force NotiFast URL for free users
+          url: isPro ? (notification.url || "") : "https://www.notifast.fun",
           websiteId: websiteIdStr,
           userId: session.user.email,
           createdAt: new Date()
