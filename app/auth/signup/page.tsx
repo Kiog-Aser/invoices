@@ -8,7 +8,7 @@ import Link from "next/link";
 function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard/";
+  const callbackUrl = "/dashboard"; // Always redirect to dashboard
   const [isLoading, setIsLoading] = useState<{[key: string]: boolean}>({
     google: false,
     github: false

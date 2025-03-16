@@ -54,10 +54,20 @@ export const authOptions: NextAuthOptions = {
       }
       
       return token;
+    },
+    redirect({ url, baseUrl }) {
+      // Always redirect to /dashboard after sign in
+      if (url.startsWith(baseUrl)) {
+        return "/dashboard";
+      } else if (url.startsWith("/")) {
+        return "/dashboard";
+      }
+      return "/dashboard";
     }
   },
   pages: {
     signIn: "/auth/signin",
+    signOut: "/",
     error: "/auth/error",
   },
   cookies: {
