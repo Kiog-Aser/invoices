@@ -44,22 +44,19 @@ const ButtonAccount = () => {
   if (status === "unauthenticated") return null;
 
   return (
-    <Popover className="relative z-10">
+    <Popover className="relative z-10 flex items-center">
       {({ open }) => (
         <>
-          <Popover.Button className="btn btn-ghost btn-circle avatar h-10 w-10 p-0">
-            <div className="w-full h-full rounded-full ring ring-primary ring-offset-2 flex items-center justify-center overflow-hidden">
+          <Popover.Button className="relative btn btn-ghost p-0 h-10 w-10 rounded-full">
+            <div className="relative w-full h-full rounded-full ring ring-primary ring-offset-2">
               <img
                 src={session?.user?.image || "https://i.pravatar.cc/300"}
                 alt={session?.user?.name || "Account"}
-                className="w-full h-full object-cover"
+                className="w-full h-full rounded-full object-cover"
                 referrerPolicy="no-referrer"
                 width={40}
                 height={40}
               />
-              <span className="tooltip tooltip-bottom tooltip-primary">
-                {session?.user?.name || "Account"}
-              </span>
             </div>
           </Popover.Button>
           <Transition
