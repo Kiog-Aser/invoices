@@ -351,7 +351,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       toast.success('Notifications saved successfully');
       setHasChanges(false);
       setConfigChanged(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving notifications:', error);
       toast.error(error.message || 'Failed to save notifications');
     }
@@ -360,13 +360,12 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
   // Add config change tracking
   const [configChanged, setConfigChanged] = useState(false);
 
-  const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfigChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    // Special handling for maxVisibleNotifications
+    // Update local state
     if (name === 'maxVisibleNotifications') {
       if (value === '') {
-        // Allow empty field by keeping the previous value but allowing visual empty state
         e.target.value = '';
         return;
       }

@@ -157,3 +157,54 @@ export async function PUT(req: NextRequest, { params }: { params: { websiteId: s
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { websiteId: string } }) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    const { websiteId } = params;
+    const { id } = await req.json();
+    
+    const { db } = await connectToDatabase();
+    
+    // Verify website ownership
+    let website;
+    if (ObjectId.isValid(websiteId)) {
+      website = await db.collection("websites").findOne({
+        _id: new ObjectId(websiteId),
+        userId: session.user.email
+      });
+    }
+    
+    if (!website) {
+      website = await db.collection("websites").findOne({
+        websiteId,
+        userId: session.user.email
+      });
+    }
+    
+    if (!website) {
+      return NextResponse.json({ error: "Website not found" }, { status: 404 });
+    }
+
+    // Remove notification from the notifications array
+    await db.collection("websites").updateOne(
+      { _id: website._id },
+      { 
+        $pull: { 
+          notifications: { id: id }
+        }
+      }
+    );
+
+    return NextResponse.json({ message: "Notification deleted successfully" });
+    
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
 
     const isPro = user?.plan === 'pro';
 
-    // Get notifications and config
+    // Get notifications and config from website document
     const notifications = website.notifications || [];
     const config = website.config || {};
 
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
     };
 
     // Limit notifications for free users and remove URLs
-    const sanitizedNotifications = (notifications || [])
+    const sanitizedNotifications = notifications
       .slice(0, isPro ? undefined : 5)
       .map((notification: Partial<Notification>) => ({
         ...notification,
@@ -78,8 +78,9 @@ export async function GET(req: NextRequest, { params }: { params: { websiteId: s
       notifications: sanitizedNotifications,
       config: sanitizedConfig
     });
+
   } catch (error) {
     console.error('Error fetching public notifications:', error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
   }
 }
