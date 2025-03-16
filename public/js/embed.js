@@ -48,7 +48,6 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      pointer-events: none;
     `;
 
     // Center container on mobile
@@ -336,21 +335,50 @@
 
       el.innerHTML = contentHtml;
 
+      // Make individual notifications clickable
+      el.style.pointerEvents = 'auto';
+      
+      // Add close button if enabled
       if (config.showCloseButton) {
-        const closeBtn = document.createElement('span');
+        const closeBtn = document.createElement('button');
         closeBtn.className = 'poopup-close';
-        closeBtn.textContent = '×';
-        closeBtn.onclick = (e) => {
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 20px;
+          height: 20px;
+          background-color: #e5e7eb;
+          border: none;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 14px;
+          line-height: 1;
+          color: #374151;
+          z-index: 2;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          transition: background-color 0.2s;
+        `;
+        closeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           removeNotification(el);
-        };
+        });
         el.appendChild(closeBtn);
       }
 
-      if (notification.url) {
-        el.style.cursor = 'pointer';
-        el.addEventListener('click', () => window.open(notification.url, '_blank'));
-      }
+      // Add click handler - for free users always link to notifast.fun
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        if (notification.url) {
+          window.open(notification.url, '_blank');
+        } else {
+          window.open('https://www.notifast.fun', '_blank');
+        }
+      });
 
       // Insert at the beginning of the container
       container.insertBefore(el, container.firstChild);
