@@ -132,7 +132,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
       const tour = new Shepherd.Tour({
         useModalOverlay: true,
         defaultStepOptions: {
-          classes: 'shadow-xl bg-base-100 rounded-lg',
+          classes: 'shadow-lg border border-base-300',
           modalOverlayOpeningPadding: 4,
           arrow: false,
           cancelIcon: {
@@ -142,15 +142,15 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
             show: () => {
               // Apply DaisyUI styling to tour elements
               document.querySelectorAll('.shepherd-modal-overlay').forEach(overlay => {
-                overlay.classList.add('bg-base-content/20', 'backdrop-blur-sm');
+                overlay.classList.add('bg-base-300/50', 'backdrop-blur-sm');
               });
 
               document.querySelectorAll('.shepherd-element').forEach(element => {
-                element.classList.add('bg-base-100', 'shadow-xl', 'rounded-lg', 'border', 'border-base-300');
+                element.classList.add('card', 'bg-base-100', 'shadow-lg', 'border', 'border-base-300');
               });
 
               document.querySelectorAll('.shepherd-content').forEach(content => {
-                content.classList.add('bg-base-100', 'rounded-lg');
+                content.classList.add('card-body', 'p-0');
               });
 
               document.querySelectorAll('.shepherd-text').forEach(text => {
@@ -158,7 +158,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
               });
 
               document.querySelectorAll('.shepherd-footer').forEach(footer => {
-                footer.classList.add('p-4', 'border-t', 'border-base-200', 'flex', 'justify-end', 'gap-2', 'bg-base-200/50');
+                footer.classList.add('card-actions', 'justify-end', 'px-6', 'pb-6', 'pt-0', 'gap-2');
               });
 
               document.querySelectorAll('.shepherd-button').forEach(button => {
