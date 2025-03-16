@@ -133,89 +133,49 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         useModalOverlay: true,
         defaultStepOptions: {
           classes: 'card bg-base-100 shadow-lg border border-base-300',
-          modalOverlayOpeningPadding: 4,
           arrow: false,
           scrollTo: false,
           cancelIcon: {
             enabled: false
           },
           buttons: [{
-            classes: 'btn btn-sm btn-primary',
             text: 'Next',
-            action: function() {
+            classes: 'btn btn-sm btn-primary',
+            action() {
               return this.next();
             }
-          }],
-          when: {
-            show: () => {
-              document.querySelectorAll('.shepherd-modal-overlay').forEach(overlay => {
-                overlay.classList.add('bg-black/50', 'backdrop-blur-sm');
-              });
-
-              document.querySelectorAll('.shepherd-content').forEach(content => {
-                content.classList.add('card-body', 'p-0');
-              });
-
-              document.querySelectorAll('.shepherd-text').forEach(text => {
-                text.classList.add('p-6', 'text-base-content');
-              });
-
-              document.querySelectorAll('.shepherd-footer').forEach(footer => {
-                footer.classList.add('p-4', 'flex', 'justify-end', 'gap-2');
-              });
-            }
-          }
+          }]
         }
       });
 
       tour.addStep({
         id: 'welcome',
         text: 'Welcome to NotiFast! Let\'s take a quick tour to help you get started.',
-        attachTo: { element: 'main', on: 'top' },
-        buttons: [{
-          text: 'Next',
-          action: () => tour.next()
-        }]
+        attachTo: { element: 'main', on: 'top' }
       });
 
       tour.addStep({
         id: 'add-notification',
         text: 'Start by adding your first notification here',
-        attachTo: { element: '.btn-add-notification', on: 'bottom' },
-        buttons: [{
-          text: 'Next',
-          action: () => tour.next()
-        }]
+        attachTo: { element: '.btn-add-notification', on: 'bottom' }
       });
 
       tour.addStep({
         id: 'theme',
         text: 'Customize the look of your notifications with different themes',
-        attachTo: { element: '.btn-theme', on: 'bottom' },
-        buttons: [{
-          text: 'Next',
-          action: () => tour.next()
-        }]
+        attachTo: { element: '.btn-theme', on: 'bottom' }
       });
 
       tour.addStep({
         id: 'settings',
         text: 'Configure timing and behavior settings here',
-        attachTo: { element: '.settings-panel', on: 'right' },
-        buttons: [{
-          text: 'Next',
-          action: () => tour.next()
-        }]
+        attachTo: { element: '.settings-panel', on: 'right' }
       });
 
       tour.addStep({
         id: 'preview',
         text: 'Preview your notifications before going live',
-        attachTo: { element: '.btn-preview', on: 'bottom' },
-        buttons: [{
-          text: 'Next',
-          action: () => tour.next()
-        }]
+        attachTo: { element: '.btn-preview', on: 'bottom' }
       });
 
       tour.addStep({
@@ -224,7 +184,8 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
         attachTo: { element: '.integration-code', on: 'top' },
         buttons: [{
           text: 'Finish',
-          action: () => {
+          classes: 'btn btn-sm btn-primary',
+          action() {
             tour.complete();
             setHasSeenTour(true);
             localStorage.setItem(`tour-seen-${params.websiteId}`, 'true');
