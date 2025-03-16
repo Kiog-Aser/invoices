@@ -355,14 +355,19 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
     
     // Special handling for maxVisibleNotifications
     if (name === 'maxVisibleNotifications') {
-      // If empty, use empty string, otherwise validate the number
-      const numValue = value === '' ? '' : (parseInt(value) || '');
-      // Only clamp if we have a number
-      const clampedValue = typeof numValue === 'number' ? Math.min(Math.max(numValue, 1), 10) : numValue;
-      setConfig({
-        ...config,
-        [name]: clampedValue || config.maxVisibleNotifications
-      });
+      if (value === '') {
+        // Allow empty field by keeping the previous value but allowing visual empty state
+        e.target.value = '';
+        return;
+      }
+      const numValue = parseInt(value);
+      if (!isNaN(numValue)) {
+        const clampedValue = Math.min(Math.max(numValue, 1), 10);
+        setConfig({
+          ...config,
+          [name]: clampedValue
+        });
+      }
     } else {
       setConfig({
         ...config,
