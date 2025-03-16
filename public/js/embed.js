@@ -104,6 +104,19 @@
       border: 1px solid rgba(255,255,255,0.1);
       }
 
+      .poopup.theme-dark .poopup-message,
+      .poopup.theme-dark .poopup-title {
+      color: #f3f4f6;
+      }
+
+      .poopup.theme-dark .poopup-message {
+      opacity: 0.8;
+      }
+
+      .poopup.theme-dark .poopup-timestamp {
+      color: rgba(255, 255, 255, 0.7);
+      }
+
       /* Minimal Theme */
       .poopup.theme-minimal {
       border-radius: 0.375rem;
@@ -191,6 +204,7 @@
       /* Dark theme text colors */
       .poopup.theme-dark .poopup-message {
       opacity: 0.8;
+      color: #f3f4f6;
       }
 
       /* Colorful theme text */

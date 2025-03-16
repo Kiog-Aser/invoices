@@ -1451,7 +1451,7 @@ export default function NotificationSettings({ params }: { params: { websiteId: 
                       <div className="w-8 h-8 rounded-full bg-primary/20" />
                       <div>
                         <div className="font-medium text-sm">Sample Title</div>
-                        <div className="text-xs opacity-70">Sample notification message</div>
+                        <div className={`text-xs ${theme.id === 'dark' ? 'text-white/70' : 'opacity-70'}`}>Sample notification message</div>
                       </div>
                     </div>
                   </div>
