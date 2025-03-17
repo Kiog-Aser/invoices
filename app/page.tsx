@@ -218,7 +218,7 @@ export default function Page() {
           <Suspense fallback={<div className="py-20 flex justify-center"><div className="loading loading-spinner"></div></div>}>
             <PricingSection />
           </Suspense>
-          
+          <Testimonial1Small />
           <FAQ />
           <section className="py-24 bg-base-300">
             <div className="max-w-4xl mx-auto px-8 text-center">
@@ -232,7 +232,7 @@ export default function Page() {
               </Link>
             </div>
           </section>
-          <Testimonial1Small />
+          
           <Footer />
         </main>
       </Suspense>
