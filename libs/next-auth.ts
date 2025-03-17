@@ -34,23 +34,32 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    session({ session, token }) {
-      if (session?.user && token.sub) {
-        session.user.id = token.sub;
-        session.user.plan = token.plan as string || '';
-        session.user.customerId = token.customerId as string || '';
+    session: async ({ session, token }) => {
+      if (session?.user) {
+        session.user.id = token.uid as string;
+        session.user.image = token.picture as string;
+        session.user.plan = token.plan as string;
+        session.user.customerId = token.customerId as string;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
     },
-    async jwt({ token, user, trigger, session }) {
+    jwt: async ({ token, user, trigger, session }) => {
       if (user) {
+        token.uid = user.id;
         token.plan = user.plan;
         token.customerId = user.customerId;
+        token.isAdmin = user.isAdmin;
       }
       
+      // if we update the session, we want to also update the token
       if (trigger === "update" && session?.user) {
+        token.name = session.user.name;
+        token.email = session.user.email;
+        token.picture = session.user.image;
         token.plan = session.user.plan;
         token.customerId = session.user.customerId;
+        token.isAdmin = session.user.isAdmin;
       }
       
       return token;

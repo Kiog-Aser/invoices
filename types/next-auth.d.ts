@@ -1,4 +1,5 @@
 import "next-auth";
+import type { DefaultSession } from 'next-auth';
 
 declare module "next-auth" {
   interface User {
@@ -8,6 +9,7 @@ declare module "next-auth" {
     email: string;
     image?: string;
     name?: string;
+    isAdmin?: boolean;
   }
 
   interface Session {
@@ -15,7 +17,8 @@ declare module "next-auth" {
       id: string;
       plan: string;
       customerId: string;
-    };
+      isAdmin: boolean;
+    } & DefaultSession['user'];
     token: {
       id: string;
       plan: string;
