@@ -26,8 +26,6 @@ interface FormData {
 // Add a more specific ref type
 type ActiveInputRefType = HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement;
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
-
 const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "review"];
 
 export default function NewTestimonialPage() {
@@ -127,74 +125,41 @@ export default function NewTestimonialPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const validateFile = (file: File, type: 'image' | 'video') => {
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File must be less than 5MB`);
-      return false;
+  const handleProfileImage = (url: string) => {
+    if (!url) {
+      toast.error("Please enter a valid image URL");
+      return;
     }
-
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    const validVideoTypes = ['video/mp4', 'video/webm'];
-    const validTypes = type === 'video' ? validVideoTypes : validImageTypes;
-
-    if (!validTypes.includes(file.type)) {
-      toast.error(`Invalid file type. Must be ${type === 'video' ? 'MP4 or WebM' : 'JPEG, PNG, GIF or WebP'}`);
-      return false;
-    }
-
-    return true;
+    updateFormData('profileImage', url);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && validateFile(file, 'image')) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', 'image');
-        
-        const response = await fetch('/api/testimonial/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Upload failed');
-        }
-        
-        updateFormData('profileImage', data.url);
-      } catch (error) {
-        console.error('Error uploading file:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to upload image');
-      }
+  const handleVideoUrl = (url: string) => {
+    if (!url) {
+      toast.error("Please enter a valid video URL");
+      return;
     }
-  };
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && validateFile(file, 'video')) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', 'video');
-        
-        const response = await fetch('/api/testimonial/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Upload failed');
+    // Extract video ID from YouTube/Vimeo URLs
+    let videoUrl = url;
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        const videoId = url.includes('youtu.be') 
+          ? url.split('/').pop() 
+          : new URLSearchParams(urlObj.search).get('v');
+        if (videoId) {
+          videoUrl = `https://www.youtube.com/embed/${videoId}`;
         }
-        
-        updateFormData('videoUrl', data.url);
-      } catch (error) {
-        console.error('Error uploading video:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to upload video');
+      } else if (urlObj.hostname.includes('vimeo.com')) {
+        const videoId = url.split('/').pop();
+        if (videoId) {
+          videoUrl = `https://player.vimeo.com/video/${videoId}`;
+        }
       }
+    } catch (e) {
+      toast.error("Please enter a valid YouTube or Vimeo URL");
+      return;
     }
+    updateFormData('videoUrl', videoUrl);
   };
 
   const handleSubmit = async () => {
@@ -357,7 +322,7 @@ export default function NewTestimonialPage() {
             <div className="space-y-2">
               <h2 className="text-2xl font-bold">Add your profile picture</h2>
               <p className="text-base-content/70">
-                This will appear alongside your testimonial
+                Enter the URL of your profile picture (or use your social media profile picture)
               </p>
             </div>
 
@@ -372,28 +337,22 @@ export default function NewTestimonialPage() {
                     className="w-32 h-32 rounded-full object-cover"
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => updateFormData("profileImage", "")}
                     className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
                   >
                     Change
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="btn btn-outline btn-lg gap-2"
+                <input
+                  type="text"
+                  placeholder="Enter image URL or leave empty to skip"
+                  className="input input-bordered w-full"
+                  onChange={(e) => handleProfileImage(e.target.value)}
                   ref={setActiveRef}
-                >
-                  <FaImage /> Choose Image
-                </button>
+                  autoFocus
+                />
               )}
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
             </div>
 
             <div className="flex justify-between">
@@ -486,54 +445,36 @@ export default function NewTestimonialPage() {
             ) : (
               <div className="space-y-6">
                 <p className="text-base-content/70 italic">
-                  Consider including these points in your video:
+                  Share a video from YouTube or Vimeo:
                 </p>
-                <ul className="list-disc list-inside space-y-2 text-base-content/70">
-                  <li>{formData.howHelped || ""}</li>
-                  <li>Before using NotiFast, [describe your situation before]</li>
-                  <li>Now, with NotiFast, [describe how your situation has improved and the impact NotiFast had]</li>
-                <li>[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]</li>
-                </ul>
-
                 {formData.videoUrl ? (
                   <div className="space-y-4">
-                    <video
+                    <iframe
                       src={formData.videoUrl}
-                      controls
                       className="w-full aspect-video rounded-box"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
                     />
                     <button
                       className="btn btn-outline w-full"
-                      onClick={() => {
-                        updateFormData("videoUrl", undefined);
-                        const videoInput = document.createElement('input');
-                        videoInput.type = 'file';
-                        videoInput.accept = 'video/*';
-                        videoInput.onchange = (e) => handleVideoUpload(e as any);
-                        videoInput.click();
-                      }}
+                      onClick={() => updateFormData("videoUrl", "")}
                     >
-                      Choose Another Video
+                      Change Video
                     </button>
                   </div>
                 ) : (
                   <div className="text-center space-y-4">
                     <p className="text-base-content/70">
-                      Record a short video (1-2 minutes) sharing your experience
+                      Record and upload a short video (1-2 minutes) to YouTube/Vimeo sharing your experience
                     </p>
-                    <button
-                      className="btn btn-primary gap-2"
-                      onClick={() => {
-                        const videoInput = document.createElement('input');
-                        videoInput.type = 'file';
-                        videoInput.accept = 'video/*';
-                        videoInput.onchange = (e) => handleVideoUpload(e as any);
-                        videoInput.click();
-                      }}
+                    <input
+                      type="text"
+                      placeholder="Enter YouTube or Vimeo video URL"
+                      className="input input-bordered w-full"
+                      onChange={(e) => handleVideoUrl(e.target.value)}
                       ref={setActiveRef}
-                    >
-                      <FaVideo /> Upload Video
-                    </button>
+                      autoFocus
+                    />
                   </div>
                 )}
 
