@@ -316,7 +316,7 @@ export default function NewTestimonialPage() {
                   onClick={() => updateFormData("socialPlatform", "twitter")}
                   className={`btn flex-1 ${formData.socialPlatform === "twitter" ? "btn-primary" : "btn-ghost"}`}
                 >
-                  <FaTwitter /> Twitter
+                  <FaTwitter /> X (Twitter)
                 </button>
                 <button
                   onClick={() => updateFormData("socialPlatform", "linkedin")}
