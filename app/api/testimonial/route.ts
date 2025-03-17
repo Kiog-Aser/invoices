@@ -33,9 +33,10 @@ export async function POST(req: Request) {
     const data = await req.json();
     const validatedData = testimonialSchema.parse(data);
 
-    // Create testimonial
+    // Create testimonial with status set to pending
     const testimonial = await Testimonial.create({
       userId: session.user.id,
+      status: 'pending', // Explicitly set status to pending
       ...validatedData,
     });
 

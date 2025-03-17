@@ -12,16 +12,28 @@ export async function GET() {
     }
 
     console.log('Fetching approved testimonials...');
-    const testimonials = await Testimonial.find({ status: 'approved' })
+    const testimonials = await Testimonial.find({ 
+      status: 'approved' 
+    })
+      .select({
+        _id: 1,
+        name: 1,
+        socialHandle: 1,
+        socialPlatform: 1,
+        profileImage: 1,
+        reviewType: 1,
+        textReview: 1,
+        videoUrl: 1,
+        createdAt: 1
+      })
       .sort({ createdAt: -1 })
-      .lean()  // Convert to plain JS objects for better performance
-      .exec(); // Explicitly execute the query
+      .lean()
+      .exec();
 
     console.log(`Found ${testimonials.length} approved testimonials`);
     return NextResponse.json(testimonials);
   } catch (error) {
     console.error("Error fetching testimonials:", error);
-    // More detailed error message
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { error: "Failed to fetch testimonials", details: errorMessage },

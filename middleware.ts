@@ -18,12 +18,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if this is a page refresh or navigation
-  const isRefresh = request.headers.get('purpose') === 'prefetch' || 
-                   request.headers.get('sec-fetch-mode') === 'navigate';
-
-  // Only force update session on actual navigation, not on refreshes
-  if (!isRefresh && session) {
+  // Check if this is a testimonial page
+  const isTestimonialPage = request.nextUrl.pathname.startsWith('/testimonial/');
+  
+  // Force update session on testimonial pages or actual navigation
+  if (session && (isTestimonialPage || !request.headers.get('purpose'))) {
     const response = NextResponse.next();
     
     // Add cache control headers to prevent caching
@@ -33,6 +32,25 @@ export async function middleware(request: NextRequest) {
     );
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+    
+    // For testimonial pages, prefetch user data
+    if (isTestimonialPage) {
+      try {
+        // Prefetch user data and store it in session
+        const userResponse = await fetch(`${request.nextUrl.origin}/api/user`, {
+          headers: {
+            Cookie: request.headers.get('cookie') || '',
+          },
+        });
+        
+        if (userResponse.ok) {
+          // The user data will be available in the session when the page loads
+          await userResponse.json();
+        }
+      } catch (error) {
+        console.error('Error prefetching user data:', error);
+      }
+    }
     
     return response;
   }

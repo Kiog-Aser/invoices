@@ -23,8 +23,12 @@ interface FormData {
   videoUrl?: string;
 }
 
-// Add a more specific ref type
-type ActiveInputRefType = HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement;
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+}
 
 const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "review"];
 
@@ -32,13 +36,11 @@ export default function NewTestimonialPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
-  const [formData, setFormData] = useState<Partial<FormData>>({
-    name: session?.user?.name || "",
-    profileImage: session?.user?.image || "",
-  });
+  const [formData, setFormData] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Use MutableRefObject for a ref we want to update
   const activeInputRef = useRef<HTMLElement | null>(null);
 
   // Create a type-safe ref setter
@@ -47,6 +49,42 @@ export default function NewTestimonialPage() {
       activeInputRef.current = element;
     }
   }, []);
+
+  // Load user data on mount and when session changes
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!session?.user?.email) return;
+
+      try {
+        setIsLoadingUserData(true);
+        const response = await fetch('/api/user');
+        if (!response.ok) throw new Error('Failed to fetch user data');
+        const data = await response.json();
+        
+        setUserData(data);
+        // Pre-fill the form with user data
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || session.user?.name || "",
+          profileImage: data.image || session.user?.image || "",
+        }));
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Fallback to session data if API fails
+        if (session.user) {
+          setFormData(prev => ({
+            ...prev,
+            name: session.user?.name || "",
+            profileImage: session.user?.image || "",
+          }));
+        }
+      } finally {
+        setIsLoadingUserData(false);
+      }
+    };
+
+    loadUserData();
+  }, [session]);
 
   const canProceed = useCallback(() => {
     switch (currentStep) {
@@ -173,7 +211,6 @@ export default function NewTestimonialPage() {
                      `Before NotiFast:\n${formData.beforeChallenge}\n\n` +
                      `After NotiFast:\n${formData.afterSolution}\n\n` +
                      `${formData.textReview || ""}`;
-        updateFormData("textReview", finalReview);
       }
 
       const response = await fetch('/api/testimonial', {
@@ -181,7 +218,10 @@ export default function NewTestimonialPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          textReview: finalReview || formData.textReview,
+        }),
       });
 
       if (!response.ok) {
