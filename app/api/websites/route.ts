@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { connectToDatabase } from "@/libs/mongo";
 import { authOptions } from "@/libs/next-auth";
+import { ObjectId } from "mongodb";
 
 // GET all websites for the current user
 export async function GET(req: NextRequest) {
@@ -18,17 +19,15 @@ export async function GET(req: NextRequest) {
       .collection("websites")
       .find({ userId: session.user.email })
       .toArray();
-    
-    // Transform MongoDB documents to have consistent ID format
-    const transformedWebsites = websites.map(website => ({
-      ...website,
-      websiteId: website._id.toString(),
-      _id: website._id.toString() // Convert ObjectId to string
+
+    // Transform website data and include notification count
+    const websitesWithNotifications = websites.map(website => ({
+      _id: website._id.toString(),
+      domain: website.domain,
+      notificationCount: (website.notifications || []).length
     }));
     
-    console.log("Fetched websites:", transformedWebsites);
-    
-    return NextResponse.json(transformedWebsites);
+    return NextResponse.json(websitesWithNotifications);
   } catch (error) {
     console.error("Error fetching websites:", error);
     return NextResponse.json({ error: "Failed to fetch websites" }, { status: 500 });
