@@ -41,14 +41,14 @@ export default function ThankYouPage() {
         <div className="card bg-base-200 p-6">
           <h2 className="text-lg font-semibold mb-4">Share NotiFast with others</h2>
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+            href={`https://x.com/intent/tweet?text=${encodeURIComponent(
               "Just shared my experience with @NotiFast! They're revolutionizing website engagement with real-time social proof notifications 🚀\n\nCheck them out:"
             )}&url=https://notifast.com`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-primary gap-2"
           >
-            <FaTwitter /> Share on Twitter
+            <FaTwitter /> Share on X
           </a>
         </div>
 
