@@ -18,6 +18,7 @@ import Problem from "@/components/Problem";
 import ButtonPopover from "@/components/ButtonPopover";
 import Modal from "@/components/Modal";
 import TestimonialRating from "@/components/TestimonialRating";
+import Testimonials1 from "@/components/Testimonials1";
 
 function PricingSection() {
   return (
@@ -230,6 +231,7 @@ export default function Page() {
               </Link>
             </div>
           </section>
+          <Testimonials1 />
           <Footer />
         </main>
       </Suspense>
