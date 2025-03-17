@@ -6,7 +6,7 @@ const config = {
   appName: "NotiFast",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Increase conversions with 'fake' notifications. Use our pre-built templates or create your own.",
+    "Increase conversions with notifications. Use our pre-built templates or create your own.",
   // REQUIRED (no https://, not trialing slash at the end)
   domainName: "notifast.co",
   // REQUIRED — the path to your favicon file
