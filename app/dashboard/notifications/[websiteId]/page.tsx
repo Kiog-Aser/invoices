@@ -12,14 +12,18 @@ import 'shepherd.js/dist/css/shepherd.css';
 
 // Popular brand logos
 const POPULAR_LOGOS = [
-  { name: "Stripe", url: "https://cdn.iconscout.com/icon/free/png-256/free-stripe-2-498440.png" },
-  { name: "PayPal", url: "https://cdn.iconscout.com/icon/free/png-256/free-paypal-54-675727.png" },
-  { name: "Gmail", url: "https://cdn.iconscout.com/icon/free/png-256/free-gmail-2981844-2476484.png" },
-  { name: "Facebook", url: "https://cdn.iconscout.com/icon/free/png-256/free-facebook-263-721950.png" },
-  { name: "Twitter", url: "https://cdn.iconscout.com/icon/free/png-256/free-twitter-241-721979.png" },
-  { name: "Instagram", url: "https://cdn.iconscout.com/icon/free/png-256/free-instagram-1868978-1583142.png" },
-  { name: "LinkedIn", url: "https://cdn.iconscout.com/icon/free/png-256/free-linkedin-162-498418.png" },
-  { name: "YouTube", url: "https://cdn.iconscout.com/icon/free/png-256/free-youtube-85-226402.png" },
+  { name: "Stripe", url: "https://www.google.com/s2/favicons?domain=stripe.com&sz=64" },
+  { name: "PayPal", url: "https://www.google.com/s2/favicons?domain=paypal.com&sz=64" },
+  { name: "Facebook", url: "https://www.google.com/s2/favicons?domain=facebook.com&sz=64" },
+  { name: "X", url: "https://www.google.com/s2/favicons?domain=x.com&sz=64" },
+  { name: "Instagram", url: "https://www.google.com/s2/favicons?domain=instagram.com&sz=64" },
+  { name: "LinkedIn", url: "https://www.google.com/s2/favicons?domain=linkedin.com&sz=64" },
+  { name: "YouTube", url: "https://www.google.com/s2/favicons?domain=youtube.com&sz=64" },
+  { name: "TikTok", url: "https://www.google.com/s2/favicons?domain=tiktok.com&sz=64" },
+  { name: "Pinterest", url: "https://www.google.com/s2/favicons?domain=pinterest.com&sz=64" },
+  { name: "Slack", url: "https://www.google.com/s2/favicons?domain=slack.com&sz=64" },
+  { name: "Discord", url: "https://www.google.com/s2/favicons?domain=discord.com&sz=64" },
+  { name: "WhatsApp", url: "https://www.google.com/s2/favicons?domain=whatsapp.com&sz=64" }
 ];
 
 interface Notification {

@@ -8,8 +8,14 @@ const POPULAR_ICONS = [
   { name: "PayPal", url: "https://cdn.iconscout.com/icon/free/png-256/free-paypal-54-675727.png" },
   { name: "Gmail", url: "https://cdn.iconscout.com/icon/free/png-256/free-gmail-2981844-2476484.png" },
   { name: "Facebook", url: "https://cdn.iconscout.com/icon/free/png-256/free-facebook-263-721950.png" },
-  { name: "Twitter", url: "https://cdn.iconscout.com/icon/free/png-256/free-twitter-241-721979.png" },
+  { name: "X", url: "https://www.google.com/s2/favicons?domain=x.com&sz=64" },
+  { name: "Instagram", url: "https://cdn.iconscout.com/icon/free/png-256/free-instagram-1868978-1583142.png" },
   { name: "LinkedIn", url: "https://cdn.iconscout.com/icon/free/png-256/free-linkedin-162-498418.png" },
+  { name: "YouTube", url: "https://cdn.iconscout.com/icon/free/png-256/free-youtube-85-226402.png" },
+  { name: "TikTok", url: "https://www.google.com/s2/favicons?domain=tiktok.com&sz=64" },
+  { name: "Pinterest", url: "https://www.google.com/s2/favicons?domain=pinterest.com&sz=64" },
+  { name: "Discord", url: "https://www.google.com/s2/favicons?domain=discord.com&sz=64" },
+  { name: "WhatsApp", url: "https://www.google.com/s2/favicons?domain=whatsapp.com&sz=64" }
 ];
 
 interface NewMessageModalProps {
