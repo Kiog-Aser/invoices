@@ -1,5 +1,4 @@
 import Image from "next/image";
-import type { StaticImport } from "next/dist/shared/lib/get-img-props";
 import { useState, useEffect } from "react";
 import config from "@/config";
 
@@ -12,6 +11,7 @@ interface Testimonial {
   reviewType: 'text' | 'video';
   textReview?: string;
   videoUrl?: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 // A single testimonial, to be rendered in a list
@@ -19,11 +19,23 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
   return (
     <li className="w-full">
       <figure className="relative h-full p-6 md:p-10 bg-base-200 rounded-2xl max-md:text-sm flex flex-col">
-        <blockquote className="relative flex-1">
-          <p className="text-base-content/80 leading-relaxed">
-            {testimonial.textReview}
-          </p>
-        </blockquote>
+        {testimonial.reviewType === 'text' ? (
+          <blockquote className="relative flex-1">
+            <p className="text-base-content/80 leading-relaxed whitespace-pre-wrap">
+              {testimonial.textReview}
+            </p>
+          </blockquote>
+        ) : (
+          <div className="aspect-video mb-4">
+            <iframe
+              src={testimonial.videoUrl}
+              className="w-full h-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
+        
         <figcaption className="relative flex items-center justify-start gap-4 pt-4 mt-4 md:gap-8 md:pt-8 md:mt-8 border-t border-base-content/5">
           <div className="w-full flex items-center justify-between gap-2">
             <div>
@@ -31,9 +43,14 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
                 {testimonial.name}
               </div>
               {testimonial.socialHandle && (
-                <div className="mt-0.5 text-sm text-base-content/80">
+                <a
+                  href={`https://${testimonial.socialPlatform}.com/${testimonial.socialHandle}`}
+                  target="_blank"
+                  rel="noopener noreferrer" 
+                  className="mt-0.5 text-sm text-base-content/80 hover:text-primary"
+                >
                   @{testimonial.socialHandle}
-                </div>
+                </a>
               )}
             </div>
             <div className="overflow-hidden rounded-full bg-base-300 shrink-0">
@@ -131,8 +148,8 @@ export default function Testimonials3() {
             </h2>
           </div>
           <p className="lg:w-2/3 mx-auto leading-relaxed text-base text-base-content/80">
-            Don&apos;t take our word for it. Here&apos;s what our users have to say
-            about NotiFast.
+            Don&apos;t take our word for it. Here&apos;s what our users say
+            about {config.appName}.
           </p>
         </div>
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
