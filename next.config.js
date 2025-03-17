@@ -1,6 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'notifast.fun',
+          },
+        ],
+        destination: 'https://www.notifast.fun/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
