@@ -19,6 +19,7 @@ import ButtonPopover from "@/components/ButtonPopover";
 import Modal from "@/components/Modal";
 import TestimonialRating from "@/components/TestimonialRating";
 import Testimonials1 from "@/components/Testimonials1";
+import Testimonial1Small from "@/components/Testimonial1Small";
 
 function PricingSection() {
   return (
@@ -133,7 +134,7 @@ export default function Page() {
     script.src = "/js/embed.js";
     script.async = true;
     script.defer = true;
-    script.dataset.websiteId = "67d1ee0297c36cce9ddd19c5";
+    script.dataset.websiteId = "67d869fe01e3c264ffb82815";
     document.body.appendChild(script);
 
     return () => {
@@ -231,7 +232,7 @@ export default function Page() {
               </Link>
             </div>
           </section>
-          <Testimonials1 />
+          <Testimonial1Small />
           <Footer />
         </main>
       </Suspense>

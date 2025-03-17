@@ -8,7 +8,7 @@ const config = {
   appDescription:
     "Increase conversions with notifications. Use our pre-built templates or create your own.",
   // REQUIRED (no https://, not trialing slash at the end)
-  domainName: "notifast.co",
+  domainName: "notifast.fun",
   // REQUIRED — the path to your favicon file
   faviconPath: "/favicon.ico",
   // REQUIRED: Your marketplace's logo
