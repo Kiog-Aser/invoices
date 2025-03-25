@@ -43,9 +43,9 @@ export default function ThankYouPage() {
           <a
             href={`https://x.com/intent/tweet?text=${encodeURIComponent(
               "Just shared my experience with @NotiFast! They're revolutionizing website engagement with real-time social proof notifications 🚀\n\nCheck them out:"
-            )}&url=https://notifast.com`}
+            )}&url=https://www.notifast.fun`}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener noreferrer" 
             className="btn btn-primary gap-2"
           >
             <FaTwitter /> Share on X
