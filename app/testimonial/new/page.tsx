@@ -57,7 +57,9 @@ export default function NewTestimonialPage() {
 
       try {
         setIsLoadingUserData(true);
-        const response = await fetch('/api/user');
+        const response = await fetch('/api/user', {
+          credentials: 'include' // Add this to include auth cookies
+        });
         if (!response.ok) throw new Error('Failed to fetch user data');
         const data = await response.json();
         
@@ -218,6 +220,7 @@ export default function NewTestimonialPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Add this line to include cookies with the request
         body: JSON.stringify({
           ...formData,
           textReview: finalReview || formData.textReview,
