@@ -8,6 +8,9 @@ import connectMongo from "@/libs/mongoose";
 import { unlink } from 'fs/promises';
 import path from 'path';
 
+// Prevent caching for this route to ensure session is always current
+export const dynamic = 'force-dynamic';
+
 const testimonialSchema = z.object({
   name: z.string().min(1),
   socialHandle: z.string().optional(),

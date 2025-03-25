@@ -5,6 +5,9 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { cleanupUploads } from "@/utils/cleanupUploads";
 
+// Prevent caching for this route to ensure session is always current
+export const dynamic = 'force-dynamic';
+
 // 5MB file size limit
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 

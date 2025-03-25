@@ -3,6 +3,9 @@ import connectMongo from "@/libs/mongoose";
 import Testimonial from "@/models/Testimonial";
 import mongoose from "mongoose";
 
+// Prevent caching for testimonials endpoint
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Check MongoDB connection status
