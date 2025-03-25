@@ -220,7 +220,7 @@ export default function NewTestimonialPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Add this line to include cookies with the request
+        credentials: 'include', // This sends cookies with the request
         body: JSON.stringify({
           ...formData,
           textReview: finalReview || formData.textReview,
@@ -228,7 +228,8 @@ export default function NewTestimonialPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit testimonial');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to submit testimonial' }));
+        throw new Error(errorData.error || 'Failed to submit testimonial');
       }
 
       router.push('/testimonial/thank-you');

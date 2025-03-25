@@ -25,10 +25,30 @@ const testimonialSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Set CORS headers to allow credentials
+  const origin = req.headers.get('origin');
+  
+  // Create a headers object to be used in the response
+  const headers = new Headers({
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  });
+  
+  // Set the Access-Control-Allow-Origin header
+  if (origin) {
+    headers.set('Access-Control-Allow-Origin', origin);
+  }
+
   try {
     const session = await getServerSession(authOptions);
+    console.log("Session in testimonial API:", session); // Debug log
+    
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return new NextResponse(
+        JSON.stringify({ error: "Unauthorized" }), 
+        { status: 401, headers }
+      );
     }
 
     await connectMongo();
@@ -48,7 +68,7 @@ export async function POST(req: Request) {
       hasGivenTestimonial: true,
     });
 
-    return NextResponse.json({ success: true, testimonial });
+    return NextResponse.json({ success: true, testimonial }, { headers });
   } catch (error) {
     console.error("Error saving testimonial:", error);
 
@@ -68,11 +88,12 @@ export async function POST(req: Request) {
     }
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.errors }, { status: 400, headers });
     }
+    
     return NextResponse.json(
       { error: "Failed to save testimonial" },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 }
