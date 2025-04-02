@@ -4,6 +4,7 @@ import { authOptions } from "@/libs/next-auth";
 import connectMongo from "@/libs/mongoose";
 import WritingProtocol from "@/models/WritingProtocol";
 
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
