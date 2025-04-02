@@ -58,6 +58,11 @@ export default function CreateWritingProtocolPage() {
     null,
   );
 
+  // For polling protocol status
+  const [protocolId, setProtocolId] = useState<string | null>(null);
+  const [processingTimePassed, setProcessingTimePassed] = useState(0);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Content type options
   const contentTypeOptions = [
     "Blog posts",
@@ -300,17 +305,22 @@ export default function CreateWritingProtocolPage() {
       }
 
       // Parse successful response
-      const protocol = await response.json();
+      const result = await response.json();
 
-      // Dismiss loading toast
+      // Update loading toast with more specific message
       toast.dismiss();
-      toast.success("Writing protocol created successfully!");
+      toast.loading(
+        `Your protocol is being generated ${formData.modelType === 'quality' ? '(this may take 2-3 minutes)' : ''}...`, 
+        { duration: 60000 }
+      );
 
-      // Redirect to the results page
-      if (protocol && protocol._id) {
-        router.push(`/dashboard/${protocol._id}`);
+      // Store the protocol ID for polling
+      if (result && result._id) {
+        setProtocolId(result._id);
+        startPolling(result._id);
       } else {
-        router.push("/dashboard/");
+        // If no ID was returned, something went wrong
+        throw new Error("Failed to create protocol. No ID returned.");
       }
     } catch (error) {
       console.error("Error creating writing protocol:", error);
@@ -324,6 +334,69 @@ export default function CreateWritingProtocolPage() {
       setIsProcessing(false);
     }
   };
+
+  // Start polling for protocol status
+  const startPolling = (id: string) => {
+    // Set up polling timer to check protocol status
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
+    // Poll every 3 seconds
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        // Increment the time counter (for UI)
+        setProcessingTimePassed(prev => prev + 3);
+        
+        // Check protocol status
+        const response = await fetch(`/api/writing-protocol?id=${id}`, {
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch protocol status');
+        }
+
+        const protocol = await response.json();
+        
+        // If the protocol generation is complete or failed
+        if (protocol.status === 'completed' || protocol.status === 'failed') {
+          // Clear the polling interval
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+
+          // If completed, redirect to the protocol page
+          if (protocol.status === 'completed') {
+            toast.dismiss();
+            toast.success('Your writing protocol is ready!');
+            router.push(`/dashboard/${id}`);
+          } 
+          // If failed, show error and allow retrying
+          else if (protocol.status === 'failed') {
+            toast.dismiss();
+            toast.error(protocol.statusMessage || 'Failed to generate protocol. Please try again.');
+            setCurrentStep('challenges');
+            setIsProcessing(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error polling protocol status:", error);
+      }
+    }, 3000);
+  };
+
+  // Clean up polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -756,12 +829,29 @@ export default function CreateWritingProtocolPage() {
                     Our AI is analyzing your responses and crafting a
                     personalized writing system for you.
                   </p>
-                  <div className="flex justify-center my-8">
-                    <div className="loading loading-spinner loading-lg text-primary"></div>
+                  <div className="flex flex-col items-center my-8">
+                    <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
+                    <div className="w-full max-w-xs bg-base-200 rounded-full h-2.5 mb-2">
+                      <div className="bg-primary h-2.5 rounded-full" style={{ 
+                        width: `${Math.min(processingTimePassed / (formData.modelType === 'quality' ? 120 : 60) * 100, 98)}%` 
+                      }}></div>
+                    </div>
+                    <p className="text-sm text-base-content/50">
+                      {formData.modelType === 'quality' 
+                        ? `This may take up to 3 minutes (${Math.floor(processingTimePassed)} seconds elapsed)`
+                        : `This may take up to 1 minute (${Math.floor(processingTimePassed)} seconds elapsed)`}
+                    </p>
                   </div>
-                  <p className="text-sm text-base-content/50">
-                    This can take a minute.
-                  </p>
+                  <div className="text-sm text-base-content/70 p-4 bg-base-200 rounded-lg">
+                    <p className="font-medium mb-2">What's happening now:</p>
+                    <ul className="list-disc pl-5 space-y-1 text-left">
+                      <li>The AI is analyzing your role, industry, and content types</li>
+                      <li>It's developing a comprehensive niche authority positioning</li>
+                      <li>Creating tailored content pillars for your specific audience</li>
+                      <li>Designing an efficient content repurposing system</li>
+                      <li>Crafting a strategic conversion funnel for your business</li>
+                    </ul>
+                  </div>
                 </div>
               )}
 

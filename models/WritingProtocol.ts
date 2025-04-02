@@ -10,6 +10,9 @@ export interface IWritingProtocol {
   contentTypes: string[];
   goals: string[];
   challenges: string[];
+  status: 'processing' | 'completed' | 'failed';
+  statusMessage?: string;
+  modelType?: 'fast' | 'quality';
   aiGeneratedContent: {
     nicheAuthority: {
       fullNiche: string;
@@ -117,6 +120,21 @@ const writingProtocolSchema = new mongoose.Schema<IWritingProtocol>(
       type: String,
       required: true,
     }],
+    status: {
+      type: String,
+      enum: ['processing', 'completed', 'failed'],
+      default: 'processing',
+      required: true,
+    },
+    statusMessage: {
+      type: String,
+      required: false,
+    },
+    modelType: {
+      type: String,
+      enum: ['fast', 'quality'],
+      required: false,
+    },
     aiGeneratedContent: {
 
       // New structure
