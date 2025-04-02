@@ -299,39 +299,63 @@ export async function POST(req: Request) {
       throw new Error("Failed to generate writing protocol");
     }
 
-    // Parse the AI response as JSON, handling any "thinking" sections
+    // Parse the AI response as JSON, handling any thinking sections
     let aiGeneratedContent;
     try {
       const responseContent = completion.choices[0].message.content || "";
       
-      // Check if we're dealing with a response that might have thinking sections (DeepSeek model)
-      if (modelType === 'quality') {
-        // Extract only the JSON part by removing any thinking sections
-        // Thinking sections might look like: <details type="reasoning" done="true" duration="105">...</details>
-        
-        // First, try to find JSON content directly
-        let jsonContent = responseContent;
-        
-        // Remove any thinking sections that might be at the beginning
-        const thinkingSectionRegex = /<details.*?>[\s\S]*?<\/details>/gm;
-        jsonContent = jsonContent.replace(thinkingSectionRegex, '').trim();
-        
-        // If still no valid JSON, check if there's text before the JSON
-        if (!isValidJSON(jsonContent)) {
-          // Look for the first '{' character that starts a JSON object
-          const jsonStartIndex = jsonContent.indexOf('{');
-          if (jsonStartIndex > 0) {
-            jsonContent = jsonContent.substring(jsonStartIndex);
+      // First, clean up any special thinking sections from DeepSeek or other models
+      let jsonContent = responseContent;
+      
+      // Remove any thinking sections in various formats
+      const thinkingPatterns = [
+        /<think>[\s\S]*?<\/think>/gm,           // <think>...</think>
+        /<details.*?>[\s\S]*?<\/details>/gm,    // <details>...</details>
+        /```json\s*([\s\S]*?)```/gm,            // ```json ... ```
+      ];
+      
+      // Apply each pattern to remove thinking sections
+      thinkingPatterns.forEach(pattern => {
+        // For JSON code blocks, we want to extract the content, not remove it
+        if (pattern.toString().includes('```json')) {
+          const matches = [...jsonContent.matchAll(pattern)];
+          if (matches.length > 0) {
+            // Use the first JSON code block found
+            jsonContent = matches[0][1];
           }
+        } else {
+          // For other patterns, remove them entirely
+          jsonContent = jsonContent.replace(pattern, '').trim();
         }
+      });
+      
+      // Look for the actual JSON content if we haven't yet found it
+      if (!isValidJSON(jsonContent)) {
+        // Find the first occurrence of a JSON object
+        const jsonStartIndex = jsonContent.indexOf('{');
+        const jsonEndIndex = jsonContent.lastIndexOf('}');
         
-        // Log the cleaned content
-        console.log("Cleaned content for parsing:", jsonContent.substring(0, 100) + "...");
-        
+        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+          jsonContent = jsonContent.substring(jsonStartIndex, jsonEndIndex + 1);
+        }
+      }
+      
+      // Additional cleanup for any JSON formatting errors
+      // Sometimes the model adds an extra comma at the end of an object
+      jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+      
+      // Log the cleaned content for debugging
+      console.log("Cleaned content for parsing:", jsonContent.substring(0, 100) + "...");
+      
+      try {
         aiGeneratedContent = JSON.parse(jsonContent);
-      } else {
-        // Standard model response - just parse normally
-        aiGeneratedContent = JSON.parse(responseContent);
+      } catch (parseError) {
+        console.error("Initial parsing failed:", parseError);
+        
+        // Last resort: try to manually fix any common JSON syntax errors
+        const fixedContent = fixCommonJsonErrors(jsonContent);
+        console.log("Attempting with fixed content:", fixedContent.substring(0, 100) + "...");
+        aiGeneratedContent = JSON.parse(fixedContent);
       }
     } catch (error) {
       console.error("Error parsing AI response:", error);
@@ -347,6 +371,46 @@ export async function POST(req: Request) {
       } catch (e) {
         return false;
       }
+    }
+    
+    // Helper function to fix common JSON syntax errors
+    function fixCommonJsonErrors(jsonString: string) {
+      let fixed = jsonString;
+      
+      // Fix duplicate commas
+      fixed = fixed.replace(/,\s*,/g, ',');
+      
+      // Fix trailing commas in objects and arrays
+      fixed = fixed.replace(/,\s*}/g, '}');
+      fixed = fixed.replace(/,\s*]/g, ']');
+      
+      // Fix missing quotes around property names
+      fixed = fixed.replace(/(\w+):/g, '"$1":');
+      
+      // Fix dangling properties without values
+      fixed = fixed.replace(/"[^"]+"\s*:(?!\s*["{\[0-9tf])/g, '$&null');
+      
+      // Remove any non-JSON text at the end (after the closing brace)
+      const lastBrace = fixed.lastIndexOf('}');
+      if (lastBrace !== -1) {
+        fixed = fixed.substring(0, lastBrace + 1);
+      }
+      
+      // Check for missing closing brackets
+      const openBraces = (fixed.match(/{/g) || []).length;
+      const closeBraces = (fixed.match(/}/g) || []).length;
+      const openBrackets = (fixed.match(/\[/g) || []).length;
+      const closeBrackets = (fixed.match(/]/g) || []).length;
+      
+      // Add missing closing braces/brackets
+      for (let i = 0; i < openBraces - closeBraces; i++) {
+        fixed += '}';
+      }
+      for (let i = 0; i < openBrackets - closeBrackets; i++) {
+        fixed += ']';
+      }
+      
+      return fixed;
     }
 
     // Log the AI's response to see what's being generated
