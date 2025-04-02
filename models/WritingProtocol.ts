@@ -197,7 +197,7 @@ const writingProtocolSchema = new mongoose.Schema<IWritingProtocol>(
 );
 
 // Add the toJSON plugin for consistent document transformations
-writingProtocolSchema.plugin(toJSON);
+writingProtocolSchema.plugin(toJSON as any);
 
 // Create the model (use existing one if already defined)
 const WritingProtocol = mongoose.models.WritingProtocol || 
