@@ -297,9 +297,9 @@ export default function CreateWritingProtocolPage() {
 
       // Redirect to the results page
       if (protocol && protocol._id) {
-        router.push(`/dashboard/writing-protocol/${protocol._id}`);
+        router.push(`/dashboard/${protocol._id}`);
       } else {
-        router.push("/dashboard/writing-protocol");
+        router.push("/dashboard/");
       }
     } catch (error) {
       console.error("Error creating writing protocol:", error);

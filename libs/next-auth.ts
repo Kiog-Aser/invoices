@@ -15,6 +15,15 @@ const isLocalhost = domain === "localhost";
 const cookiePrefix = isDevelopment && isLocalhost ? "" : "__Secure-";
 const useSecureCookies = !(isDevelopment && isLocalhost); // Disable secure cookies for localhost HTTP
 
+// Get the domain without subdomain for cookie settings
+const getCookieDomain = (hostname: string | undefined) => {
+  if (!hostname || hostname === 'localhost') return undefined;
+  // Don't set a specific domain for Vercel deployments or other platforms
+  if (hostname.includes('vercel.app')) return undefined;
+  // For custom domains, remove www. if present and return without leading dot
+  return hostname.replace(/^www\./, '');
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -73,11 +82,11 @@ export const authOptions: NextAuthOptions = {
     redirect({ url, baseUrl }) {
       // Always redirect to /dashboard after sign in
       if (url.startsWith(baseUrl)) {
-        return "/dashboard";
+        return config.auth.callbackUrl;
       } else if (url.startsWith("/")) {
-        return "/dashboard";
+        return config.auth.callbackUrl;
       }
-      return "/dashboard";
+      return config.auth.callbackUrl;
     }
   },
   pages: {
@@ -93,7 +102,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: useSecureCookies,
-        domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
+        domain: domain ? getCookieDomain(domain) : undefined
       }
     },
     callbackUrl: {
@@ -102,7 +111,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: useSecureCookies,
-        domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
+        domain: domain ? getCookieDomain(domain) : undefined
       }
     },
     csrfToken: {

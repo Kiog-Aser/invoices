@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaArrowRight, FaPlus, FaTrash, FaEdit, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import ButtonAccount from '@/components/ButtonAccount';
 
 interface WritingProtocol {
   id: string;  // Changed from _id to id to match toJSON plugin's transformation
@@ -107,7 +108,9 @@ export default function WritingProtocolsPage() {
 
   return (
     <div className="px-4 py-6 max-w-6xl mx-auto">
+      
       <div className="flex justify-between items-center mb-8">
+      <ButtonAccount />
         <h1 className="text-2xl font-bold">Your Writing Protocols</h1>
         <button 
           onClick={handleCreateNew}

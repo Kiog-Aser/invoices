@@ -8,7 +8,8 @@ const config = {
   appDescription:
     "Increase conversions with notifications. Use our pre-built templates or create your own.",
   // REQUIRED (no https://, not trialing slash at the end)
-  domainName: "notifast.fun",
+  // This will respect the deployment URL (like Vercel) if no custom domain is set
+  domainName: process.env.VERCEL_URL || "systems-ai.vercel.app" || "notifast.fun",
   // REQUIRED — the path to your favicon file
   faviconPath: "/favicon.ico",
   // REQUIRED: Your marketplace's logo
@@ -84,7 +85,7 @@ const config = {
     main: themes["light"]["primary"],
   },
   auth: {
-    // REQUIRED — the path to log in users. It's use to protect private routes (like /dashboard). It's used in apiClient (/libs/api.js) upon 401 errors from our API
+    // Keep this as api/auth/signin to work with Google OAuth registration
     loginUrl: "/api/auth/signin",
     // REQUIRED — the path you want to redirect users after successfull login (i.e. /dashboard, /private). This is normally a private page for users to manage their accounts. It's used in apiClient (/libs/api.js) upon 401 errors from our API & in ButtonSignin.js
     callbackUrl: "/dashboard",
