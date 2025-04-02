@@ -1,380 +1,185 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { FaArrowRight, FaPlus } from "react-icons/fa";
-import toast from "react-hot-toast";
-import ButtonCheckout from "@/components/ButtonCheckout";
-import ButtonAccount from "@/components/ButtonAccount";
-import { setupStripeSuccessListener } from "@/libs/refreshSession";
-import TestimonialRequestModal from "@/components/TestimonialRequestModal";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { FaArrowRight, FaPlus, FaTrash, FaEdit, FaSpinner } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
 
-interface Website {
-  _id: string;
-  domain: string;
-  notificationCount?: number;
+interface WritingProtocol {
+  id: string;  // Changed from _id to id to match toJSON plugin's transformation
+  title: string;
+  userRole: string;
+  industry: string;
+  createdAt: string;
 }
 
-export default function Page() {
+export default function WritingProtocolsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const searchParams = useSearchParams();
-  const [isPro, setIsPro] = useState(false);
+  const [protocols, setProtocols] = useState<WritingProtocol[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [websites, setWebsites] = useState<Website[]>([]);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newWebsite, setNewWebsite] = useState("");
-  const [showTestimonialRequest, setShowTestimonialRequest] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<Record<string, boolean>>({});
 
-  // Check pro status whenever session changes
+  // Fetch user's writing protocols
   useEffect(() => {
-    const checkProStatus = async () => {
-      if (session?.user?.plan === 'pro') {
-        setIsPro(true);
-      } else if (status === 'authenticated') {
-        try {
-          const userResponse = await fetch('/api/user');
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            setIsPro(userData.plan === 'pro');
-          } else {
-            console.error('Failed to fetch user data:', await userResponse.text());
-            toast.error('Failed to load user data. Please refresh the page.');
-          }
-        } catch (error) {
-          console.error('Error checking pro status:', error);
-          toast.error('Error loading user data. Please refresh the page.');
+    const fetchProtocols = async () => {
+      try {
+        const response = await fetch('/api/writing-protocol', {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch protocols');
         }
-      }
-      setIsLoading(false);
-    };
-    
-    checkProStatus();
-  }, [session, status]);
 
-  // Check for success parameter in URL - this happens after Stripe redirect
-  useEffect(() => {
-    const success = searchParams.get('success');
-    if (success === 'true') {
-      // Remove the success parameter from URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('success');
-      window.history.replaceState({}, document.title, url.toString());
-      
-      toast.success('Payment successful! Updating your account...');
-      setupStripeSuccessListener();
-    }
-  }, [searchParams]);
-
-  // Fetch websites when session is loaded
-  useEffect(() => {
-    const fetchData = async () => {
-      if (status === 'unauthenticated') {
-        return;
-      }
-
-      if (status !== 'loading') {
-        try {
-          const websitesResponse = await fetch('/api/websites');
-          if (!websitesResponse.ok) {
-            throw new Error('Failed to fetch websites');
-          }
-          const websitesData = await websitesResponse.json();
-          setWebsites(websitesData);
-          setShowOnboarding(websitesData.length === 0);
-        } catch (error) {
-          console.error('Error fetching data:', error);
-          toast.error('Failed to load data');
-        }
+        const data = await response.json();
+        setProtocols(data);
+      } catch (error) {
+        console.error('Error fetching protocols:', error);
+        toast.error('Failed to load your writing protocols');
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    fetchData();
-  }, [status]);
 
-  const handleAddWebsite = async () => {
-    if (!newWebsite) {
-      toast.error("Please enter a domain name");
-      return;
-    }
-    
-    if (!isPro && websites.length >= 1) {
-      toast.error("Free plan limited to 1 website. Please upgrade to Pro.");
-      router.push("/pricing");
-      return;
-    }
-    
-    let domain = newWebsite.trim().toLowerCase();
-    if (!domain.match(/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/)) {
-      toast.error("Please enter a valid domain");
-      return;
-    }
+    fetchProtocols();
+  }, []);
 
-    try {
-      setIsSubmitting(true);
-      const response = await fetch('/api/websites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ domain }),
-      });
+  const handleCreateNew = () => {
+    router.push('/dashboard/create');
+  };
+
+  const handleView = (id: string) => {
+    if (!id) {
+      console.error("Invalid protocol ID for view:", id);
+      toast.error("Cannot view protocol: Invalid ID");
+      return;
+    }
+    router.push(`/dashboard/${id}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!id) {
+      console.error("Invalid protocol ID for deletion:", id);
+      toast.error("Cannot delete protocol: Invalid ID");
+      return;
+    }
+    
+    if (confirm('Are you sure you want to delete this writing protocol?')) {
+      setIsDeleting(prev => ({ ...prev, [id]: true }));
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add website');
+      try {
+        console.log("Deleting protocol with ID:", id);
+        const response = await fetch(`/api/writing-protocol/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Delete error response:', errorData);
+          throw new Error(errorData.error || 'Failed to delete protocol');
+        }
+
+        // Remove the deleted protocol from the list
+        setProtocols(protocols.filter(protocol => protocol.id !== id));
+        toast.success('Writing protocol deleted successfully');
+      } catch (error) {
+        console.error('Error deleting protocol:', error);
+        toast.error('Failed to delete writing protocol');
+      } finally {
+        setIsDeleting(prev => ({ ...prev, [id]: false }));
       }
-      
-      const newSite = await response.json();
-      setWebsites([...websites, newSite]);
-      setNewWebsite('');
-      setShowOnboarding(false);
-      toast.success('Website added successfully');
-    } catch (error) {
-      console.error('Error adding website:', error);
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to add website');
-      }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleWebsiteClick = (websiteId: string) => {
-    router.push(`/dashboard/notifications/${websiteId}`);
+  // Format date to be more readable
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
-
-  useEffect(() => {
-    if (session?.user) {
-      // Check if user is eligible for testimonial request
-      const checkTestimonialEligibility = async () => {
-        try {
-          const response = await fetch('/api/user');
-          const userData = await response.json();
-
-          // Show testimonial request if user is pro and meets criteria
-          if (
-            userData.plan === 'pro' &&
-            !userData.hasGivenTestimonial && // Add this field to your user model
-            userData.createdAt < Date.now() - 7 * 24 * 60 * 60 * 1000 // User for > 7 days
-          ) {
-            setShowTestimonialRequest(true);
-          }
-        } catch (error) {
-          console.error('Error checking testimonial eligibility:', error);
-        }
-      };
-
-      checkTestimonialEligibility();
-    }
-  }, [session]);
-
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="min-h-screen bg-base-200 flex justify-center items-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    router.push("/auth/signin");
-    return null;
-  }
 
   return (
-    <div className="min-h-screen bg-base-100/50">
-      <header className="bg-base-100 border-b border-base-200">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between min-h-[3.5rem]">
-          <div className="flex items-center gap-2 h-full py-2">
-            <ButtonAccount />
-            {isPro && (
-              <span className="badge badge-sm badge-outline badge-primary">PRO</span>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            {!isPro && (
-              <ButtonCheckout
-                priceId="price_1R0h7qE9pBPkT56e79CYuP3r"
-                mode="payment"
-                successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
-                cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-                className="btn btn-primary btn-sm"
-              />
-            )}
-            
-            {isPro && (
-              <a href="https://insigh.to/b/notifast" target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                Feature Request
-              </a>
-            )}
-          </div>
+    <div className="px-4 py-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Your Writing Protocols</h1>
+        <button 
+          onClick={handleCreateNew}
+          className="btn btn-primary"
+        >
+          <FaPlus className="mr-2" /> Create New Protocol
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <FaSpinner className="animate-spin text-2xl text-primary" />
         </div>
-      </header>
-      
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {showOnboarding ? (
-          <div className="px-6">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3">Welcome to NotiFast! 👋</h1>
-              <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
-                Let's get started by setting up your first website. NotiFast will help you engage visitors 
-                with beautiful notifications that increase conversion and engagement.
-              </p>
-            </div>
-            
-            <div className="max-w-md mx-auto">
-              <div className="mb-6">
-                <label htmlFor="website" className="label">
-                  <span className="label-text">What's your website domain?</span>
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-                  <input
-                    type="text"
-                    id="website"
-                    placeholder="example.com"
-                    value={newWebsite}
-                    onChange={(e) => setNewWebsite(e.target.value)}
-                    className="flex-1 input input-bordered min-h-[3rem] !h-[3rem] w-full sm:rounded-r-none"
-                  />
-                  <button
-                    onClick={handleAddWebsite}
-                    disabled={isSubmitting}
-                    className="btn btn-primary min-h-[3rem] !h-[3rem] w-full sm:w-auto sm:rounded-l-none"
-                  >
-                    {isSubmitting ? (
-                      <span className="loading loading-spinner loading-sm"></span>
-                    ) : (
-                      <>Continue <FaArrowRight className="ml-2" /></>
-                    )}
-                  </button>
-                </div>
-              </div>
-              
-              <div className="text-center text-sm text-base-content/60">
-                <p>You'll be able to add {isPro ? "unlimited" : "up to 1"} website{isPro ? "s" : ""}.</p>
-                {!isPro && (
-                  <p className="mt-1">
-                    <ButtonCheckout
-                      priceId="price_1R0h7qE9pBPkT56e79CYuP3r"
-                      mode="payment"
-                      successUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`}
-                      cancelUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?canceled=true`}
-                      asLink={true}
-                      className="link link-primary"
-                    >
-                      Upgrade to Pro
-                    </ButtonCheckout>
-                    {" "}for unlimited websites.
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="divider">How it works</div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div className="card bg-base-200">
-                <div className="card-body items-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                    <span className="text-primary font-bold">1</span>
-                  </div>
-                  <h3 className="card-title text-base">Add your website</h3>
-                  <p className="text-sm text-base-content/70">Enter your domain to get started</p>
-                </div>
-              </div>
-              
-              <div className="card bg-base-200">
-                <div className="card-body items-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                    <span className="text-primary font-bold">2</span>
-                  </div>
-                  <h3 className="card-title text-base">Create notifications</h3>
-                  <p className="text-sm text-base-content/70">Customize messages for your audience</p>
-                </div>
-              </div>
-              
-              <div className="card bg-base-200">
-                <div className="card-body items-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                    <span className="text-primary font-bold">3</span>
-                  </div>
-                  <h3 className="card-title text-base">Add to your site</h3>
-                  <p className="text-sm text-base-content/70">Paste one line of code</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-semibold">Your Websites</h1>
-              <button
-                onClick={() => setShowOnboarding(true)}
-                disabled={!isPro && websites.length >= 1}
-                className={`btn btn-primary ${!isPro && websites.length >= 1 ? "btn-disabled" : ""}`}
-              >
-                <FaPlus className="mr-2" /> Add Website
-                {!isPro && websites.length >= 1 && " (Upgrade to Pro)"}
-              </button>
-            </div>
-            
-            {websites.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {websites.map((website) => (
-                  <div 
-                    key={website._id} 
-                    onClick={() => handleWebsiteClick(website._id)}
-                    className="card bg-base-100 hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <div className="card-body border border-base-300 rounded-lg">
-                      <div className="flex items-center mb-3">
-                        <div className="avatar placeholder">
-                          <div className="w-10 h-10 rounded-lg bg-primary text-primary-content font-bold">
-                            <span>{website.domain.charAt(0).toUpperCase()}</span>
-                          </div>
-                        </div>
-                        <h3 className="card-title ml-3">{website.domain}</h3>
-                      </div>
-                      
-                      <p className="text-sm text-base-content/60">
-                        {website.notificationCount || 0} notifications configured
-                      </p>
-                      
-                      <div className="card-actions justify-end mt-4">
-                        <span className="text-primary font-medium flex items-center">
-                          Manage <FaArrowRight className="ml-1" />
-                        </span>
-                      </div>
+      ) : protocols.length === 0 ? (
+        <div className="text-center py-12 bg-base-200 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">No writing protocols yet</h2>
+          <p className="text-base-content/70 mb-6">
+            Create your first personalized writing protocol to improve your writing process.
+          </p>
+          <button 
+            onClick={handleCreateNew}
+            className="btn btn-primary"
+          >
+            <FaPlus className="mr-2" /> Create Your First Protocol
+          </button>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Role</th>
+                <th>Industry</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {protocols.map((protocol) => (
+                <tr key={protocol.id} className="hover">
+                  <td className="font-medium">{protocol.title}</td>
+                  <td>{protocol.userRole}</td>
+                  <td>{protocol.industry}</td>
+                  <td>{formatDate(protocol.createdAt)}</td>
+                  <td>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleView(protocol.id)}
+                        className="btn btn-sm btn-outline"
+                      >
+                        View <FaArrowRight className="ml-1" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(protocol.id)}
+                        className="btn btn-sm btn-outline btn-error"
+                        disabled={isDeleting[protocol.id]}
+                      >
+                        {isDeleting[protocol.id] ? (
+                          <FaSpinner className="animate-spin" />
+                        ) : (
+                          <FaTrash />
+                        )}
+                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="card bg-base-100">
-                <div className="card-body items-center text-center">
-                  <p className="text-base-content/60">No websites found. Add your first website to get started.</p>
-                  <button
-                    onClick={() => setShowOnboarding(true)}
-                    className="btn btn-primary mt-4"
-                  >
-                    Add Website
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-      <TestimonialRequestModal
-        isOpen={showTestimonialRequest}
-        onClose={() => setShowTestimonialRequest(false)}
-      />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

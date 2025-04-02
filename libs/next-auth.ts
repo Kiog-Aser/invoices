@@ -8,6 +8,12 @@ import config from "@/config";
 
 // Get the domain from NEXTAUTH_URL
 const domain = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).hostname : undefined;
+const isDevelopment = process.env.NODE_ENV === "development";
+const isLocalhost = domain === "localhost";
+
+// For development with HTTP on localhost, we need different cookie settings
+const cookiePrefix = isDevelopment && isLocalhost ? "" : "__Secure-";
+const useSecureCookies = !(isDevelopment && isLocalhost); // Disable secure cookies for localhost HTTP
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -81,40 +87,40 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: `${cookiePrefix}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: true,
+        secure: useSecureCookies,
         domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
       }
     },
     callbackUrl: {
-      name: `__Secure-next-auth.callback-url`,
+      name: `${cookiePrefix}next-auth.callback-url`,
       options: {
         sameSite: 'lax',
         path: '/',
-        secure: true,
+        secure: useSecureCookies,
         domain: domain && domain !== 'localhost' ? '.notifast.fun' : undefined
       }
     },
     csrfToken: {
-      name: `__Host-next-auth.csrf-token`,
+      name: isDevelopment && isLocalhost ? "next-auth.csrf-token" : `__Host-next-auth.csrf-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: true
+        secure: useSecureCookies
       }
     }
   },
-  useSecureCookies: true,
+  useSecureCookies,
   secret: process.env.NEXTAUTH_SECRET,
   jwt: {
     maxAge: 24 * 60 * 60, // 24 hours
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: isDevelopment,
 };
 
 export default NextAuth(authOptions);

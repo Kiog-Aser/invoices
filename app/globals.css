@@ -25,3 +25,105 @@ progress::-webkit-progress-value {
     @apply !capitalize;
   }
 }
+
+/* Content Calendar Styles */
+.content-calendar {
+  @apply grid grid-cols-8 gap-2 rounded-lg overflow-hidden border border-base-300;
+}
+
+.content-calendar-header {
+  @apply bg-primary/10 p-3 font-semibold;
+}
+
+.content-calendar-day {
+  @apply bg-base-200 p-3;
+}
+
+.content-calendar-content {
+  @apply p-3;
+}
+
+.content-calendar-highlight {
+  @apply bg-primary/5;
+}
+
+/* Improve scroll behavior for section tracking */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+/* Print and PDF Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    color: black;
+    background: white;
+  }
+  
+  .sidebar-navigation,
+  .print:hidden,
+  button {
+    display: none !important;
+  }
+  
+  .main-content-wrapper,
+  .print-layout {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    left: 0 !important;
+  }
+  
+  /* Center the content */
+  .pl-72 {
+    padding-left: 0 !important;
+  }
+  
+  /* Style tweaks for printed content */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  h1 {
+    font-size: 24pt !important;
+  }
+  
+  h2 {
+    font-size: 18pt !important;
+  }
+  
+  h3 {
+    font-size: 14pt !important;
+  }
+  
+  p, li {
+    font-size: 11pt !important;
+  }
+  
+  /* Force page breaks between major sections */
+  .content-section {
+    page-break-before: always;
+    break-before: always;
+  }
+  
+  /* Ensure the calendar looks good in print */
+  .card {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+  
+  /* Hide some UI elements not needed in print */
+  .group-hover\:opacity-100,
+  .hover\:bg-base-100\/50 {
+    display: none !important;
+  }
+}
