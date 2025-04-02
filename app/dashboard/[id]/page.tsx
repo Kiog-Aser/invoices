@@ -1773,7 +1773,7 @@ ${conversionContent}`;
   };
   
   const handleBackToDashboard = () => {
-    router.push('/dashboard/writing-protocol');
+    router.push('/dashboard/');
   };
   
   if (status === "loading" || isLoading) {
