@@ -853,6 +853,7 @@ export default function WritingProtocolPage({ params }: { params: { id: string }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Keep SECTIONS for sidebar structure, but don't use content property
   const sections = useMemo(() => SECTIONS, []);
@@ -1801,8 +1802,8 @@ ${conversionContent}`;
 
   return (
     <div className="min-h-screen bg-base-100 print:bg-white flex">
-      {/* Permanent Sidebar Navigation */}
-      <div className="print:hidden w-72 bg-base-200 min-h-screen overflow-y-auto fixed left-0 top-0 p-6 border-r border-base-300 sidebar-navigation">
+      {/* Permanent Sidebar Navigation - Now properly hidden on mobile */}
+      <div className="hidden md:block print:hidden w-72 bg-base-200 min-h-screen overflow-y-auto fixed left-0 top-0 p-6 border-r border-base-300 sidebar-navigation">
         <div className="flex items-center gap-2 mb-6">
           <button
             onClick={handleBackToDashboard}
@@ -1864,7 +1865,91 @@ ${conversionContent}`;
         </nav>
       </div>
 
-      <div className="flex-1 pl-72 main-content-wrapper">
+      <div className="flex-1 md:pl-72 main-content-wrapper">
+        {/* Mobile Menu Button - only visible on mobile */}
+        <button 
+          onClick={() => setShowMobileMenu(true)}
+          className="fixed top-4 left-4 z-20 bg-base-100 rounded-lg shadow-md p-3 md:hidden print:hidden"
+          aria-label="Open table of contents"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        
+        {/* Mobile Navigation Overlay */}
+        {showMobileMenu && (
+          <div className="fixed inset-0 bg-base-100 z-50 overflow-y-auto md:hidden print:hidden">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold">Table of Contents</h3>
+                <button 
+                  onClick={() => setShowMobileMenu(false)}
+                  className="btn btn-ghost btn-sm"
+                  aria-label="Close menu"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <nav className="space-y-2">
+                {sections.map((section) => (
+                  <div key={section.id}>
+                    <button
+                      onClick={() => {
+                        document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' });
+                        setActiveSection(section.id);
+                        setShowMobileMenu(false);
+                      }}
+                      className={`block w-full text-left px-4 py-3 text-base ${
+                        activeSection === section.id 
+                          ? 'bg-primary/10 text-primary font-medium' 
+                          : 'text-base-content/70 hover:bg-base-300'
+                      } rounded-lg transition-colors`}
+                    >
+                      <div className="flex items-center">
+                        <span className="flex-1">{section.title}</span>
+                        {section.subsections && (
+                          <FaChevronRight 
+                            size={12} 
+                            className={`transform transition-transform ${
+                              activeSection === section.id ? 'rotate-90' : ''
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </button>
+                    
+                    {section.subsections && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {section.subsections.map((subsection) => (
+                          <button
+                            key={subsection.id}
+                            onClick={() => {
+                              document.getElementById(subsection.id)?.scrollIntoView({ behavior: 'smooth' });
+                              setActiveSubsection(subsection.id);
+                              setShowMobileMenu(false);
+                            }}
+                            className={`block w-full text-left px-4 py-2.5 text-base ${
+                              activeSubsection === subsection.id 
+                                ? 'text-primary font-medium' 
+                                : 'text-base-content/60 hover:text-base-content'
+                            } rounded-lg transition-colors`}
+                          >
+                            {subsection.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </nav>
+            </div>
+          </div>
+        )}
+        
         {/* Header with actions - hide on print */}
         <div className="bg-base-100 border-b border-base-200 sticky top-0 z-10 print:hidden">
           <div className="max-w-4xl mx-auto px-4 py-4 flex justify-end gap-2">
