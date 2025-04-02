@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 // Define step types for our typeform-style form
 type Step =
   | "title"
+  | "modelSelect"
   | "role"
   | "industry"
   | "contentTypes"
@@ -27,6 +28,7 @@ interface FormData {
   customContentTypes: string[]; // Add custom types
   customGoals: string[]; // Add custom goals
   customChallenges: string[]; // Add custom challenges
+  modelType: 'fast' | 'quality'; // New field for AI model selection
 }
 
 export default function CreateWritingProtocolPage() {
@@ -43,6 +45,7 @@ export default function CreateWritingProtocolPage() {
     customContentTypes: [],
     customGoals: [],
     customChallenges: [],
+    modelType: 'fast',
   });
 
   // Custom inputs temporary states
@@ -124,6 +127,8 @@ export default function CreateWritingProtocolPage() {
     switch (currentStep) {
       case "title":
         return !!formData.title;
+      case "modelSelect":
+        return !!formData.modelType; // Always valid since we have a default value
       case "role":
         return !!formData.userRole;
       case "industry":
@@ -145,6 +150,9 @@ export default function CreateWritingProtocolPage() {
 
     switch (currentStep) {
       case "title":
+        setCurrentStep("modelSelect");
+        break;
+      case "modelSelect":
         setCurrentStep("role");
         break;
       case "role":
@@ -171,8 +179,11 @@ export default function CreateWritingProtocolPage() {
   // Go to previous step
   const goToPreviousStep = () => {
     switch (currentStep) {
-      case "role":
+      case "modelSelect":
         setCurrentStep("title");
+        break;
+      case "role":
+        setCurrentStep("modelSelect");
         break;
       case "industry":
         setCurrentStep("role");
@@ -383,6 +394,48 @@ export default function CreateWritingProtocolPage() {
                       activeInputRef.current = el;
                     }}
                   />
+                </div>
+              )}
+
+              {currentStep === "modelSelect" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Choose AI Quality Level
+                  </h1>
+                  <p className="text-base-content/70">
+                    Select the AI quality level that best fits your needs.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4">
+                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.modelType === "fast" ? "border-primary border-2" : ""}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.modelType === "fast"}
+                          onChange={() => updateFormData("modelType", "fast")}
+                        />
+                        <span className="font-bold text-lg">Fast Generation (⚡️ ~1 minute)</span>
+                      </div>
+                      <p className="text-base-content/70 mt-2 ml-8">
+                        Generates your writing protocol quickly with good quality results. Best for most situations when you need a writing protocol created rapidly.
+                      </p>
+                    </label>
+                    
+                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.modelType === "quality" ? "border-primary border-2" : ""}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.modelType === "quality"}
+                          onChange={() => updateFormData("modelType", "quality")}
+                        />
+                        <span className="font-bold text-lg">High Quality Generation (⏱️ ~2-3 minutes)</span>
+                      </div>
+                      <p className="text-base-content/70 mt-2 ml-8">
+                        Takes more time but produces more detailed and thoughtful writing protocols with deeper insights. Recommended for professional use cases.
+                      </p>
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -707,7 +760,7 @@ export default function CreateWritingProtocolPage() {
                     <div className="loading loading-spinner loading-lg text-primary"></div>
                   </div>
                   <p className="text-sm text-base-content/50">
-                    This typically takes 15-30 seconds.
+                    This can take a minute.
                   </p>
                 </div>
               )}
@@ -749,6 +802,7 @@ export default function CreateWritingProtocolPage() {
 // Steps array for progress tracking
 const STEPS: Step[] = [
   "title",
+  "modelSelect",
   "role",
   "industry",
   "contentTypes",

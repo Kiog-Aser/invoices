@@ -5,6 +5,9 @@ import connectMongo from "@/libs/mongoose";
 import { githubAIClient, models } from "@/libs/github-ai";
 import WritingProtocol from "@/models/WritingProtocol";
 
+// Model constants
+const DEEPSEEK_MODEL = "DeepSeek-R1";
+
 export async function POST(req: Request) {
   try {
     // Verify authentication
@@ -31,7 +34,8 @@ export async function POST(req: Request) {
       industry,
       contentTypes,
       goals,
-      challenges
+      challenges,
+      modelType
     } = await req.json();
 
     // Validate required fields
@@ -266,10 +270,16 @@ export async function POST(req: Request) {
       }
     }`;
 
-    // Determine which model to use based on the active client
-    const modelToUse = process.env.USE_AKASH === "true" ? models.akash : models.github;
+    // Determine which model to use based on user's selection
+    let modelToUse = process.env.USE_AKASH === "true" ? models.akash : models.github;
     
-    console.log(`Using model: ${modelToUse} for writing protocol generation`);
+    // Override with DeepSeek model if quality is selected
+    if (modelType === 'quality') {
+      modelToUse = DEEPSEEK_MODEL;
+      console.log(`Using higher quality model: ${modelToUse} for writing protocol generation`);
+    } else {
+      console.log(`Using fast model: ${modelToUse} for writing protocol generation`);
+    }
 
     // Send request to AI
     const completion = await githubAIClient.chat.completions.create({
@@ -289,8 +299,55 @@ export async function POST(req: Request) {
       throw new Error("Failed to generate writing protocol");
     }
 
-    // Parse the AI response as JSON
-    const aiGeneratedContent = JSON.parse(completion.choices[0].message.content);
+    // Parse the AI response as JSON, handling any "thinking" sections
+    let aiGeneratedContent;
+    try {
+      const responseContent = completion.choices[0].message.content || "";
+      
+      // Check if we're dealing with a response that might have thinking sections (DeepSeek model)
+      if (modelType === 'quality') {
+        // Extract only the JSON part by removing any thinking sections
+        // Thinking sections might look like: <details type="reasoning" done="true" duration="105">...</details>
+        
+        // First, try to find JSON content directly
+        let jsonContent = responseContent;
+        
+        // Remove any thinking sections that might be at the beginning
+        const thinkingSectionRegex = /<details.*?>[\s\S]*?<\/details>/gm;
+        jsonContent = jsonContent.replace(thinkingSectionRegex, '').trim();
+        
+        // If still no valid JSON, check if there's text before the JSON
+        if (!isValidJSON(jsonContent)) {
+          // Look for the first '{' character that starts a JSON object
+          const jsonStartIndex = jsonContent.indexOf('{');
+          if (jsonStartIndex > 0) {
+            jsonContent = jsonContent.substring(jsonStartIndex);
+          }
+        }
+        
+        // Log the cleaned content
+        console.log("Cleaned content for parsing:", jsonContent.substring(0, 100) + "...");
+        
+        aiGeneratedContent = JSON.parse(jsonContent);
+      } else {
+        // Standard model response - just parse normally
+        aiGeneratedContent = JSON.parse(responseContent);
+      }
+    } catch (error) {
+      console.error("Error parsing AI response:", error);
+      console.log("Raw response:", completion.choices[0].message.content);
+      throw new Error("Failed to parse AI response. The model returned an invalid format.");
+    }
+
+    // Helper function to check if a string is valid JSON
+    function isValidJSON(str: string) {
+      try {
+        JSON.parse(str);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
 
     // Log the AI's response to see what's being generated
     console.log("=============== AI RESPONSE START ===============");
