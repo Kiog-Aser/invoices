@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaArrowRight, FaPlus, FaTrash, FaEdit, FaSpinner } from 'react-icons/fa';
+import { FaArrowRight, FaPlus, FaTrash, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import ButtonAccount from '@/components/ButtonAccount';
 
@@ -65,34 +65,32 @@ export default function WritingProtocolsPage() {
       return;
     }
     
-    if (confirm('Are you sure you want to delete this writing protocol?')) {
-      setIsDeleting(prev => ({ ...prev, [id]: true }));
-      
-      try {
-        console.log("Deleting protocol with ID:", id);
-        const response = await fetch(`/api/writing-protocol/${id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Delete error response:', errorData);
-          throw new Error(errorData.error || 'Failed to delete protocol');
+    setIsDeleting(prev => ({ ...prev, [id]: true }));
+    
+    try {
+      console.log("Deleting protocol with ID:", id);
+      const response = await fetch(`/api/writing-protocol/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         }
+      });
 
-        // Remove the deleted protocol from the list
-        setProtocols(protocols.filter(protocol => protocol.id !== id));
-        toast.success('Writing protocol deleted successfully');
-      } catch (error) {
-        console.error('Error deleting protocol:', error);
-        toast.error('Failed to delete writing protocol');
-      } finally {
-        setIsDeleting(prev => ({ ...prev, [id]: false }));
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Delete error response:', errorData);
+        throw new Error(errorData.error || 'Failed to delete protocol');
       }
+
+      // Remove the deleted protocol from the list
+      setProtocols(protocols.filter(protocol => protocol.id !== id));
+      toast.success('Writing protocol deleted successfully');
+    } catch (error) {
+      console.error('Error deleting protocol:', error);
+      toast.error('Failed to delete writing protocol');
+    } finally {
+      setIsDeleting(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -110,7 +108,7 @@ export default function WritingProtocolsPage() {
     <div className="px-4 py-6 max-w-6xl mx-auto">
       
       <div className="flex justify-between items-center mb-8">
-      <ButtonAccount />
+        <ButtonAccount />
         <h1 className="text-2xl font-bold">Your Writing Protocols</h1>
         <button 
           onClick={handleCreateNew}
@@ -138,49 +136,52 @@ export default function WritingProtocolsPage() {
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Role</th>
-                <th>Industry</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {protocols.map((protocol) => (
-                <tr key={protocol.id} className="hover">
-                  <td className="font-medium">{protocol.title}</td>
-                  <td>{protocol.userRole}</td>
-                  <td>{protocol.industry}</td>
-                  <td>{formatDate(protocol.createdAt)}</td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleView(protocol.id)}
-                        className="btn btn-sm btn-outline"
-                      >
-                        View <FaArrowRight className="ml-1" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(protocol.id)}
-                        className="btn btn-sm btn-outline btn-error"
-                        disabled={isDeleting[protocol.id]}
-                      >
-                        {isDeleting[protocol.id] ? (
-                          <FaSpinner className="animate-spin" />
-                        ) : (
-                          <FaTrash />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {protocols.map((protocol) => (
+            <div 
+              key={protocol.id} 
+              className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer relative"
+              onClick={() => handleView(protocol.id)}
+            >
+              {/* Delete button in top right corner */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(protocol.id);
+                }}
+                className="absolute top-2 right-2 btn btn-sm btn-ghost text-error z-10"
+                disabled={isDeleting[protocol.id]}
+                aria-label="Delete protocol"
+              >
+                {isDeleting[protocol.id] ? (
+                  <FaSpinner className="animate-spin" />
+                ) : (
+                  <FaTrash />
+                )}
+              </button>
+
+              <div className="card-body">
+                <h2 className="card-title text-lg font-bold truncate">{protocol.title}</h2>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center">
+                    <span className="font-medium text-base-content/70 w-24 text-sm">Role:</span> 
+                    <span className="text-sm truncate flex-1">{protocol.userRole}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium text-base-content/70 w-24 text-sm">Industry:</span> 
+                    <span className="text-sm truncate flex-1">{protocol.industry}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium text-base-content/70 w-24 text-sm">Created:</span> 
+                    <span className="text-sm flex-1">{formatDate(protocol.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="mt-4 card-actions justify-end opacity-60">
+                  <FaArrowRight className="text-primary" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
