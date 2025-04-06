@@ -2,19 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'systems-ai.vercel.app',
-          },
-        ],
-        destination: 'https://systems-ai.vercel.app/:path*',
-        permanent: true,
-      },
-    ];
+    // Intentionally returning an empty array to remove the problematic redirect
+    return [];
   },
   async headers() {
     return [

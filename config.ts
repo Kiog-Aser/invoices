@@ -6,12 +6,12 @@ const config = {
   appName: "CreatiFun",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Generate professional writing systems for your content creation process. Stop the endless content struggle. Create a structured writing protocol that eliminates frustration and delivers results.",
+    "Create a structured writing protocol that eliminates frustration and delivers results. Stop the endless content struggle.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
   domainName: process.env.VERCEL_URL || "systems-ai.vercel.app",
   // REQUIRED — the path to your favicon file
-  faviconPath: "/favico.ico",
+  faviconPath: "/favicon.ico",
   // REQUIRED: Your marketplace's logo
   logoPath: "/logo.png",
   // REQUIRED: The OG image used when someone shares your website on social media
