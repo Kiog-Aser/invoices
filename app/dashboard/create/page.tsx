@@ -7,6 +7,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 import toast from "react-hot-toast";
 
+// Custom hook for localStorage persistence with form data
+function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === "undefined") {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error("Error reading from localStorage:", error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.error("Error writing to localStorage:", error);
+    }
+  };
+
+  return [storedValue, setValue];
+}
+
 // Define step types for our typeform-style form
 type Step =
   | "title"
@@ -24,6 +54,8 @@ type Step =
   | "challenges"
   | "leadMagnets"       
   | "offers"            
+  | "contentSample"     
+  | "contentBalance"    
   | "processing";
 
 interface FormData {
@@ -32,16 +64,16 @@ interface FormData {
   industry: string;
   contentTypes: string[];
   goals: string[];
+  prioritizedGoals: { goal: string; priority: number }[];
   challenges: string[];
   customContentTypes: string[];
   customGoals: string[];
   customChallenges: string[];
   modelType: 'fast' | 'quality';
-  
-  // New fields for additional user context
   experience: string;
   audience: string[];
-  audienceDetails: string; // New field for detailed audience description
+  audienceDetails: string;
+  idealClientProfiles: { description: string }[];
   timeAvailability: string;
   onlinePresence: {
     platforms: string[];
@@ -50,21 +82,21 @@ interface FormData {
       postFrequency: string;
     }>;
   };
-  hasLeadMagnets: boolean; // New field to track if they have lead magnets
+  contentBalance: 'education' | 'conversion' | 'balanced';
+  contentSample: string;
+  hasLeadMagnets: boolean;
   leadMagnets: string[];
-  leadMagnetDetails: string; // New field for detailed lead magnet description
-  hasOffers: boolean; // New field to track if they have offers
+  leadMagnetDetails: string;
+  hasOffers: boolean;
   offers: string[];
-  offerDetails: string; // New field for detailed offer description
+  offerDetails: string;
 }
 
-// Define the type for platform details
 type PlatformDetail = {
   metricName: string;
   ranges: string[];
 };
 
-// Type-safe platform details
 const platformDetails: Record<string, PlatformDetail> = {
   "Website/Blog": {
     metricName: "Monthly visitors",
@@ -184,13 +216,14 @@ const platformDetails: Record<string, PlatformDetail> = {
 export default function CreateWritingProtocolPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [currentStep, setCurrentStep] = useState<Step>("title");
-  const [formData, setFormData] = useState<FormData>({
+  const [currentStep, setCurrentStep] = useLocalStorage<Step>("writingProtocolCurrentStep", "title");
+  const [formData, setFormData] = useLocalStorage<FormData>("writingProtocolFormData", {
     title: "",
     userRole: "",
     industry: "",
     contentTypes: [],
     goals: [],
+    prioritizedGoals: [],
     challenges: [],
     customContentTypes: [],
     customGoals: [],
@@ -199,11 +232,14 @@ export default function CreateWritingProtocolPage() {
     experience: "",
     audience: [],
     audienceDetails: "",
+    idealClientProfiles: [],
     timeAvailability: "",
     onlinePresence: {
       platforms: [],
       platformDetails: {},
     },
+    contentBalance: 'balanced',
+    contentSample: "",
     hasLeadMagnets: false,
     leadMagnets: [],
     leadMagnetDetails: "",
@@ -212,14 +248,12 @@ export default function CreateWritingProtocolPage() {
     offerDetails: "",
   });
 
-  // Add protocol access state
   const [hasProtocolAccess, setHasProtocolAccess] = useState(true);
   const [accessDetails, setAccessDetails] = useState<{
     isUnlimited: boolean;
     tokens: number;
   }>({ isUnlimited: false, tokens: 0 });
 
-  // Custom inputs temporary states
   const [newCustomContentType, setNewCustomContentType] = useState("");
   const [newCustomGoal, setNewCustomGoal] = useState("");
   const [newCustomChallenge, setNewCustomChallenge] = useState("");
@@ -229,12 +263,10 @@ export default function CreateWritingProtocolPage() {
     null,
   );
 
-  // For polling protocol status
   const [protocolId, setProtocolId] = useState<string | null>(null);
   const [processingTimePassed, setProcessingTimePassed] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Content type options
   const contentTypeOptions = [
     "Blog posts",
     "Social media content",
@@ -248,7 +280,6 @@ export default function CreateWritingProtocolPage() {
     "Website content",
   ];
 
-  // Goal options
   const goalOptions = [
     "Improve writing speed",
     "Enhance quality",
@@ -262,7 +293,6 @@ export default function CreateWritingProtocolPage() {
     "Maintain brand voice",
   ];
 
-  // Challenges options
   const challengeOptions = [
     "Procrastination",
     "Writer's block",
@@ -276,44 +306,11 @@ export default function CreateWritingProtocolPage() {
     "Finding inspiration",
   ];
 
-  // Add options for additional fields
   const experienceLevelOptions = [
     "Beginner (0-1 years)",
     "Intermediate (1-3 years)",
     "Advanced (3-5 years)",
     "Expert (5+ years)"
-  ];
-
-  // Updated audience selection approach
-  const audienceOptions = [
-    {
-      category: "Professionals",
-      examples: "Corporate employees, Knowledge workers, Industry specialists"
-    },
-    {
-      category: "Business Owners",
-      examples: "Entrepreneurs, Small business owners, Startups, Executives"
-    },
-    {
-      category: "Creative Professionals",
-      examples: "Designers, Writers, Artists, Photographers"
-    },
-    {
-      category: "Technical Audience",
-      examples: "Developers, Engineers, IT professionals, Data scientists"
-    },
-    {
-      category: "Academia",
-      examples: "Students, Researchers, Educators, Academic institutions"
-    },
-    {
-      category: "Consumer Groups",
-      examples: "Parents, Health enthusiasts, Hobbyists, Lifestyle focus"
-    },
-    {
-      category: "Industry Specific",
-      examples: "Healthcare, Finance, Legal, Real estate, Construction"
-    }
   ];
 
   const timeAvailabilityOptions = [
@@ -342,7 +339,6 @@ export default function CreateWritingProtocolPage() {
     "Very large audience (100,000+ followers)"
   ];
 
-  // Add lead magnet and offer options
   const leadMagnetOptions = [
     "PDF guide or ebook",
     "Email course or challenge",
@@ -368,17 +364,30 @@ export default function CreateWritingProtocolPage() {
     "Custom solution"
   ];
 
-  // Add state for platform details questions
   const [currentPlatformIndex, setCurrentPlatformIndex] = useState<number>(0);
 
-  // Focus the active input when step changes
+  useEffect(() => {
+    if (!formData.idealClientProfiles || !formData.idealClientProfiles.length) {
+      setFormData(prev => ({
+        ...prev,
+        idealClientProfiles: [{ description: "" }]
+      }));
+    }
+  }, []);
+
+  const clearSavedFormData = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem('writingProtocolFormData');
+      window.localStorage.removeItem('writingProtocolCurrentStep');
+    }
+  };
+
   useEffect(() => {
     if (activeInputRef.current) {
       activeInputRef.current.focus();
     }
   }, [currentStep]);
 
-  // Handle checking if authenticated and has protocol access
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
@@ -390,7 +399,6 @@ export default function CreateWritingProtocolPage() {
     }
   }, [status, router]);
 
-  // Check if user has access to create protocols
   const checkProtocolAccess = async () => {
     try {
       const response = await fetch('/api/user/protocol-access');
@@ -405,7 +413,6 @@ export default function CreateWritingProtocolPage() {
         tokens: data.remainingTokens,
       });
       
-      // If user doesn't have access, show a message and redirect to pricing
       if (!data.hasAccess) {
         toast.error('You need to purchase access to create protocols');
         setTimeout(() => router.push('/#pricing'), 1500);
@@ -416,7 +423,6 @@ export default function CreateWritingProtocolPage() {
     }
   };
 
-  // Update form data
   const updateFormData = <K extends keyof FormData>(
     field: K,
     value: FormData[K],
@@ -424,17 +430,16 @@ export default function CreateWritingProtocolPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Check if the current step is valid
   const canProceed = (): boolean => {
     switch (currentStep) {
       case "title":
-        return !!formData.title;
+        return !!formData.title && formData.title.trim().length >= 3;
       case "modelSelect":
-        return !!formData.modelType; // Always valid since we have a default value
+        return !!formData.modelType;
       case "role":
-        return !!formData.userRole;
+        return !!formData.userRole && formData.userRole.trim().length >= 3;
       case "industry":
-        return !!formData.industry;
+        return !!formData.industry && formData.industry.trim().length >= 3;
       case "contentTypes":
         return formData.contentTypes.length > 0;
       case "goals":
@@ -444,25 +449,29 @@ export default function CreateWritingProtocolPage() {
       case "experience":
         return !!formData.experience;
       case "audience":
-        return formData.audience.length > 0;
+        return formData.idealClientProfiles.length > 0 && 
+               formData.idealClientProfiles.some(profile => profile.description.trim().length > 0);
       case "timeAvailability":
         return !!formData.timeAvailability;
       case "onlinePresence":
-        return true; // Always valid since we allow proceeding without platforms
+        return true;
       case "platformSelection":
         return formData.onlinePresence.platforms.length > 0;
       case "platformDetails":
-        return true; // Always valid since we allow proceeding without platforms
+        return true;
       case "leadMagnets":
-        return formData.hasLeadMagnets ? formData.leadMagnets.length > 0 : true;
+        return true; // Always allow proceeding regardless of selection
       case "offers":
-        return formData.hasOffers ? formData.offers.length > 0 : true;
+        return true; // Always allow proceeding regardless of selection
+      case "contentSample":
+        return true;
+      case "contentBalance":
+        return !!formData.contentBalance;
       default:
         return false;
     }
   };
 
-  // Go to next step
   const goToNextStep = () => {
     if (!canProceed()) return;
 
@@ -489,7 +498,6 @@ export default function CreateWritingProtocolPage() {
         setCurrentStep("onlinePresence");
         break;
       case "onlinePresence":
-        // If they have no online presence, skip platform questions
         if (formData.onlinePresence.platforms.length === 0) {
           setCurrentStep("contentTypes");
         } else {
@@ -497,16 +505,13 @@ export default function CreateWritingProtocolPage() {
         }
         break;
       case "platformSelection":
-        // Reset platform index before showing platform details
         setCurrentPlatformIndex(0);
         setCurrentStep("platformDetails");
         break;
       case "platformDetails":
-        // If we have more platforms to collect details for, increment the index
         if (currentPlatformIndex < formData.onlinePresence.platforms.length - 1) {
           setCurrentPlatformIndex(currentPlatformIndex + 1);
         } else {
-          // We've collected details for all platforms, move to content types
           setCurrentStep("contentTypes");
         }
         break;
@@ -523,6 +528,12 @@ export default function CreateWritingProtocolPage() {
         setCurrentStep("offers");
         break;
       case "offers":
+        setCurrentStep("contentSample");
+        break;
+      case "contentSample":
+        setCurrentStep("contentBalance");
+        break;
+      case "contentBalance":
         setCurrentStep("processing");
         handleSubmit();
         break;
@@ -531,7 +542,6 @@ export default function CreateWritingProtocolPage() {
     }
   };
 
-  // Go to previous step
   const goToPreviousStep = () => {
     switch (currentStep) {
       case "modelSelect":
@@ -560,20 +570,16 @@ export default function CreateWritingProtocolPage() {
         break;
       case "platformDetails":
         if (currentPlatformIndex > 0) {
-          // Go to previous platform's details
           setCurrentPlatformIndex(currentPlatformIndex - 1);
         } else {
-          // Go back to platform selection
           setCurrentStep("platformSelection");
         }
         break;
       case "contentTypes":
         if (formData.onlinePresence.platforms.length > 0) {
-          // If they had platforms, go back to the last platform's details
           setCurrentPlatformIndex(formData.onlinePresence.platforms.length - 1);
           setCurrentStep("platformDetails");
         } else {
-          // Otherwise go back to online presence question
           setCurrentStep("onlinePresence");
         }
         break;
@@ -589,15 +595,20 @@ export default function CreateWritingProtocolPage() {
       case "offers":
         setCurrentStep("leadMagnets");
         break;
-      case "processing":
+      case "contentSample":
         setCurrentStep("offers");
+        break;
+      case "contentBalance":
+        setCurrentStep("contentSample");
+        break;
+      case "processing":
+        setCurrentStep("contentBalance");
         break;
       default:
         break;
     }
   };
 
-  // Toggle a value in a string array
   const toggleArrayValue = (array: string[], value: string): string[] => {
     if (array.includes(value)) {
       return array.filter((item) => item !== value);
@@ -606,7 +617,6 @@ export default function CreateWritingProtocolPage() {
     }
   };
 
-  // Add a custom option to the form data
   const addCustomOption = (
     category: 'contentTypes' | 'goals' | 'challenges',
     value: string
@@ -617,7 +627,6 @@ export default function CreateWritingProtocolPage() {
     const newCustomValues = [...(formData[customFieldName] as string[]), value.trim()];
     updateFormData(customFieldName, newCustomValues);
     
-    // Reset the input field
     switch(category) {
       case 'contentTypes':
         setNewCustomContentType('');
@@ -631,7 +640,6 @@ export default function CreateWritingProtocolPage() {
     }
   };
 
-  // Remove a custom option from the form data
   const removeCustomOption = (
     category: 'contentTypes' | 'goals' | 'challenges',
     index: number
@@ -642,10 +650,8 @@ export default function CreateWritingProtocolPage() {
     updateFormData(customFieldName, newCustomValues);
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     try {
-      // Check access again right before submission
       const accessResponse = await fetch('/api/user/protocol-access');
       if (!accessResponse.ok) {
         throw new Error('Failed to verify protocol access');
@@ -661,29 +667,23 @@ export default function CreateWritingProtocolPage() {
       setIsProcessing(true);
       toast.loading("Creating your writing protocol...");
 
-      // Simple validation to ensure we have at least a title
       if (!formData.title.trim()) {
         throw new Error("Title is required");
       }
 
-      // Prepare data for submission by combining regular options with custom options
       const submissionData = {
         ...formData,
-        // Merge custom content types with regular content types (excluding "Other")
         contentTypes: formData.contentTypes.includes("Other") 
           ? [...formData.contentTypes.filter(type => type !== "Other"), ...formData.customContentTypes]
           : formData.contentTypes,
-        // Merge custom goals with regular goals (excluding "Other")
         goals: formData.goals.includes("Other")
           ? [...formData.goals.filter(goal => goal !== "Other"), ...formData.customGoals]
           : formData.goals,
-        // Merge custom challenges with regular challenges (excluding "Other")
         challenges: formData.challenges.includes("Other")
           ? [...formData.challenges.filter(challenge => challenge !== "Other"), ...formData.customChallenges]
           : formData.challenges,
       };
 
-      // Submit the form data to the API
       const response = await fetch("/api/writing-protocol", {
         method: "POST",
         headers: {
@@ -692,22 +692,17 @@ export default function CreateWritingProtocolPage() {
         body: JSON.stringify(submissionData),
       });
 
-      // Handle error responses
       if (!response.ok) {
         let errorMessage = "Failed to create writing protocol";
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          // If we can't parse JSON, use default error message
-        }
+        } catch (e) {}
         throw new Error(errorMessage);
       }
 
-      // Parse successful response
       const result = await response.json();
 
-      // Consume a token if needed (if not unlimited)
       if (!accessData.isUnlimited) {
         const consumeResponse = await fetch('/api/user/consume-token', {
           method: 'POST',
@@ -721,19 +716,17 @@ export default function CreateWritingProtocolPage() {
         }
       }
 
-      // Update loading toast with more specific message
       toast.dismiss();
       toast.loading(
         `Your protocol is being generated ${formData.modelType === 'quality' ? '(this may take 2-3 minutes)' : ''}...`, 
         { duration: 60000 }
       );
 
-      // Store the protocol ID for polling
       if (result && result._id) {
         setProtocolId(result._id);
         startPolling(result._id);
+        clearSavedFormData();
       } else {
-        // If no ID was returned, something went wrong
         throw new Error("Failed to create protocol. No ID returned.");
       }
     } catch (error) {
@@ -744,25 +737,20 @@ export default function CreateWritingProtocolPage() {
           ? error.message
           : "Failed to create writing protocol",
       );
-      setCurrentStep("offers"); // Go back to the last step
+      setCurrentStep("contentSample");
       setIsProcessing(false);
     }
   };
 
-  // Start polling for protocol status
   const startPolling = (id: string) => {
-    // Set up polling timer to check protocol status
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
     }
 
-    // Poll every 3 seconds
     pollIntervalRef.current = setInterval(async () => {
       try {
-        // Increment the time counter (for UI)
         setProcessingTimePassed(prev => prev + 3);
         
-        // Check protocol status
         const response = await fetch(`/api/writing-protocol?id=${id}`, {
           headers: {
             'Cache-Control': 'no-cache',
@@ -775,25 +763,20 @@ export default function CreateWritingProtocolPage() {
 
         const protocol = await response.json();
         
-        // If the protocol generation is complete or failed
         if (protocol.status === 'completed' || protocol.status === 'failed') {
-          // Clear the polling interval
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
 
-          // If completed, redirect to the protocol page
           if (protocol.status === 'completed') {
             toast.dismiss();
             toast.success('Your writing protocol is ready!');
             router.push(`/dashboard/${id}`);
-          } 
-          // If failed, show error and allow retrying
-          else if (protocol.status === 'failed') {
+          } else if (protocol.status === 'failed') {
             toast.dismiss();
             toast.error(protocol.statusMessage || 'Failed to generate protocol. Please try again.');
-            setCurrentStep('offers');
+            setCurrentStep('contentSample');
             setIsProcessing(false);
           }
         }
@@ -803,7 +786,6 @@ export default function CreateWritingProtocolPage() {
     }, 3000);
   };
 
-  // Clean up polling interval on unmount
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) {
@@ -812,7 +794,6 @@ export default function CreateWritingProtocolPage() {
     };
   }, []);
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -830,7 +811,6 @@ export default function CreateWritingProtocolPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentStep, formData]);
 
-  // Show loading state if checking auth
   if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -841,7 +821,6 @@ export default function CreateWritingProtocolPage() {
 
   return (
     <div className="min-h-screen bg-base-100 flex flex-col">
-      {/* Progress bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-base-200 z-10">
         <div
           className="h-full bg-primary transition-all duration-300 ease-out"
@@ -851,7 +830,6 @@ export default function CreateWritingProtocolPage() {
         ></div>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
           <AnimatePresence mode="wait">
@@ -1002,48 +980,63 @@ export default function CreateWritingProtocolPage() {
                     Who is your target audience?
                   </h1>
                   <p className="text-base-content/70">
-                    Select all audience types that apply to your content.
+                    Describe your ideal clients/readers to help us create more personalized content.
                   </p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {audienceOptions.map((option) => (
-                      <label
-                        key={option.category}
-                        className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
-                          formData.audience.includes(option.category) ? "border-primary border-2" : ""
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            className="checkbox checkbox-primary mr-3"
-                            checked={formData.audience.includes(option.category)}
-                            onChange={() =>
-                              updateFormData(
-                                "audience",
-                                toggleArrayValue(formData.audience, option.category)
-                              )
-                            }
-                          />
-                          <span className="font-medium">{option.category}</span>
-                        </div>
-                        <p className="text-sm text-base-content/70 mt-1 ml-8">
-                          Examples: {option.examples}
-                        </p>
-                      </label>
-                    ))}
-                  </div>
                   
-                  <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-2">Tell us more about your audience</h2>
-                    <textarea
-                      placeholder="Describe your specific audience in more detail (demographics, psychographics, pain points, desires, etc.)"
-                      className="textarea textarea-bordered w-full h-32"
-                      value={formData.audienceDetails}
-                      onChange={(e) => updateFormData("audienceDetails", e.target.value)}
-                      ref={(el) => {
-                        activeInputRef.current = el;
-                      }}
-                    ></textarea>
+                  <div className="mt-2">
+                    
+                    {formData.idealClientProfiles.map((profile, index) => (
+                      <div key={index} className="mb-4 bg-base-200 p-4 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium">Profile #{index + 1}</h3>
+                          <button 
+                            className="btn btn-sm btn-ghost" 
+                            onClick={() => {
+                              const updatedProfiles = [...formData.idealClientProfiles];
+                              updatedProfiles.splice(index, 1);
+                              updateFormData("idealClientProfiles", updatedProfiles);
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <textarea
+                          placeholder={`Describe your ideal client/reader. What are their demographics, pain points, desires, objections, and where are they in their journey?`}
+                          className="textarea textarea-bordered w-full h-24"
+                          value={profile.description}
+                          onChange={(e) => {
+                            const updatedProfiles = [...formData.idealClientProfiles];
+                            updatedProfiles[index].description = e.target.value;
+                            updateFormData("idealClientProfiles", updatedProfiles);
+                          }}
+                          ref={index === 0 ? (el) => {
+                            activeInputRef.current = el;
+                          } : undefined}
+                        ></textarea>
+                      </div>
+                    ))}
+                    
+                    {formData.idealClientProfiles.length < 3 && (
+                      <button 
+                        className="btn btn-outline btn-primary btn-sm mt-2" 
+                        onClick={() => {
+                          const updatedProfiles = [...formData.idealClientProfiles, { description: "" }];
+                          updateFormData("idealClientProfiles", updatedProfiles);
+                        }}
+                      >
+                        + Add another profile
+                      </button>
+                    )}
+                    
+                    <div className="bg-base-200/50 p-4 rounded-lg mt-6">
+                      <div className="flex items-start mb-2">
+                        <span className="text-xl mr-2">💡</span>
+                        <h3 className="font-semibold">Example Profile</h3>
+                      </div>
+                      <p className="text-sm text-base-content/80">
+                        "Sarah, 38, marketing director at a mid-sized B2B company. She's overwhelmed with managing multiple marketing channels and needs systems to make content creation more efficient. She has a good marketing foundation but struggles with content consistency. She values data-driven approaches and practical strategies she can implement right away."
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1096,12 +1089,10 @@ export default function CreateWritingProtocolPage() {
                         className="radio radio-primary mr-3"
                         checked={formData.onlinePresence.platforms.length > 0}
                         onChange={() => {
-                          // Just set an empty array - we'll select platforms in the next step
                           updateFormData("onlinePresence", {
                             platforms: ["Website/Blog"],
                             platformDetails: {}
                           });
-                          // Go to platform selection on "Yes"
                           setCurrentStep("platformSelection");
                         }}
                       />
@@ -1122,7 +1113,6 @@ export default function CreateWritingProtocolPage() {
                             platforms: [],
                             platformDetails: {}
                           });
-                          // Skip ahead to contentTypes on "No"
                           setCurrentStep("contentTypes");
                         }}
                       />
@@ -1153,7 +1143,6 @@ export default function CreateWritingProtocolPage() {
                           className="checkbox checkbox-primary mr-3"
                           checked={formData.onlinePresence.platforms.includes(platform)}
                           onChange={() => {
-                            // If "Website/Blog" was the placeholder, remove it when selecting actual platforms
                             let currentPlatforms = formData.onlinePresence.platforms;
                             if (currentPlatforms.length === 1 && currentPlatforms[0] === "Website/Blog" && platform !== "Website/Blog") {
                               currentPlatforms = [];
@@ -1164,7 +1153,6 @@ export default function CreateWritingProtocolPage() {
                               platform
                             );
                             
-                            // Initialize platform details when checked
                             const updatedPlatformDetails = { ...formData.onlinePresence.platformDetails };
                             
                             if (!currentPlatforms.includes(platform) && updatedPlatforms.includes(platform)) {
@@ -1174,7 +1162,6 @@ export default function CreateWritingProtocolPage() {
                               };
                             }
                             
-                            // Remove platform details when unchecked
                             if (currentPlatforms.includes(platform) && !updatedPlatforms.includes(platform)) {
                               delete updatedPlatformDetails[platform];
                             }
@@ -1204,7 +1191,6 @@ export default function CreateWritingProtocolPage() {
                       </p>
                       
                       <div className="space-y-8 mt-6">
-                        {/* Audience size slider */}
                         <div className="space-y-3">
                           <label className="font-medium">
                             {platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.metricName || "Audience size"}
@@ -1260,7 +1246,6 @@ export default function CreateWritingProtocolPage() {
                           </div>
                         </div>
                         
-                        {/* Posting frequency slider */}
                         <div className="space-y-3">
                           <label className="font-medium">Posting Frequency</label>
                           
@@ -1369,7 +1354,6 @@ export default function CreateWritingProtocolPage() {
                     </label>
                   </div>
                   
-                  {/* Custom content types input */}
                   {formData.contentTypes.includes("Other") && (
                     <div className="mt-4 space-y-4">
                       <div className="flex items-center gap-2">
@@ -1389,7 +1373,6 @@ export default function CreateWritingProtocolPage() {
                         </button>
                       </div>
                       
-                      {/* Display custom content types */}
                       {formData.customContentTypes.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-sm font-medium">Custom content types:</p>
@@ -1458,7 +1441,6 @@ export default function CreateWritingProtocolPage() {
                     </label>
                   </div>
                   
-                  {/* Custom goals input */}
                   {formData.goals.includes("Other") && (
                     <div className="mt-4 space-y-4">
                       <div className="flex items-center gap-2">
@@ -1478,7 +1460,6 @@ export default function CreateWritingProtocolPage() {
                         </button>
                       </div>
                       
-                      {/* Display custom goals */}
                       {formData.customGoals.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-sm font-medium">Custom goals:</p>
@@ -1547,7 +1528,6 @@ export default function CreateWritingProtocolPage() {
                     </label>
                   </div>
                   
-                  {/* Custom challenges input */}
                   {formData.challenges.includes("Other") && (
                     <div className="mt-4 space-y-4">
                       <div className="flex items-center gap-2">
@@ -1567,7 +1547,6 @@ export default function CreateWritingProtocolPage() {
                         </button>
                       </div>
                       
-                      {/* Display custom challenges */}
                       {formData.customChallenges.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-sm font-medium">Custom challenges:</p>
@@ -1609,7 +1588,7 @@ export default function CreateWritingProtocolPage() {
                       <input
                         type="radio"
                         className="radio radio-primary mr-3"
-                        checked={formData.hasLeadMagnets}
+                        checked={formData.hasLeadMagnets === true}
                         onChange={() => updateFormData("hasLeadMagnets", true)}
                       />
                       <span>Yes, I have lead magnets</span>
@@ -1617,17 +1596,20 @@ export default function CreateWritingProtocolPage() {
                     
                     <label
                       className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
-                        !formData.hasLeadMagnets ? "border-primary border-2" : ""
+                        formData.hasLeadMagnets === false ? "border-primary border-2" : ""
                       }`}
                     >
                       <input
                         type="radio"
                         className="radio radio-primary mr-3"
-                        checked={!formData.hasLeadMagnets}
+                        checked={formData.hasLeadMagnets === false}
                         onChange={() => {
-                          updateFormData("hasLeadMagnets", false);
-                          updateFormData("leadMagnets", []);
-                          updateFormData("leadMagnetDetails", "");
+                          setFormData(prev => ({
+                            ...prev,
+                            hasLeadMagnets: false,
+                            leadMagnets: [],
+                            leadMagnetDetails: ""
+                          }));
                         }}
                       />
                       <span>No, not yet</span>
@@ -1704,7 +1686,7 @@ export default function CreateWritingProtocolPage() {
                       <input
                         type="radio"
                         className="radio radio-primary mr-3"
-                        checked={formData.hasOffers}
+                        checked={formData.hasOffers === true}
                         onChange={() => updateFormData("hasOffers", true)}
                       />
                       <span>Yes, I have offers</span>
@@ -1718,11 +1700,14 @@ export default function CreateWritingProtocolPage() {
                       <input
                         type="radio"
                         className="radio radio-primary mr-3"
-                        checked={!formData.hasOffers}
+                        checked={formData.hasOffers === false}
                         onChange={() => {
-                          updateFormData("hasOffers", false);
-                          updateFormData("offers", []);
-                          updateFormData("offerDetails", "");
+                          setFormData(prev => ({
+                            ...prev,
+                            hasOffers: false,
+                            offers: [],
+                            offerDetails: ""
+                          }));
                         }}
                       />
                       <span>No, not yet</span>
@@ -1781,6 +1766,125 @@ export default function CreateWritingProtocolPage() {
                 </div>
               )}
 
+              {currentStep === "contentSample" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Upload a sample of your content
+                  </h1>
+                  <p className="text-base-content/70">
+                    Sharing a sample of your existing content helps us better understand your style and create a more personalized protocol.
+                  </p>
+                  
+                  <textarea
+                    placeholder="Paste a sample of your content here (e.g., a blog post, article, or social media post that represents your writing style)"
+                    className="textarea textarea-bordered w-full h-40"
+                    value={formData.contentSample}
+                    onChange={(e) => updateFormData("contentSample", e.target.value)}
+                  ></textarea>
+                  
+                  <div className="p-4 bg-base-200/40 rounded-lg">
+                    <div className="flex items-start">
+                      <span className="text-xl mr-2">💡</span>
+                      <div>
+                        <p className="font-semibold">Tip</p>
+                        <p className="text-sm text-base-content/80">
+                          The more representative your sample is of your usual writing style, the better we can tailor your protocol. 
+                          Aim for 200-500 words if possible.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "contentBalance" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Content Balance Preference
+                  </h1>
+                  <p className="text-base-content/70">
+                    Choose how you'd like to balance educational content with conversion-focused content.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 gap-4 mt-4">
+                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "education" ? "border-primary border-2" : ""}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.contentBalance === "education"}
+                          onChange={() => updateFormData("contentBalance", "education")}
+                        />
+                        <span className="font-bold">Education First 📚</span>
+                      </div>
+                      <div className="ml-8 mt-2">
+                        <p className="text-base-content/70 mb-2">
+                          Focus more on providing value and educating your audience (80% educational, 20% promotional content)
+                        </p>
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                          <div className="bg-blue-400 h-full" style={{ width: "80%" }}></div>
+                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "20%" }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span>Educational</span>
+                          <span>Promotional</span>
+                        </div>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "balanced" ? "border-primary border-2" : ""}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.contentBalance === "balanced"}
+                          onChange={() => updateFormData("contentBalance", "balanced")}
+                        />
+                        <span className="font-bold">Balanced Approach ⚖️</span>
+                      </div>
+                      <div className="ml-8 mt-2">
+                        <p className="text-base-content/70 mb-2">
+                          Equal focus on educational content and promotional material (50% educational, 50% promotional)
+                        </p>
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                          <div className="bg-blue-400 h-full" style={{ width: "50%" }}></div>
+                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "50%" }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span>Educational</span>
+                          <span>Promotional</span>
+                        </div>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "conversion" ? "border-primary border-2" : ""}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.contentBalance === "conversion"}
+                          onChange={() => updateFormData("contentBalance", "conversion")}
+                        />
+                        <span className="font-bold">Conversion Focused 🎯</span>
+                      </div>
+                      <div className="ml-8 mt-2">
+                        <p className="text-base-content/70 mb-2">
+                          More emphasis on promoting your offers and driving conversions (40% educational, 60% promotional)
+                        </p>
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                          <div className="bg-blue-400 h-full" style={{ width: "40%" }}></div>
+                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "60%" }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span>Educational</span>
+                          <span>Promotional</span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {currentStep === "processing" && (
                 <div className="space-y-6 text-center">
                   <h1 className="text-3xl font-bold">
@@ -1816,7 +1920,6 @@ export default function CreateWritingProtocolPage() {
                 </div>
               )}
 
-              {/* Navigation buttons */}
               {currentStep !== "processing" && (
                 <div className="mt-10 flex justify-between items-center">
                   {currentStep !== "title" ? (
@@ -1835,7 +1938,7 @@ export default function CreateWritingProtocolPage() {
                     disabled={!canProceed()}
                     className="btn btn-primary"
                   >
-                    {currentStep === "offers"
+                    {currentStep === "contentBalance"
                       ? "Create Protocol"
                       : "Continue"}
                     <FaArrowRight size={12} className="ml-2" />
@@ -1850,7 +1953,6 @@ export default function CreateWritingProtocolPage() {
   );
 }
 
-// Steps array for progress tracking
 const STEPS: Step[] = [
   "title",
   "modelSelect",
@@ -1867,5 +1969,7 @@ const STEPS: Step[] = [
   "challenges",
   "leadMagnets",
   "offers",
+  "contentSample",
+  "contentBalance",
   "processing",
 ];

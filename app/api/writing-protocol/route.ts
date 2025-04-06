@@ -46,7 +46,8 @@ export async function POST(req: Request) {
       offers,
       offerDetails,
       hasLeadMagnets,
-      hasOffers
+      hasOffers,
+      contentBalance
     } = await req.json();
 
     // Validate required fields
@@ -170,7 +171,8 @@ export async function POST(req: Request) {
       offers,
       offerDetails,
       hasLeadMagnets,
-      hasOffers
+      hasOffers,
+      contentBalance
     }).catch(error => {
       console.error('Background processing error:', error);
     });
@@ -210,6 +212,7 @@ async function generateProtocolContent(
     offerDetails?: string;
     hasLeadMagnets?: boolean;
     hasOffers?: boolean;
+    contentBalance?: 'education' | 'conversion' | 'balanced';
   }
 ) {
   try {
@@ -253,6 +256,16 @@ async function generateProtocolContent(
     ? `- Products/services offered: ${data.offers?.join(", ") || "None"}
     ${data.offerDetails ? `- Offer details: ${data.offerDetails}` : ""}`
     : "- No specific products or services defined yet"}
+    
+    PROTOCOL BALANCE PREFERENCE:
+    ${data.contentBalance 
+      ? data.contentBalance === 'education' 
+        ? '- Focus more on educational content (80% educational, 20% promotional)'
+        : data.contentBalance === 'conversion'
+          ? '- Focus more on conversion and promotional content (40% educational, 60% promotional)'
+          : '- Balanced approach between educational and promotional content (50% educational, 50% promotional)'
+      : '- Balanced approach between educational and promotional content (50% educational, 50% promotional)'
+    }
     
     The writing protocol should be titled: "${data.title}"
     
