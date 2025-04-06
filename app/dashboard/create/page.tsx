@@ -48,6 +48,13 @@ export default function CreateWritingProtocolPage() {
     modelType: 'fast',
   });
 
+  // Add protocol access state
+  const [hasProtocolAccess, setHasProtocolAccess] = useState(true);
+  const [accessDetails, setAccessDetails] = useState<{
+    isUnlimited: boolean;
+    tokens: number;
+  }>({ isUnlimited: false, tokens: 0 });
+
   // Custom inputs temporary states
   const [newCustomContentType, setNewCustomContentType] = useState("");
   const [newCustomGoal, setNewCustomGoal] = useState("");
@@ -112,12 +119,43 @@ export default function CreateWritingProtocolPage() {
     }
   }, [currentStep]);
 
-  // Handle checking if authenticated
+  // Handle checking if authenticated and has protocol access
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
+      return;
+    }
+
+    if (status === "authenticated") {
+      checkProtocolAccess();
     }
   }, [status, router]);
+
+  // Check if user has access to create protocols
+  const checkProtocolAccess = async () => {
+    try {
+      const response = await fetch('/api/user/protocol-access');
+      if (!response.ok) {
+        throw new Error('Failed to check protocol access');
+      }
+      
+      const data = await response.json();
+      setHasProtocolAccess(data.hasAccess);
+      setAccessDetails({
+        isUnlimited: data.isUnlimited,
+        tokens: data.remainingTokens,
+      });
+      
+      // If user doesn't have access, show a message and redirect to pricing
+      if (!data.hasAccess) {
+        toast.error('You need to purchase access to create protocols');
+        setTimeout(() => router.push('/#pricing'), 1500);
+      }
+    } catch (error) {
+      console.error('Error checking protocol access:', error);
+      toast.error('Failed to verify protocol access');
+    }
+  };
 
   // Update form data
   const updateFormData = <K extends keyof FormData>(
@@ -258,6 +296,19 @@ export default function CreateWritingProtocolPage() {
   // Handle form submission
   const handleSubmit = async () => {
     try {
+      // Check access again right before submission
+      const accessResponse = await fetch('/api/user/protocol-access');
+      if (!accessResponse.ok) {
+        throw new Error('Failed to verify protocol access');
+      }
+      
+      const accessData = await accessResponse.json();
+      if (!accessData.hasAccess) {
+        toast.error('You need to purchase access to create protocols');
+        router.push('/#pricing');
+        return;
+      }
+      
       setIsProcessing(true);
       toast.loading("Creating your writing protocol...");
 
@@ -306,6 +357,20 @@ export default function CreateWritingProtocolPage() {
 
       // Parse successful response
       const result = await response.json();
+
+      // Consume a token if needed (if not unlimited)
+      if (!accessData.isUnlimited) {
+        const consumeResponse = await fetch('/api/user/consume-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!consumeResponse.ok) {
+          console.error('Failed to consume token, but protocol was created');
+        }
+      }
 
       // Update loading toast with more specific message
       toast.dismiss();

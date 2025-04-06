@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaArrowRight, FaPlus, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaArrowRight, FaPlus, FaTrash, FaSpinner, FaInfinity, FaTicketAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import ButtonAccount from '@/components/ButtonAccount';
 
@@ -14,11 +14,49 @@ interface WritingProtocol {
   createdAt: string;
 }
 
+interface ProtocolAccess {
+  hasAccess: boolean;
+  remainingTokens: number;
+  isUnlimited: boolean;
+  isLoading: boolean;
+}
+
 export default function WritingProtocolsPage() {
   const router = useRouter();
   const [protocols, setProtocols] = useState<WritingProtocol[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<Record<string, boolean>>({});
+  const [access, setAccess] = useState<ProtocolAccess>({
+    hasAccess: false,
+    remainingTokens: 0,
+    isUnlimited: false,
+    isLoading: true
+  });
+
+  // Fetch user's token status
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const response = await fetch('/api/user/protocol-access');
+        if (response.ok) {
+          const data = await response.json();
+          setAccess({
+            hasAccess: data.hasAccess,
+            remainingTokens: data.remainingTokens,
+            isUnlimited: data.isUnlimited,
+            isLoading: false
+          });
+        } else {
+          setAccess(prev => ({ ...prev, isLoading: false }));
+        }
+      } catch (error) {
+        console.error('Error checking protocol access:', error);
+        setAccess(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    checkAccess();
+  }, []);
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -46,6 +84,11 @@ export default function WritingProtocolsPage() {
   }, []);
 
   const handleCreateNew = () => {
+    if (!access.hasAccess) {
+      toast.error('You need to purchase access to create a new protocol');
+      setTimeout(() => router.push('/#pricing'), 1000);
+      return;
+    }
     router.push('/dashboard/create');
   };
 
@@ -107,18 +150,57 @@ export default function WritingProtocolsPage() {
   return (
     <div className="px-4 py-6 max-w-6xl mx-auto">
       
-      <div className="flex justify-between items-center mb-8">
-        <ButtonAccount />
-        <h1 className="text-2xl font-bold">Your Writing Protocols</h1>
-        <button 
-          onClick={handleCreateNew}
-          className="btn btn-primary"
-        >
-          <FaPlus className="mr-2" /> Create New Protocol
-        </button>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div className="flex items-center">
+          <ButtonAccount />
+          <h1 className="text-2xl font-bold ml-4">Your Writing Protocols</h1>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {access.isLoading ? (
+            <div className="animate-pulse bg-base-300 h-10 w-40 rounded-lg"></div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 bg-base-200 rounded-lg">
+              {access.isUnlimited ? (
+                <>
+                  <FaInfinity className="text-primary" />
+                  <span className="font-medium">Unlimited Access</span>
+                </>
+              ) : (
+                <>
+                  <FaTicketAlt className={access.remainingTokens > 0 ? "text-primary" : "text-error"} />
+                  <span className={`font-medium ${access.remainingTokens > 0 ? "" : "text-error"}`}>
+                    {access.remainingTokens} Token{access.remainingTokens !== 1 ? 's' : ''} Left
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+          
+          <button 
+            onClick={handleCreateNew}
+            className={`btn ${access.hasAccess ? 'btn-primary' : 'btn-outline'}`}
+            disabled={access.isLoading}
+          >
+            <FaPlus className="mr-2" /> Create New Protocol
+          </button>
+        </div>
       </div>
 
-      {isLoading ? (
+      {access.hasAccess === false && !access.isLoading && protocols.length === 0 ? (
+        <div className="text-center py-12 bg-base-200 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">Purchase Access to Get Started</h2>
+          <p className="text-base-content/70 mb-6 max-w-lg mx-auto">
+            Choose either a single protocol or unlimited access to create personalized writing protocols that will transform your content creation.
+          </p>
+          <button 
+            onClick={() => router.push('/#pricing')}
+            className="btn btn-primary"
+          >
+            View Pricing Options
+          </button>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center items-center py-12">
           <FaSpinner className="animate-spin text-2xl text-primary" />
         </div>
@@ -182,6 +264,23 @@ export default function WritingProtocolsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {access.hasAccess === false && protocols.length > 0 && (
+        <div className="mt-8 p-4 bg-base-200 rounded-lg">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Need to create more protocols?</h3>
+              <p className="text-base-content/70 mt-1">You've used all your tokens. Get unlimited access or purchase a single protocol.</p>
+            </div>
+            <button 
+              onClick={() => router.push('/#pricing')}
+              className="btn btn-primary mt-4 md:mt-0"
+            >
+              View Pricing Options
+            </button>
+          </div>
         </div>
       )}
     </div>

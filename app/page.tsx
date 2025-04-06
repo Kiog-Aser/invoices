@@ -26,98 +26,105 @@ function PricingSection() {
     <section id="pricing" className="py-20">
       <div className="max-w-5xl mx-auto px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">Pay Once, Use Forever</h2>
+          <h2 className="text-3xl font-bold mb-4">Professional Writing Protocols</h2>
           <p className="text-xl text-base-content/70 max-w-2xl mx-auto">
-            Start with our free plan or upgrade anytime to unlock unlimited websites for life
+            Choose the plan that fits your content creation needs
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Free Plan */}
+          {/* Single Protocol Plan */}
           <div className="card bg-base-100 shadow-lg">
             <div className="card-body">
               <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2">Free Forever</h3>
-                <div className="text-4xl font-bold mb-2">$0</div>
-                <p className="text-base-content/70">Perfect for trying NotiFast</p>
+                <h3 className="text-2xl font-bold mb-2">Single Protocol</h3>
+                <div className="text-4xl font-bold mb-2">$39</div>
+                <p className="text-base-content/70">One-time payment, one protocol</p>
               </div>
               
               <div className="mb-8 flex-grow">
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>1 website</span>
+                    <span><strong>Complete writing protocol</strong></span>
                   </li>
                   <li className="flex items-start">
                     <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>Up to 5 notifications</span>
+                    <span><strong>30-minute strategy call</strong></span>
                   </li>
                   <li className="flex items-start">
                     <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>Basic customization options</span>
+                    <span>PDF export functionality</span>
                   </li>
                   <li className="flex items-start">
                     <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>One theme (iOS)</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <Link href="/dashboard" className="btn btn-outline btn-block">
-                Start Free
-              </Link>
-            </div>
-          </div>
-          
-          {/* Pro Plan */}
-          <div className="card bg-primary/5 shadow-lg relative overflow-hidden border border-primary/20">
-            <div className="absolute top-0 right-0 bg-primary text-primary-content px-4 py-1 font-medium">
-              50% OFF
-            </div>
-            
-            <div className="card-body">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2">Pro Lifetime</h3>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-base-content/50 line-through">$20</span>
-                  <span className="text-4xl font-bold">$10</span>
-                </div>
-                <p className="text-base-content/70">One-time payment, lifetime updates</p>
-              </div>
-              
-              <div className="mb-8 flex-grow">
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span><strong>Unlimited websites</strong></span>
+                    <span>Calendar integration</span>
                   </li>
                   <li className="flex items-start">
                     <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span><strong>Unlimited notifications</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>Advanced customization options</span>
-                  </li>
-                  <li className="flex items-start">
-                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>Custom notification themes</span>
-                  </li>
-                  <li className="flex items-start">
-                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
-                    <span>No NotiFast backlinks</span>
+                    <span>AI-generated content templates</span>
                   </li>
                 </ul>
               </div>
               
               <ButtonCheckout
-                priceId="price_1R8LfbQF2yOHJOkbihbM8EQ5"
+                priceId="price_1RAEzBQF2yOHJOkbGoyJKFUh"
+                mode="payment"
+                successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
+                cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
+                className="btn btn-outline btn-block"
+              >
+                Get Single Protocol
+              </ButtonCheckout>
+            </div>
+          </div>
+          
+          {/* Unlimited Protocol Plan */}
+          <div className="card bg-primary/5 shadow-lg relative overflow-hidden border border-primary/20">
+            <div className="absolute top-0 right-0 bg-primary text-primary-content px-4 py-1 font-medium">
+              BEST VALUE
+            </div>
+            
+            <div className="card-body">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2">Unlimited Access</h3>
+                <div className="text-4xl font-bold mb-2">$159</div>
+                <p className="text-base-content/70">One-time payment, lifetime access</p>
+              </div>
+              
+              <div className="mb-8 flex-grow">
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
+                    <span><strong>Unlimited protocol generations</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
+                    <span><strong>Priority support</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
+                    <span><strong>60-minute onboarding call</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
+                    <span>All export options</span>
+                  </li>
+                  <li className="flex items-start">
+                    <FaCheck className="text-success mt-1 mr-3 flex-shrink-0" />
+                    <span>Future feature updates</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <ButtonCheckout
+                priceId="price_1RAF0yQF2yOHJOkbGp7h8r08"
                 mode="payment"
                 successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
                 cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
                 className="btn btn-primary btn-block"
               >
-                Get Pro Access
+                Get Unlimited Access
               </ButtonCheckout>
               
             </div>

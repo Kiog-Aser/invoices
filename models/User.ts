@@ -44,6 +44,25 @@ const userSchema = new mongoose.Schema(
         return val || '';
       }
     },
+    // Protocol access configuration
+    protocols: {
+      tokens: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      isUnlimited: {
+        type: Boolean,
+        default: false
+      },
+      purchasedCount: {
+        type: Number,
+        default: 0
+      },
+      lastGenerated: {
+        type: Date
+      }
+    },
     provider: {
       type: String,
       required: false, // Make it optional for backward compatibility

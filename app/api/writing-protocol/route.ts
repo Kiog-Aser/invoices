@@ -502,6 +502,22 @@ async function generateProtocolContent(
           status: 'failed',
           statusMessage: 'Failed to parse AI response. Please try again.'
         });
+        
+        // Refund token for the user
+        try {
+          await fetch('/api/user/refund-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            // Use the protocol data to get the user context from the session
+            credentials: 'include',
+          });
+          console.log(`✅ Token refunded for failed protocol generation: ${protocolId}`);
+        } catch (refundError) {
+          console.error("Failed to refund token:", refundError);
+        }
+        
         return;
       }
 
@@ -572,6 +588,21 @@ async function generateProtocolContent(
         status: 'failed',
         statusMessage: aiError.message || 'Failed to generate writing protocol. Please try again.'
       });
+      
+      // Refund token for the user
+      try {
+        await fetch('/api/user/refund-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // Use the protocol data to get the user context from the session
+          credentials: 'include',
+        });
+        console.log(`✅ Token refunded for failed AI generation: ${protocolId}`);
+      } catch (refundError) {
+        console.error("Failed to refund token:", refundError);
+      }
     }
   } catch (error) {
     console.error("Background protocol generation error:", error);
@@ -582,6 +613,21 @@ async function generateProtocolContent(
         status: 'failed',
         statusMessage: error.message || 'An unexpected error occurred. Please try again.'
       });
+      
+      // Refund token for the user
+      try {
+        await fetch('/api/user/refund-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // Use the protocol data to get the user context from the session
+          credentials: 'include',
+        });
+        console.log(`✅ Token refunded for failed protocol processing: ${protocolId}`);
+      } catch (refundError) {
+        console.error("Failed to refund token:", refundError);
+      }
     } catch (dbError) {
       console.error("Failed to update protocol with error status:", dbError);
     }
