@@ -13,9 +13,17 @@ type Step =
   | "modelSelect"
   | "role"
   | "industry"
+  | "experience"        
+  | "audience"          
+  | "timeAvailability"  
+  | "onlinePresence"    
+  | "platformSelection" 
+  | "platformDetails"   
   | "contentTypes"
   | "goals"
   | "challenges"
+  | "leadMagnets"       
+  | "offers"            
   | "processing";
 
 interface FormData {
@@ -25,11 +33,153 @@ interface FormData {
   contentTypes: string[];
   goals: string[];
   challenges: string[];
-  customContentTypes: string[]; // Add custom types
-  customGoals: string[]; // Add custom goals
-  customChallenges: string[]; // Add custom challenges
-  modelType: 'fast' | 'quality'; // New field for AI model selection
+  customContentTypes: string[];
+  customGoals: string[];
+  customChallenges: string[];
+  modelType: 'fast' | 'quality';
+  
+  // New fields for additional user context
+  experience: string;
+  audience: string[];
+  audienceDetails: string; // New field for detailed audience description
+  timeAvailability: string;
+  onlinePresence: {
+    platforms: string[];
+    platformDetails: Record<string, {
+      followersCount: string;
+      postFrequency: string;
+    }>;
+  };
+  hasLeadMagnets: boolean; // New field to track if they have lead magnets
+  leadMagnets: string[];
+  leadMagnetDetails: string; // New field for detailed lead magnet description
+  hasOffers: boolean; // New field to track if they have offers
+  offers: string[];
+  offerDetails: string; // New field for detailed offer description
 }
+
+// Define the type for platform details
+type PlatformDetail = {
+  metricName: string;
+  ranges: string[];
+};
+
+// Type-safe platform details
+const platformDetails: Record<string, PlatformDetail> = {
+  "Website/Blog": {
+    metricName: "Monthly visitors",
+    ranges: [
+      "Under 1,000",
+      "1,000-10,000", 
+      "10,000-50,000", 
+      "50,000-100,000", 
+      "100,000+"
+    ]
+  },
+  "LinkedIn": {
+    metricName: "Connections/Followers",
+    ranges: [
+      "Under 500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000-10,000", 
+      "10,000+"
+    ]
+  },
+  "Twitter/X": {
+    metricName: "Followers",
+    ranges: [
+      "Under 500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000-10,000", 
+      "10,000-50,000", 
+      "50,000+"
+    ]
+  },
+  "Instagram": {
+    metricName: "Followers",
+    ranges: [
+      "Under 1,000", 
+      "1,000-5,000", 
+      "5,000-10,000", 
+      "10,000-50,000", 
+      "50,000-100,000", 
+      "100,000+"
+    ]
+  },
+  "Facebook": {
+    metricName: "Page/Group followers",
+    ranges: [
+      "Under 500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000-10,000", 
+      "10,000-50,000", 
+      "50,000+"
+    ]
+  },
+  "YouTube": {
+    metricName: "Subscribers",
+    ranges: [
+      "Under 100", 
+      "100-1,000", 
+      "1,000-10,000", 
+      "10,000-100,000", 
+      "100,000+"
+    ]
+  },
+  "TikTok": {
+    metricName: "Followers",
+    ranges: [
+      "Under 1,000", 
+      "1,000-5,000", 
+      "5,000-20,000", 
+      "20,000-100,000", 
+      "100,000+"
+    ]
+  },
+  "Medium": {
+    metricName: "Followers",
+    ranges: [
+      "Under 100", 
+      "100-500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000+"
+    ]
+  },
+  "Substack": {
+    metricName: "Subscribers",
+    ranges: [
+      "Under 100", 
+      "100-500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000+"
+    ]
+  },
+  "Pinterest": {
+    metricName: "Followers",
+    ranges: [
+      "Under 500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000-10,000", 
+      "10,000+"
+    ]
+  },
+  "Podcast": {
+    metricName: "Listeners per episode",
+    ranges: [
+      "Under 100", 
+      "100-500", 
+      "500-1,000", 
+      "1,000-5,000", 
+      "5,000+"
+    ]
+  }
+};
 
 export default function CreateWritingProtocolPage() {
   const router = useRouter();
@@ -46,6 +196,20 @@ export default function CreateWritingProtocolPage() {
     customGoals: [],
     customChallenges: [],
     modelType: 'fast',
+    experience: "",
+    audience: [],
+    audienceDetails: "",
+    timeAvailability: "",
+    onlinePresence: {
+      platforms: [],
+      platformDetails: {},
+    },
+    hasLeadMagnets: false,
+    leadMagnets: [],
+    leadMagnetDetails: "",
+    hasOffers: false,
+    offers: [],
+    offerDetails: "",
   });
 
   // Add protocol access state
@@ -111,6 +275,101 @@ export default function CreateWritingProtocolPage() {
     "Creating engaging content",
     "Finding inspiration",
   ];
+
+  // Add options for additional fields
+  const experienceLevelOptions = [
+    "Beginner (0-1 years)",
+    "Intermediate (1-3 years)",
+    "Advanced (3-5 years)",
+    "Expert (5+ years)"
+  ];
+
+  // Updated audience selection approach
+  const audienceOptions = [
+    {
+      category: "Professionals",
+      examples: "Corporate employees, Knowledge workers, Industry specialists"
+    },
+    {
+      category: "Business Owners",
+      examples: "Entrepreneurs, Small business owners, Startups, Executives"
+    },
+    {
+      category: "Creative Professionals",
+      examples: "Designers, Writers, Artists, Photographers"
+    },
+    {
+      category: "Technical Audience",
+      examples: "Developers, Engineers, IT professionals, Data scientists"
+    },
+    {
+      category: "Academia",
+      examples: "Students, Researchers, Educators, Academic institutions"
+    },
+    {
+      category: "Consumer Groups",
+      examples: "Parents, Health enthusiasts, Hobbyists, Lifestyle focus"
+    },
+    {
+      category: "Industry Specific",
+      examples: "Healthcare, Finance, Legal, Real estate, Construction"
+    }
+  ];
+
+  const timeAvailabilityOptions = [
+    "Very limited (1-2 hours/week)",
+    "Limited (3-5 hours/week)",
+    "Moderate (5-10 hours/week)",
+    "Significant (10-20 hours/week)",
+    "Full-time (20+ hours/week)"
+  ];
+
+  const frequencyOptions = [
+    "Rarely (less than once per month)",
+    "Occasionally (1-3 times per month)",
+    "Regularly (1-2 times per week)",
+    "Frequently (3-5 times per week)",
+    "Daily",
+    "Multiple times per day"
+  ];
+
+  const followerRangeOptions = [
+    "Just starting (<100 followers)",
+    "Small audience (100-1,000 followers)",
+    "Growing audience (1,000-10,000 followers)",
+    "Established audience (10,000-50,000 followers)",
+    "Large audience (50,000-100,000 followers)",
+    "Very large audience (100,000+ followers)"
+  ];
+
+  // Add lead magnet and offer options
+  const leadMagnetOptions = [
+    "PDF guide or ebook",
+    "Email course or challenge",
+    "Free template or worksheet",
+    "Webinar or workshop",
+    "Quiz or assessment",
+    "Free consultation or coaching call",
+    "Resource library or toolkit",
+    "Free trial or demo",
+    "Checklist",
+    "Video tutorial"
+  ];
+  
+  const offerOptions = [
+    "Digital product (course, ebook, etc.)",
+    "Coaching or consulting services",
+    "Membership or subscription",
+    "Physical product",
+    "Software as a service (SaaS)",
+    "Done-for-you service",
+    "Group program",
+    "Masterclass or workshop",
+    "Custom solution"
+  ];
+
+  // Add state for platform details questions
+  const [currentPlatformIndex, setCurrentPlatformIndex] = useState<number>(0);
 
   // Focus the active input when step changes
   useEffect(() => {
@@ -182,6 +441,22 @@ export default function CreateWritingProtocolPage() {
         return formData.goals.length > 0;
       case "challenges":
         return formData.challenges.length > 0;
+      case "experience":
+        return !!formData.experience;
+      case "audience":
+        return formData.audience.length > 0;
+      case "timeAvailability":
+        return !!formData.timeAvailability;
+      case "onlinePresence":
+        return true; // Always valid since we allow proceeding without platforms
+      case "platformSelection":
+        return formData.onlinePresence.platforms.length > 0;
+      case "platformDetails":
+        return true; // Always valid since we allow proceeding without platforms
+      case "leadMagnets":
+        return formData.hasLeadMagnets ? formData.leadMagnets.length > 0 : true;
+      case "offers":
+        return formData.hasOffers ? formData.offers.length > 0 : true;
       default:
         return false;
     }
@@ -202,7 +477,38 @@ export default function CreateWritingProtocolPage() {
         setCurrentStep("industry");
         break;
       case "industry":
-        setCurrentStep("contentTypes");
+        setCurrentStep("experience");
+        break;
+      case "experience":
+        setCurrentStep("audience");
+        break;
+      case "audience":
+        setCurrentStep("timeAvailability");
+        break;
+      case "timeAvailability":
+        setCurrentStep("onlinePresence");
+        break;
+      case "onlinePresence":
+        // If they have no online presence, skip platform questions
+        if (formData.onlinePresence.platforms.length === 0) {
+          setCurrentStep("contentTypes");
+        } else {
+          setCurrentStep("platformSelection");
+        }
+        break;
+      case "platformSelection":
+        // Reset platform index before showing platform details
+        setCurrentPlatformIndex(0);
+        setCurrentStep("platformDetails");
+        break;
+      case "platformDetails":
+        // If we have more platforms to collect details for, increment the index
+        if (currentPlatformIndex < formData.onlinePresence.platforms.length - 1) {
+          setCurrentPlatformIndex(currentPlatformIndex + 1);
+        } else {
+          // We've collected details for all platforms, move to content types
+          setCurrentStep("contentTypes");
+        }
         break;
       case "contentTypes":
         setCurrentStep("goals");
@@ -211,6 +517,12 @@ export default function CreateWritingProtocolPage() {
         setCurrentStep("challenges");
         break;
       case "challenges":
+        setCurrentStep("leadMagnets");
+        break;
+      case "leadMagnets":
+        setCurrentStep("offers");
+        break;
+      case "offers":
         setCurrentStep("processing");
         handleSubmit();
         break;
@@ -231,8 +543,39 @@ export default function CreateWritingProtocolPage() {
       case "industry":
         setCurrentStep("role");
         break;
-      case "contentTypes":
+      case "experience":
         setCurrentStep("industry");
+        break;
+      case "audience":
+        setCurrentStep("experience");
+        break;
+      case "timeAvailability":
+        setCurrentStep("audience");
+        break;
+      case "onlinePresence":
+        setCurrentStep("timeAvailability");
+        break;
+      case "platformSelection":
+        setCurrentStep("onlinePresence");
+        break;
+      case "platformDetails":
+        if (currentPlatformIndex > 0) {
+          // Go to previous platform's details
+          setCurrentPlatformIndex(currentPlatformIndex - 1);
+        } else {
+          // Go back to platform selection
+          setCurrentStep("platformSelection");
+        }
+        break;
+      case "contentTypes":
+        if (formData.onlinePresence.platforms.length > 0) {
+          // If they had platforms, go back to the last platform's details
+          setCurrentPlatformIndex(formData.onlinePresence.platforms.length - 1);
+          setCurrentStep("platformDetails");
+        } else {
+          // Otherwise go back to online presence question
+          setCurrentStep("onlinePresence");
+        }
         break;
       case "goals":
         setCurrentStep("contentTypes");
@@ -240,8 +583,14 @@ export default function CreateWritingProtocolPage() {
       case "challenges":
         setCurrentStep("goals");
         break;
-      case "processing":
+      case "leadMagnets":
         setCurrentStep("challenges");
+        break;
+      case "offers":
+        setCurrentStep("leadMagnets");
+        break;
+      case "processing":
+        setCurrentStep("offers");
         break;
       default:
         break;
@@ -395,7 +744,7 @@ export default function CreateWritingProtocolPage() {
           ? error.message
           : "Failed to create writing protocol",
       );
-      setCurrentStep("challenges"); // Go back to the last step
+      setCurrentStep("offers"); // Go back to the last step
       setIsProcessing(false);
     }
   };
@@ -444,7 +793,7 @@ export default function CreateWritingProtocolPage() {
           else if (protocol.status === 'failed') {
             toast.dismiss();
             toast.error(protocol.statusMessage || 'Failed to generate protocol. Please try again.');
-            setCurrentStep('challenges');
+            setCurrentStep('offers');
             setIsProcessing(false);
           }
         }
@@ -555,7 +904,7 @@ export default function CreateWritingProtocolPage() {
                         <span className="font-bold text-lg">Fast Generation (⚡️ ~1 minute)</span>
                       </div>
                       <p className="text-base-content/70 mt-2 ml-8">
-                        Generates your writing protocol quickly with good quality results. Best for most situations when you need a writing protocol created rapidly.
+                        Quick generation of writing protocols for standard use cases. Good for most situations.
                       </p>
                     </label>
                     
@@ -615,6 +964,363 @@ export default function CreateWritingProtocolPage() {
                       activeInputRef.current = el;
                     }}
                   />
+                </div>
+              )}
+
+              {currentStep === "experience" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    What is your experience level?
+                  </h1>
+                  <p className="text-base-content/70">
+                    This helps us tailor the protocol to your expertise.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {experienceLevelOptions.map((option) => (
+                      <label
+                        key={option}
+                        className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                          formData.experience === option ? "border-primary border-2" : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.experience === option}
+                          onChange={() => updateFormData("experience", option)}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "audience" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Who is your target audience?
+                  </h1>
+                  <p className="text-base-content/70">
+                    Select all audience types that apply to your content.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {audienceOptions.map((option) => (
+                      <label
+                        key={option.category}
+                        className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                          formData.audience.includes(option.category) ? "border-primary border-2" : ""
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-primary mr-3"
+                            checked={formData.audience.includes(option.category)}
+                            onChange={() =>
+                              updateFormData(
+                                "audience",
+                                toggleArrayValue(formData.audience, option.category)
+                              )
+                            }
+                          />
+                          <span className="font-medium">{option.category}</span>
+                        </div>
+                        <p className="text-sm text-base-content/70 mt-1 ml-8">
+                          Examples: {option.examples}
+                        </p>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h2 className="text-xl font-semibold mb-2">Tell us more about your audience</h2>
+                    <textarea
+                      placeholder="Describe your specific audience in more detail (demographics, psychographics, pain points, desires, etc.)"
+                      className="textarea textarea-bordered w-full h-32"
+                      value={formData.audienceDetails}
+                      onChange={(e) => updateFormData("audienceDetails", e.target.value)}
+                      ref={(el) => {
+                        activeInputRef.current = el;
+                      }}
+                    ></textarea>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "timeAvailability" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    How much time can you dedicate to content creation?
+                  </h1>
+                  <p className="text-base-content/70">
+                    This will help tailor the protocol to a realistic schedule for you.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {timeAvailabilityOptions.map((option) => (
+                      <label
+                        key={option}
+                        className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                          formData.timeAvailability === option ? "border-primary border-2" : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="radio radio-primary mr-3"
+                          checked={formData.timeAvailability === option}
+                          onChange={() => updateFormData("timeAvailability", option)}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "onlinePresence" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Do you already have an online presence?
+                  </h1>
+                  <p className="text-base-content/70">
+                    Select "Yes" if you already create content on any platform.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        formData.onlinePresence.platforms.length > 0 ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={formData.onlinePresence.platforms.length > 0}
+                        onChange={() => {
+                          // Just set an empty array - we'll select platforms in the next step
+                          updateFormData("onlinePresence", {
+                            platforms: ["Website/Blog"],
+                            platformDetails: {}
+                          });
+                          // Go to platform selection on "Yes"
+                          setCurrentStep("platformSelection");
+                        }}
+                      />
+                      <span>Yes</span>
+                    </label>
+                    
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        formData.onlinePresence.platforms.length === 0 ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={formData.onlinePresence.platforms.length === 0}
+                        onChange={() => {
+                          updateFormData("onlinePresence", {
+                            platforms: [],
+                            platformDetails: {}
+                          });
+                          // Skip ahead to contentTypes on "No"
+                          setCurrentStep("contentTypes");
+                        }}
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "platformSelection" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Select the platforms you use
+                  </h1>
+                  <p className="text-base-content/70 mb-4">
+                    Choose all platforms where you currently create content.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {Object.keys(platformDetails).map((platform) => (
+                      <label
+                        key={platform}
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                          formData.onlinePresence.platforms.includes(platform) ? "border-primary border-2" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-primary mr-3"
+                          checked={formData.onlinePresence.platforms.includes(platform)}
+                          onChange={() => {
+                            // If "Website/Blog" was the placeholder, remove it when selecting actual platforms
+                            let currentPlatforms = formData.onlinePresence.platforms;
+                            if (currentPlatforms.length === 1 && currentPlatforms[0] === "Website/Blog" && platform !== "Website/Blog") {
+                              currentPlatforms = [];
+                            }
+                            
+                            const updatedPlatforms = toggleArrayValue(
+                              currentPlatforms,
+                              platform
+                            );
+                            
+                            // Initialize platform details when checked
+                            const updatedPlatformDetails = { ...formData.onlinePresence.platformDetails };
+                            
+                            if (!currentPlatforms.includes(platform) && updatedPlatforms.includes(platform)) {
+                              updatedPlatformDetails[platform] = {
+                                followersCount: platformDetails[platform]?.ranges[0] || "",
+                                postFrequency: frequencyOptions[0]
+                              };
+                            }
+                            
+                            // Remove platform details when unchecked
+                            if (currentPlatforms.includes(platform) && !updatedPlatforms.includes(platform)) {
+                              delete updatedPlatformDetails[platform];
+                            }
+                            
+                            updateFormData("onlinePresence", {
+                              platforms: updatedPlatforms,
+                              platformDetails: updatedPlatformDetails
+                            });
+                          }}
+                        />
+                        <span>{platform}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "platformDetails" && (
+                <div className="space-y-6">
+                  {formData.onlinePresence.platforms.length > currentPlatformIndex && (
+                    <>
+                      <h1 className="text-3xl font-bold">
+                        Tell us about your {formData.onlinePresence.platforms[currentPlatformIndex]} presence
+                      </h1>
+                      <p className="text-base-content/70">
+                        This helps us tailor your protocol to your existing audience and content strategy.
+                      </p>
+                      
+                      <div className="space-y-8 mt-6">
+                        {/* Audience size slider */}
+                        <div className="space-y-3">
+                          <label className="font-medium">
+                            {platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.metricName || "Audience size"}
+                          </label>
+                          
+                          <div className="flex flex-col space-y-4">
+                            <input 
+                              type="range" 
+                              className="range range-primary" 
+                              min="0" 
+                              max={(platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.length || 1) - 1} 
+                              step="1"
+                              value={platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.indexOf(
+                                formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.followersCount || 
+                                (platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.[0] || "")
+                              ) || 0}
+                              onChange={(e) => {
+                                const platform = formData.onlinePresence.platforms[currentPlatformIndex];
+                                const rangeIndex = parseInt(e.target.value);
+                                const value = platformDetails[platform]?.ranges?.[rangeIndex] || "";
+                                
+                                const updatedPlatformDetails = {
+                                  ...formData.onlinePresence.platformDetails,
+                                  [platform]: {
+                                    ...(formData.onlinePresence.platformDetails[platform] || {}),
+                                    followersCount: value
+                                  }
+                                };
+                                
+                                updateFormData("onlinePresence", {
+                                  ...formData.onlinePresence,
+                                  platformDetails: updatedPlatformDetails
+                                });
+                              }}
+                            />
+                            
+                            <div className="flex justify-between px-2 text-xs text-base-content/70">
+                              {platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.map((range, index) => (
+                                <span key={index} className={
+                                  formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.followersCount === range 
+                                  ? "font-bold text-primary" 
+                                  : ""
+                                }>
+                                  {index === 0 || index === (platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.length || 1) - 1 ? range : ""}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            <div className="text-center font-medium">
+                              {formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.followersCount || 
+                              (platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.ranges?.[0] || "")}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Posting frequency slider */}
+                        <div className="space-y-3">
+                          <label className="font-medium">Posting Frequency</label>
+                          
+                          <div className="flex flex-col space-y-4">
+                            <input 
+                              type="range" 
+                              className="range range-primary" 
+                              min="0" 
+                              max={frequencyOptions.length - 1} 
+                              step="1"
+                              value={frequencyOptions.indexOf(
+                                formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.postFrequency || 
+                                frequencyOptions[0]
+                              ) || 0}
+                              onChange={(e) => {
+                                const platform = formData.onlinePresence.platforms[currentPlatformIndex];
+                                const rangeIndex = parseInt(e.target.value);
+                                const value = frequencyOptions[rangeIndex];
+                                
+                                const updatedPlatformDetails = {
+                                  ...formData.onlinePresence.platformDetails,
+                                  [platform]: {
+                                    ...(formData.onlinePresence.platformDetails[platform] || {}),
+                                    postFrequency: value
+                                  }
+                                };
+                                
+                                updateFormData("onlinePresence", {
+                                  ...formData.onlinePresence,
+                                  platformDetails: updatedPlatformDetails
+                                });
+                              }}
+                            />
+                            
+                            <div className="flex justify-between px-2 text-xs text-base-content/70">
+                              {frequencyOptions.map((option, index) => (
+                                <span key={index} className={
+                                  formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.postFrequency === option
+                                  ? "font-bold text-primary" 
+                                  : ""
+                                }>
+                                  {index === 0 || index === frequencyOptions.length - 1 ? option.split(' ')[0] : ""}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            <div className="text-center font-medium">
+                              {formData.onlinePresence.platformDetails[formData.onlinePresence.platforms[currentPlatformIndex]]?.postFrequency || frequencyOptions[0]}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-center mt-6">
+                          <p className="text-sm text-base-content/70">
+                            {currentPlatformIndex + 1} of {formData.onlinePresence.platforms.length} platforms
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -885,6 +1591,196 @@ export default function CreateWritingProtocolPage() {
                 </div>
               )}
 
+              {currentStep === "leadMagnets" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Do you have any lead magnets?
+                  </h1>
+                  <p className="text-base-content/70">
+                    Lead magnets help you build your audience and email list.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        formData.hasLeadMagnets ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={formData.hasLeadMagnets}
+                        onChange={() => updateFormData("hasLeadMagnets", true)}
+                      />
+                      <span>Yes, I have lead magnets</span>
+                    </label>
+                    
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        !formData.hasLeadMagnets ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={!formData.hasLeadMagnets}
+                        onChange={() => {
+                          updateFormData("hasLeadMagnets", false);
+                          updateFormData("leadMagnets", []);
+                          updateFormData("leadMagnetDetails", "");
+                        }}
+                      />
+                      <span>No, not yet</span>
+                    </label>
+                  </div>
+                  
+                  {formData.hasLeadMagnets && (
+                    <>
+                      <h2 className="text-xl font-semibold mb-3">Select your existing lead magnets</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+                        {leadMagnetOptions.map((option) => (
+                          <label
+                            key={option}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                              formData.leadMagnets.includes(option) ? "border-primary border-2" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-primary mr-3"
+                              checked={formData.leadMagnets.includes(option)}
+                              onChange={() =>
+                                updateFormData(
+                                  "leadMagnets",
+                                  toggleArrayValue(formData.leadMagnets, option)
+                                )
+                              }
+                            />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                      
+                      <div>
+                        <h2 className="text-xl font-semibold mb-2">Tell us more about your lead magnets</h2>
+                        <textarea
+                          placeholder="Describe your lead magnets in more detail (topics, conversion rates, how you promote them, etc.)"
+                          className="textarea textarea-bordered w-full h-32"
+                          value={formData.leadMagnetDetails}
+                          onChange={(e) => updateFormData("leadMagnetDetails", e.target.value)}
+                          ref={(el) => {
+                            activeInputRef.current = el;
+                          }}
+                        ></textarea>
+                      </div>
+                    </>
+                  )}
+                  
+                  {!formData.hasLeadMagnets && (
+                    <div className="p-5 border rounded-lg bg-base-200/50 text-center">
+                      <p className="text-base-content/80">
+                        No problem! Your protocol will include suggestions for lead magnets you can create to grow your audience.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStep === "offers" && (
+                <div className="space-y-6">
+                  <h1 className="text-3xl font-bold">
+                    Do you have products or services you offer?
+                  </h1>
+                  <p className="text-base-content/70">
+                    This helps tailor your protocol to generate leads and sales for your business.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        formData.hasOffers ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={formData.hasOffers}
+                        onChange={() => updateFormData("hasOffers", true)}
+                      />
+                      <span>Yes, I have offers</span>
+                    </label>
+                    
+                    <label
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                        !formData.hasOffers ? "border-primary border-2" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio radio-primary mr-3"
+                        checked={!formData.hasOffers}
+                        onChange={() => {
+                          updateFormData("hasOffers", false);
+                          updateFormData("offers", []);
+                          updateFormData("offerDetails", "");
+                        }}
+                      />
+                      <span>No, not yet</span>
+                    </label>
+                  </div>
+                  
+                  {formData.hasOffers && (
+                    <>
+                      <h2 className="text-xl font-semibold mb-3">Select your current offerings</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+                        {offerOptions.map((option) => (
+                          <label
+                            key={option}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${
+                              formData.offers.includes(option) ? "border-primary border-2" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-primary mr-3"
+                              checked={formData.offers.includes(option)}
+                              onChange={() =>
+                                updateFormData(
+                                  "offers",
+                                  toggleArrayValue(formData.offers, option)
+                                )
+                              }
+                            />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                      
+                      <div>
+                        <h2 className="text-xl font-semibold mb-2">Tell us more about your offers</h2>
+                        <textarea
+                          placeholder="Describe your offers in more detail (price points, target audience, unique selling points, conversion rates, etc.)"
+                          className="textarea textarea-bordered w-full h-32"
+                          value={formData.offerDetails}
+                          onChange={(e) => updateFormData("offerDetails", e.target.value)}
+                          ref={(el) => {
+                            activeInputRef.current = el;
+                          }}
+                        ></textarea>
+                      </div>
+                    </>
+                  )}
+                  
+                  {!formData.hasOffers && (
+                    <div className="p-5 border rounded-lg bg-base-200/50 text-center">
+                      <p className="text-base-content/80">
+                        No problem! Your protocol will focus on audience building and suggest possible offers you could create in the future.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {currentStep === "processing" && (
                 <div className="space-y-6 text-center">
                   <h1 className="text-3xl font-bold">
@@ -939,7 +1835,7 @@ export default function CreateWritingProtocolPage() {
                     disabled={!canProceed()}
                     className="btn btn-primary"
                   >
-                    {currentStep === "challenges"
+                    {currentStep === "offers"
                       ? "Create Protocol"
                       : "Continue"}
                     <FaArrowRight size={12} className="ml-2" />
@@ -960,8 +1856,16 @@ const STEPS: Step[] = [
   "modelSelect",
   "role",
   "industry",
+  "experience",
+  "audience",
+  "timeAvailability",
+  "onlinePresence",
+  "platformSelection",
+  "platformDetails",
   "contentTypes",
   "goals",
   "challenges",
+  "leadMagnets",
+  "offers",
   "processing",
 ];
