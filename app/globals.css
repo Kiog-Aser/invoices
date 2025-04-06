@@ -17,12 +17,34 @@ progress::-webkit-progress-value {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
 @layer base {
   .btn-gradient {
     @apply !bg-gradient !bg-[length:300%_300%] hover:saturate-[1.2] shadow duration-100 !border-0 !border-transparent !bg-transparent animate-shimmer disabled:!bg-none disabled:!bg-gray-500/30  !text-white;
   }
   .btn {
     @apply !capitalize;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"] {
+    -webkit-appearance: none;
+    margin: 0;
+    -moz-appearance: textfield !important;
   }
 }
 
@@ -51,6 +73,121 @@ progress::-webkit-progress-value {
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;
+}
+
+/* Retro design elements */
+.typing-cursor {
+  border-right: 0.15em solid;
+  white-space: nowrap;
+  animation: blinking 1s step-end infinite;
+}
+
+@keyframes blinking {
+  from, to { border-color: transparent }
+  50% { border-color: currentColor }
+}
+
+/* Retro card designs */
+.content-system-container {
+  position: relative;
+}
+
+.content-system-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  background: linear-gradient(to bottom, transparent, hsl(var(--p)), transparent);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.with-item, .without-item {
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.with-item:hover, .without-item:hover {
+  transform: translateY(-5px);
+}
+
+/* VHS Scanline effect */
+.vhs-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.vhs-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    transparent 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+.vhs-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+  z-index: 11;
+}
+
+@keyframes scanline {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+/* Retro design animations */
+@keyframes growWidth {
+  from { width: 0%; }
+  to { width: 85%; }
+}
+
+/* Pixel border style */
+.pixel-border {
+  box-shadow: 
+    0 -4px 0 0 hsl(var(--bc)),
+    0 4px 0 0 hsl(var(--bc)),
+    -4px 0 0 0 hsl(var(--bc)),
+    4px 0 0 0 hsl(var(--bc));
+}
+
+/* Animated pulse dot for simulation of old computers */
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+  vertical-align: middle;
+}
+
+@keyframes pulse {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* Print and PDF Styles */

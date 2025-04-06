@@ -206,6 +206,12 @@ export default function NewTestimonialPage() {
     try {
       setIsSubmitting(true);
 
+      // Refresh session before making the request
+      await fetch('/api/auth/session?update=true', {
+        method: 'GET',
+        credentials: 'include'
+      });
+
       // Combine howHelped, beforeChallenge, and afterSolution into the review
       let finalReview = "";
       if (formData.reviewType === "text" && formData.howHelped && formData.beforeChallenge && formData.afterSolution) {
@@ -215,16 +221,23 @@ export default function NewTestimonialPage() {
                      `${formData.textReview || ""}`;
       }
 
+      // Ensure required fields are present
+      const dataToSubmit = {
+        ...formData,
+        textReview: finalReview || formData.textReview,
+        // Add default values for required fields if not provided
+        howHelped: formData.howHelped || "Improved website engagement",
+        beforeChallenge: formData.beforeChallenge || "Low engagement on website",
+        afterSolution: formData.afterSolution || "Better visitor conversion",
+      };
+
       const response = await fetch('/api/testimonial', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // This sends cookies with the request
-        body: JSON.stringify({
-          ...formData,
-          textReview: finalReview || formData.textReview,
-        }),
+        body: JSON.stringify(dataToSubmit),
       });
 
       if (!response.ok) {

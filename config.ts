@@ -3,10 +3,10 @@ import { ConfigProps } from "./types/config";
 
 const config = {
   // REQUIRED
-  appName: "NotiFast",
+  appName: "CreatiFun",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Increase conversions with notifications. Use our pre-built templates or create your own.",
+    "Generate professional writing systems for your content creation process. Stop the endless content struggle. Create a structured writing protocol that eliminates frustration and delivers results.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
   domainName: process.env.VERCEL_URL || "systems-ai.vercel.app" || "notifast.fun",

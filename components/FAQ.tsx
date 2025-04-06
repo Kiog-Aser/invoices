@@ -10,14 +10,15 @@ interface FAQItemProps {
 
 const faqList: FAQItemProps[] = [
   {
-    question: "How do notifications help increase conversions?",
+    question: "What is a writing protocol?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        <p>NotiFast notifications work in several ways to boost conversions:</p>
+        <p>A writing protocol is a comprehensive content strategy framework that helps you:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>Social proof notifications show real-time activity</li>
-          <li>FOMO triggers create urgency</li>
-          <li>Targeted messages catch visitors at the right moment</li>
+          <li>Define your content niche and unique value proposition</li>
+          <li>Organize your content pillars and themes</li>
+          <li>Create a structured system for consistent content creation</li>
+          <li>Establish your voice, tone, and messaging strategy</li>
         </ul>
       </div>
     ),
@@ -26,10 +27,10 @@ const faqList: FAQItemProps[] = [
     question: "Is it a subscription?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        <p>No, NotiFast uses a simple one-time payment model:</p>
+        <p>No, we use a simple one-time payment model:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>Free plan: Always free for 1 website</li>
-          <li>Pro plan: One-time $10 payment for unlimited websites</li>
+          <li>Single Protocol: One-time $39 payment for a complete protocol</li>
+          <li>Unlimited Access: One-time $159 payment for unlimited protocols</li>
           <li>No recurring fees or hidden charges</li>
           <li>Includes all future updates</li>
         </ul>
@@ -37,57 +38,73 @@ const faqList: FAQItemProps[] = [
     ),
   },
   {
-    question: "How easy is it to set up?",
+    question: "How does the process work?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        <p>Setup takes less than 5 minutes:</p>
+        <p>Creating your writing protocol is simple:</p>
         <ol className="list-decimal list-inside space-y-1">
-          <li>Add your website in the dashboard</li>
-          <li>Create your notifications</li>
-          <li>Copy one line of code to your site's {'<head>'} tag</li>
-          <li>That's it! Your notifications will start showing immediately</li>
+          <li>Complete our step-by-step questionnaire about your content goals</li>
+          <li>Our AI analyzes your input and generates a personalized protocol</li>
+          <li>Access your complete protocol in the dashboard</li>
+          <li>Export, implement, and transform your content strategy</li>
         </ol>
       </div>
     ),
   },
   {
-    question: "What websites is NotiFast compatible with?",
+    question: "What's included in a writing protocol?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        <p>NotiFast works with any website where you can add custom code, including:</p>
+        <p>Each writing protocol includes:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>E-commerce platforms: Shopify, WooCommerce, Magento</li>
-          <li>Website builders: Webflow, Wix, Squarespace</li>
-          <li>Custom websites: React, Next.js, Vue, Angular</li>
-          <li>No-code tools: Bubble, Framer, Carrd</li>
+          <li>Niche Authority Growth System</li>
+          <li>Content Pillars and Topic Ideas</li>
+          <li>Content Creation Frameworks (formats, templates, examples)</li>
+          <li>Content Calendar and Publishing Schedule</li>
+          <li>Conversion Funnel Strategy</li>
         </ul>
       </div>
     ),
   },
   {
-    question: "Will notifications slow down my website?",
+    question: "How long does it take to generate a protocol?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        <p>No, NotiFast is designed for optimal performance:</p>
+        <p>The process is streamlined for efficiency:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>Lightweight script ({"<"}10KB)</li>
-          <li>Loads asynchronously - won't block your page</li>
-          <li>Uses efficient caching</li>
-          <li>Content delivered via fast CDN</li>
+          <li>Questionnaire: 10-15 minutes to complete</li>
+          <li>Standard generation: 1-2 minutes</li>
+          <li>High quality generation: 2-3 minutes</li>
+          <li>Your protocol is immediately available when completed</li>
         </ul>
       </div>
     ),
   },
   {
-    question: "Can I customize the notifications?",
+    question: "Can I customize my writing protocol?",
     answer: (
       <div className="space-y-2 leading-relaxed">
-        With the Pro plan, you get full customization options:
+        <p>Yes, your protocol is fully customizable:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>Multiple notification themes</li>
-          <li>Optional Loop functionality</li>
-          <li>Custom URL support</li>
-          <li>Optional Close Button</li>
+          <li>Add custom content types, goals, and challenges</li>
+          <li>Specify lead magnets and offers for your funnel</li>
+          <li>Balance between educational and promotional content</li>
+          <li>Tailor the protocol to your specific audience needs</li>
+        </ul>
+      </div>
+    ),
+  },
+  {
+    question: "Who is this for?",
+    answer: (
+      <div className="space-y-2 leading-relaxed">
+        <p>Our writing protocols are designed for:</p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Content creators looking to establish clear strategic direction</li>
+          <li>Coaches and consultants building thought leadership</li>
+          <li>Small business owners managing their own content</li>
+          <li>Marketers needing to organize multi-platform content strategies</li>
+          <li>Anyone struggling with content consistency or effectiveness</li>
         </ul>
       </div>
     ),

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Get server session with explicit options
     const session = await getServerSession(authOptions);
     console.log("Session in testimonial API:", session); // Debug log
     

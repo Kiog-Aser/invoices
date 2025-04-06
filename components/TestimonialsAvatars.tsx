@@ -23,7 +23,7 @@ const avatars: {
   },
   {
     alt: "User",
-    src: "https://images.unsplash.com/photo-1488161628813-04466f872be2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=3376&q=80",
+    src: "https://miro.medium.com/v2/resize:fill:176:176/1*lUfHEjTMqa3znXIJnXD9hQ.png",
   },
 ];
 
