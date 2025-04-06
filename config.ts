@@ -9,13 +9,13 @@ const config = {
     "Generate professional writing systems for your content creation process. Stop the endless content struggle. Create a structured writing protocol that eliminates frustration and delivers results.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
-  domainName: process.env.VERCEL_URL || "systems-ai.vercel.app" || "notifast.fun",
+  domainName: process.env.VERCEL_URL || "systems-ai.vercel.app",
   // REQUIRED — the path to your favicon file
-  faviconPath: "/favicon.ico",
+  faviconPath: "/favico.ico",
   // REQUIRED: Your marketplace's logo
   logoPath: "/logo.png",
   // REQUIRED: The OG image used when someone shares your website on social media
-  ogImagePath: "/og-image.png",
+  ogImagePath: "/opengraph-image.png",
   // Optional: The Google Analytics measurement ID
   googleAnalytics: {
      measurementId: "G-YZLD2B6FQ3",
@@ -31,29 +31,29 @@ const config = {
     publicKey: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
     plans: [
       {
-        name: "Free",
-        price: 0,
+        name: "Single Protocol",
+        price: 39,
         priceId: "free-tier",
         description: "Perfect for individuals",
         features: [
-          { name: "1 website" },
-          { name: "Up to 5 notifications" },
-          { name: "Basic customization options" },
-          { name: "One theme (iOS)" }
+          { name: "1 complete writing protocol" },
+          { name: "Content pillars & topic ideas" },
+          { name: "Weekly content calendar" },
+          { name: "Content creation frameworks" }
         ]
       },
       {
-        name: "Pro Lifetime",
-        price: 10,
+        name: "Unlimited Access",
+        price: 159,
         priceId: "price_1R8LfbQF2yOHJOkbihbM8EQ5",
         description: "One-time payment, lifetime access",
         isFeatured: true,
         features: [
-          { name: "Unlimited websites" },
-          { name: "Unlimited notifications" },
+          { name: "Unlimited writing protocols" },
           { name: "Advanced customization options" },
-          { name: "Custom notification themes" },
-          { name: "No NotiFast backlinks" }
+          { name: "Content repurposing system" },
+          { name: "Priority support" },
+          { name: "All future updates included" }
         ]
       }
     ]
@@ -69,11 +69,11 @@ const config = {
     // subdomain to use when sending emails, if you don't have a subdomain, just remove it. Highly recommended to have one (i.e. mg.yourdomain.com or mail.yourdomain.com)
     subdomain: "mg",
     // REQUIRED — Email 'From' field to be used when sending magic login links
-    fromNoReply: `NotiFast <noreply@mg.notifast.co>`,
+    fromNoReply: `CreatiFun <noreply@mg.systems-ai.com>`,
     // REQUIRED — Email 'From' field to be used when sending other emails, like abandoned carts, updates etc..
-    fromAdmin: `Marc at NotiFast <mil@mg.notifast.co>`,
+    fromAdmin: `Support at CreatiFun <support@mg.systems-ai.com>`,
     // Email shown to customer if need support. Leave empty if not needed => if empty, set up Crisp above, otherwise you won't be able to offer customer support."
-    supportEmail: "mil@mg.notifast.co",
+    supportEmail: "support@mg.systems-ai.com",
     // When someone replies to supportEmail sent by the app, forward it to the email below (otherwise it's lost). If you set supportEmail to empty, this will be ignored.
     forwardRepliesTo: "milloranh@gmail.com",
   },

@@ -44,10 +44,10 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col justify-center items-center md:items-start gap-2 mb-10 text-sm">
-                <Link href="https://www.notifast.fun/testimonial/new" target="_blank" className="link link-hover">
+                <Link href="/testimonial/new" target="_blank" className="link link-hover">
                   Leave A Testimonial
                 </Link>
-                <Link href="https://insigh.to/b/notifast" target="_blank" className="link link-hover">
+                <Link href="https://insigh.to/b/creatifun" target="_blank" className="link link-hover">
                   Feature Request
                 </Link>
                 <Link href="/#pricing" className="link link-hover">
@@ -80,7 +80,7 @@ const Footer = () => {
                   Medium
                 </Link>
                 <Link href="https://x.com/MilHoornaert" target="_blank" className="link link-hover">
-                  𝕏
+                   𝕏
                 </Link>
                 <Link href="http://news.milh.tech" target="_blank" className="link link-hover">
                   Newsletter

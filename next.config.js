@@ -8,10 +8,10 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: 'notifast.fun',
+            value: 'systems-ai.vercel.app',
           },
         ],
-        destination: 'https://www.notifast.fun/:path*',
+        destination: 'https://systems-ai.vercel.app/:path*',
         permanent: true,
       },
     ];
@@ -30,20 +30,29 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: [
-      // Add your image domains here
-      "lh3.googleusercontent.com",
-      "pbs.twimg.com",
-      "images.unsplash.com",
-      "logos-world.net",
-      // Add any other domains you need
-    ],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pbs.twimg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'logos-world.net',
+      },
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
+    unoptimized: true, // This disables image optimization for static exports
   },
   eslint: {
     ignoreDuringBuilds: true,

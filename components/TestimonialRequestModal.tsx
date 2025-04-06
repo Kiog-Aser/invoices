@@ -53,7 +53,7 @@ export default function TestimonialRequestModal({ isOpen, onClose }: Testimonial
                     <div className="absolute inset-0 opacity-10 pattern-bg" />
                     <div className="p-6 relative z-10 h-full flex flex-col justify-center text-primary-content">
                       <h3 className="font-bold text-2xl mb-2">Share Your Story</h3>
-                      <p>Help others discover how NotiFast can transform their website engagement.</p>
+                      <p>Help others discover how CreatiFun can transform their content creation process.</p>
                     </div>
                   </div>
                   
@@ -65,7 +65,7 @@ export default function TestimonialRequestModal({ isOpen, onClose }: Testimonial
                         <ul className="space-y-2 text-sm text-base-content/70">
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>
-                            Help others discover NotiFast
+                            Help others discover CreatiFun
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>

@@ -215,9 +215,9 @@ export default function NewTestimonialPage() {
       // Combine howHelped, beforeChallenge, and afterSolution into the review
       let finalReview = "";
       if (formData.reviewType === "text" && formData.howHelped && formData.beforeChallenge && formData.afterSolution) {
-        finalReview = `How NotiFast helped me:\n${formData.howHelped}\n\n` +
-                     `Before NotiFast:\n${formData.beforeChallenge}\n\n` +
-                     `After NotiFast:\n${formData.afterSolution}\n\n` +
+        finalReview = `How CreatiFun helped me:\n${formData.howHelped}\n\n` +
+                     `Before CreatiFun:\n${formData.beforeChallenge}\n\n` +
+                     `After CreatiFun:\n${formData.afterSolution}\n\n` +
                      `${formData.textReview || ""}`;
       }
 
@@ -267,7 +267,7 @@ export default function NewTestimonialPage() {
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-bold">Share Your Story</h1>
             <p className="text-xl text-base-content/70">
-              Help others discover how NotiFast transformed your website engagement
+              Help others discover how CreatiFun transforms content creation
             </p>
             <button 
               onClick={() => setCurrentStep("personal")} 
@@ -473,7 +473,7 @@ export default function NewTestimonialPage() {
                 <textarea
                   value={formData.textReview || ""}
                   onChange={(e) => updateFormData("textReview", e.target.value)}
-                  placeholder={`Here's a suggested structure for your review:\n\nBefore using NotiFast, [describe your situation before]\n\nNow, with NotiFast, [describe how your situation has improved and the impact NotiFast had]\n\n[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]`}
+                  placeholder={`Here's a suggested structure for your review:\n\nBefore using CreatiFun, [describe your content struggles before]\n\nNow, with CreatiFun, [describe how your content creation process has improved and the impact CreatiFun had]\n\n[Optional: add any other details you want to include (like how easy-to-use the platform is, etc)]`}
                   className="textarea textarea-bordered w-full min-h-[200px]"
                   ref={activeInputRef as any}
                   autoFocus
