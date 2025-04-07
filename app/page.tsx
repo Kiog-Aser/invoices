@@ -85,7 +85,7 @@ function PricingSection() {
             </div>
             
             <ButtonCheckout
-              priceId="price_1RAEzBQF2yOHJOkbGoyJKFUh"
+              priceId="price_1RBLRmG19CrUMKRawDhN6cXJ"
               mode="payment"
               successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
               cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
@@ -145,7 +145,7 @@ function PricingSection() {
             </div>
             
             <ButtonCheckout
-              priceId="price_1RAF0yQF2yOHJOkbGp7h8r08"
+              priceId="price_1RBLRiG19CrUMKRaaun6VaCZ"
               mode="payment"
               successUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?success=true"}
               cancelUrl={`${typeof window !== 'undefined' ? window.location.href : ''}`+ "?canceled=true"}
