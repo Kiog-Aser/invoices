@@ -22,9 +22,9 @@ function PricingSection() {
       {/* Retro grid background */}
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
       
-      {/* Decorative elements */}
-      <div className="absolute bottom-20 right-40 w-40 h-40 bg-primary/5 rounded-full blur-xl"></div>
-      <div className="absolute top-40 left-20 w-60 h-60 bg-secondary/5 rounded-full blur-xl"></div>
+      {/* Decorative elements - using percentage-based positioning to prevent overflow */}
+      <div className="absolute bottom-20 right-[10%] w-40 h-40 bg-primary/5 rounded-full blur-xl"></div>
+      <div className="absolute top-40 left-[5%] w-60 h-60 bg-secondary/5 rounded-full blur-xl"></div>
       
       <div className="relative max-w-5xl mx-auto px-8">
         <div className="text-center mb-16">
@@ -183,7 +183,7 @@ export default function Page() {
       }>
         <Header />
         
-        <main className="overflow-hidden">
+        <main className="overflow-x-hidden">
           {/* Hero Section with Retro Vibe */}
           <Hero />
           
@@ -201,9 +201,9 @@ export default function Page() {
             {/* Retro grid background */}
             
             
-            {/* Decorative elements */}
-            <div className="absolute -top-20 right-40 w-60 h-60 bg-primary/10 rounded-full blur-xl"></div>
-            <div className="absolute -bottom-20 left-40 w-80 h-80 bg-secondary/10 rounded-full blur-xl"></div>
+            {/* Decorative elements - using percentage-based positioning to ensure they stay within bounds */}
+            <div className="absolute -top-20 right-[10%] w-60 h-60 bg-primary/10 rounded-full blur-xl"></div>
+            <div className="absolute -bottom-20 left-[10%] w-80 h-80 bg-secondary/10 rounded-full blur-xl"></div>
             
             <div className="relative max-w-4xl mx-auto px-8 text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-base-100 rounded-xl shadow-md border border-base-content/10 mb-6">

@@ -16,12 +16,12 @@ const WithWithout = () => {
   };
 
   return (
-    <section id="solution" className="bg-base-200 min-h-[90vh] lg:min-h-screen flex items-center relative overflow-hidden">
+    <section id="solution" className="bg-base-200 min-h-[90vh] lg:min-h-screen flex items-center relative overflow-x-hidden">
       {/* No retro grid background to create zebra pattern alternation */}
       
-      {/* Decorative elements */}
-      <div className="absolute -top-10 right-40 w-40 h-40 bg-primary/10 rounded-full blur-xl"></div>
-      <div className="absolute bottom-40 left-20 w-60 h-60 bg-secondary/10 rounded-full blur-xl"></div>
+      {/* Decorative elements - adjusted positioning to ensure they don't cause overflow */}
+      <div className="absolute -top-10 right-[10%] w-40 h-40 bg-primary/10 rounded-full blur-xl"></div>
+      <div className="absolute bottom-40 left-[5%] w-60 h-60 bg-secondary/10 rounded-full blur-xl"></div>
       
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-20 md:py-24 relative">
         <div className="text-center mb-8 sm:mb-12">

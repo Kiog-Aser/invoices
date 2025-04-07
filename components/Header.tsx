@@ -41,8 +41,8 @@ const Header = () => {
       {/* Retro grid background */}
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
       
-      {/* Decorative elements */}
-      <div className="absolute -top-5 -right-5 w-20 h-20 bg-primary/10 rounded-full blur-xl"></div>
+      {/* Decorative elements - using percentage-based positioning to prevent overflow */}
+      <div className="absolute -top-5 right-[5%] w-20 h-20 bg-primary/10 rounded-full blur-xl"></div>
       
       <nav
         className="container flex items-center justify-between px-8 pt-2 mx-auto relative"
