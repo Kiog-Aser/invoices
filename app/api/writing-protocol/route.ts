@@ -2,11 +2,69 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/next-auth";
 import connectMongo from "@/libs/mongoose";
-import { githubAIClient, models } from "@/libs/github-ai";
+import { githubAIClient, models, getRotatingAkashClient, RotatingClient, QUALITY_MODEL } from "@/libs/github-ai";
 import WritingProtocol from "@/models/WritingProtocol";
 
-// Model constants
-const DEEPSEEK_MODEL = "DeepSeek-R1";
+// Helper function to check if a string is valid JSON
+function isValidJSON(str: string) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Helper function to fix common JSON syntax errors
+function fixCommonJsonErrors(jsonString: string) {
+  let fixed = jsonString;
+  
+  // Fix duplicate commas
+  fixed = fixed.replace(/,\s*,/g, ',');
+  
+  // Fix trailing commas in objects and arrays
+  fixed = fixed.replace(/,\s*}/g, '}');
+  fixed = fixed.replace(/,\s*]/g, ']');
+  
+  // Fix missing quotes around property names
+  fixed = fixed.replace(/(\w+):/g, '"$1":');
+  
+  // Fix dangling properties without values
+  fixed = fixed.replace(/"[^"]+"\s*:(?!\s*["{\[0-9tf])/g, '$&null');
+  
+  // Remove any non-JSON text at the end (after the closing brace)
+  const lastBrace = fixed.lastIndexOf('}');
+  if (lastBrace !== -1) {
+    fixed = fixed.substring(0, lastBrace + 1);
+  }
+  
+  // Check for missing closing brackets
+  const openBraces = (fixed.match(/{/g) || []).length;
+  const closeBraces = (fixed.match(/}/g) || []).length;
+  const openBrackets = (fixed.match(/\[/g) || []).length;
+  const closeBrackets = (fixed.match(/]/g) || []).length;
+  
+  // Add missing closing braces/brackets
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    fixed += '}';
+  }
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    fixed += ']';
+  }
+  
+  return fixed;
+}
+
+// Helper function to get the base URL for API calls
+function getBaseUrl() {
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3001"; // Fallback for development
+}
 
 export async function POST(req: Request) {
   try {
@@ -378,71 +436,155 @@ async function generateProtocolContent(
     // Determine which model to use based on user's selection
     let modelToUse = process.env.USE_AKASH === "true" ? models.akash : models.github;
     
-    // Override with DeepSeek model if quality is selected
+    // Override with QUALITY_MODEL if quality is selected
     if (data.modelType === 'quality') {
-      modelToUse = DEEPSEEK_MODEL;
+      modelToUse = QUALITY_MODEL;
       console.log(`Using higher quality model: ${modelToUse} for writing protocol generation`);
     } else {
       console.log(`Using fast model: ${modelToUse} for writing protocol generation`);
     }
 
     try {
-      // Check if AI client is available
-      if (!githubAIClient) {
-        throw new Error("AI service is not configured");
-      }
+      let aiGeneratedContent: any;
       
-      // Send request to AI
-      const completion = await githubAIClient.chat.completions.create({
-        model: modelToUse,
-        messages: [
-          { 
-            role: "user", 
-            content: prompt 
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 16000,
-        response_format: { type: "json_object" }
-      });
-
-      if (!completion.choices[0]?.message?.content) {
-        throw new Error("Failed to generate writing protocol");
-      }
-
-      // Parse the AI response as JSON, handling any thinking sections
-      let aiGeneratedContent;
-      try {
-        const responseContent = completion.choices[0].message.content || "";
+      // Check if we should use the rotating Akash client
+      if (process.env.USE_AKASH === "true") {
+        console.log("Using rotating Akash client for writing protocol generation");
         
-        // First, clean up any special thinking sections from DeepSeek or other models
+        // Get a client from the rotation pool with available quota
+        const rotatingClient = await getRotatingAkashClient();
+        
+        if (!rotatingClient) {
+          throw new Error("All Akash API clients are at capacity. Please try again later.");
+        }
+        
+        try {
+          // Send request to AI using the rotating client
+          const completion = await rotatingClient.client.chat.completions.create({
+            model: modelToUse,
+            messages: [
+              { 
+                role: "user", 
+                content: prompt 
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 16000,
+            response_format: { type: "json_object" }
+          });
+          
+          // Process the completion
+          if (!completion.choices[0]?.message?.content) {
+            throw new Error("Failed to generate writing protocol");
+          }
+          
+          // Process response content
+          const responseContent = completion.choices[0].message.content || "";
+          let jsonContent = responseContent;
+          
+          // Remove any thinking sections in various formats
+          const thinkingPatterns = [
+            /<think>[\s\S]*?<\/think>/gm,
+            /<details.*?>[\s\S]*?<\/details>/gm,
+            /```json\s*([\s\S]*?)```/gm,
+          ];
+          
+          // Apply each pattern to remove thinking sections
+          thinkingPatterns.forEach(pattern => {
+            if (pattern.toString().includes('```json')) {
+              const matches = [...jsonContent.matchAll(pattern)];
+              if (matches.length > 0) {
+                jsonContent = matches[0][1];
+              }
+            } else {
+              jsonContent = jsonContent.replace(pattern, '').trim();
+            }
+          });
+          
+          // Look for the actual JSON content if we haven't yet found it
+          if (!isValidJSON(jsonContent)) {
+            const jsonStartIndex = jsonContent.indexOf('{');
+            const jsonEndIndex = jsonContent.lastIndexOf('}');
+            
+            if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+              jsonContent = jsonContent.substring(jsonStartIndex, jsonEndIndex + 1);
+            }
+          }
+          
+          jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+          console.log("Cleaned content for parsing:", jsonContent.substring(0, 100) + "...");
+          
+          try {
+            aiGeneratedContent = JSON.parse(jsonContent);
+          } catch (parseError) {
+            console.error("Initial parsing failed:", parseError);
+            const fixedContent = fixCommonJsonErrors(jsonContent);
+            console.log("Attempting with fixed content:", fixedContent.substring(0, 100) + "...");
+            aiGeneratedContent = JSON.parse(fixedContent);
+          }
+          
+          // Update the protocol with the generated content
+          await WritingProtocol.findByIdAndUpdate(protocolId, {
+            aiGeneratedContent: {
+              ...aiGeneratedContent
+            },
+            status: 'completed'
+          });
+          
+          console.log(`Successfully generated and updated protocol ${protocolId}`);
+        } finally {
+          // Always release the client back to the pool
+          rotatingClient.release();
+        }
+      } else {
+        // Use the default client (GitHub or fallback)
+        if (!githubAIClient) {
+          throw new Error("AI service is not configured");
+        }
+        
+        // Send request to AI using the default client
+        const completion = await githubAIClient.chat.completions.create({
+          model: modelToUse,
+          messages: [
+            { 
+              role: "user", 
+              content: prompt 
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 16000,
+          response_format: { type: "json_object" }
+        });
+
+        if (!completion.choices[0]?.message?.content) {
+          throw new Error("Failed to generate writing protocol");
+        }
+
+        // Parse the AI response as JSON, handling any thinking sections
+        const responseContent = completion.choices[0].message.content || "";
         let jsonContent = responseContent;
         
         // Remove any thinking sections in various formats
         const thinkingPatterns = [
-          /<think>[\s\S]*?<\/think>/gm,           // <think>...</think>
-          /<details.*?>[\s\S]*?<\/details>/gm,    // <details>...</details>
-          /```json\s*([\s\S]*?)```/gm,            // ```json ... ```
+          /<think>[\s\S]*?<\/think>/gm,
+          /<details.*?>[\s\S]*?<\/details>/gm,
+          /```json\s*([\s\S]*?)```/gm,
         ];
         
         // Apply each pattern to remove thinking sections
         thinkingPatterns.forEach(pattern => {
-          // For JSON code blocks, we want to extract the content, not remove it
           if (pattern.toString().includes('```json')) {
             const matches = [...jsonContent.matchAll(pattern)];
             if (matches.length > 0) {
-              // Use the first JSON code block found
               jsonContent = matches[0][1];
             }
           } else {
-            // For other patterns, remove them entirely
             jsonContent = jsonContent.replace(pattern, '').trim();
           }
         });
         
         // Look for the actual JSON content if we haven't yet found it
         if (!isValidJSON(jsonContent)) {
-          // Find the first occurrence of a JSON object
           const jsonStartIndex = jsonContent.indexOf('{');
           const jsonEndIndex = jsonContent.lastIndexOf('}');
           
@@ -451,110 +593,28 @@ async function generateProtocolContent(
           }
         }
         
-        // Additional cleanup for any JSON formatting errors
-        // Sometimes the model adds an extra comma at the end of an object
         jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-        
-        // Log the cleaned content for debugging
         console.log("Cleaned content for parsing:", jsonContent.substring(0, 100) + "...");
         
         try {
           aiGeneratedContent = JSON.parse(jsonContent);
         } catch (parseError) {
           console.error("Initial parsing failed:", parseError);
-          
-          // Last resort: try to manually fix common JSON syntax errors
           const fixedContent = fixCommonJsonErrors(jsonContent);
           console.log("Attempting with fixed content:", fixedContent.substring(0, 100) + "...");
           aiGeneratedContent = JSON.parse(fixedContent);
         }
-      } catch (error) {
-        console.error("Error parsing AI response:", error);
-        console.log("Raw response:", completion.choices[0].message.content);
         
-        // Update protocol with error status
+        // Update the protocol with the generated content
         await WritingProtocol.findByIdAndUpdate(protocolId, {
-          status: 'failed',
-          statusMessage: 'Failed to parse AI response. Please try again.'
+          aiGeneratedContent: {
+            ...aiGeneratedContent
+          },
+          status: 'completed'
         });
-        
-        // Refund token for the user
-        try {
-          await fetch('/api/user/refund-token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            // Use the protocol data to get the user context from the session
-            credentials: 'include',
-          });
-          console.log(`✅ Token refunded for failed protocol generation: ${protocolId}`);
-        } catch (refundError) {
-          console.error("Failed to refund token:", refundError);
-        }
-        
-        return;
-      }
 
-      // Helper function to check if a string is valid JSON
-      function isValidJSON(str: string) {
-        try {
-          JSON.parse(str);
-          return true;
-        } catch (e) {
-          return false;
-        }
+        console.log(`Successfully generated and updated protocol ${protocolId}`);
       }
-      
-      // Helper function to fix common JSON syntax errors
-      function fixCommonJsonErrors(jsonString: string) {
-        let fixed = jsonString;
-        
-        // Fix duplicate commas
-        fixed = fixed.replace(/,\s*,/g, ',');
-        
-        // Fix trailing commas in objects and arrays
-        fixed = fixed.replace(/,\s*}/g, '}');
-        fixed = fixed.replace(/,\s*]/g, ']');
-        
-        // Fix missing quotes around property names
-        fixed = fixed.replace(/(\w+):/g, '"$1":');
-        
-        // Fix dangling properties without values
-        fixed = fixed.replace(/"[^"]+"\s*:(?!\s*["{\[0-9tf])/g, '$&null');
-        
-        // Remove any non-JSON text at the end (after the closing brace)
-        const lastBrace = fixed.lastIndexOf('}');
-        if (lastBrace !== -1) {
-          fixed = fixed.substring(0, lastBrace + 1);
-        }
-        
-        // Check for missing closing brackets
-        const openBraces = (fixed.match(/{/g) || []).length;
-        const closeBraces = (fixed.match(/}/g) || []).length;
-        const openBrackets = (fixed.match(/\[/g) || []).length;
-        const closeBrackets = (fixed.match(/]/g) || []).length;
-        
-        // Add missing closing braces/brackets
-        for (let i = 0; i < openBraces - closeBraces; i++) {
-          fixed += '}';
-        }
-        for (let i = 0; i < openBrackets - closeBrackets; i++) {
-          fixed += ']';
-        }
-        
-        return fixed;
-      }
-
-      // Update the protocol with the generated content and set status to completed
-      await WritingProtocol.findByIdAndUpdate(protocolId, {
-        aiGeneratedContent: {
-          ...aiGeneratedContent
-        },
-        status: 'completed'
-      });
-
-      console.log(`Successfully generated and updated protocol ${protocolId}`);
     } catch (aiError) {
       console.error("AI generation error:", aiError);
       
@@ -566,12 +626,12 @@ async function generateProtocolContent(
       
       // Refund token for the user
       try {
-        await fetch('/api/user/refund-token', {
+        const baseUrl = getBaseUrl();
+        await fetch(`${baseUrl}/api/user/refund-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          // Use the protocol data to get the user context from the session
           credentials: 'include',
         });
         console.log(`✅ Token refunded for failed AI generation: ${protocolId}`);
@@ -591,12 +651,12 @@ async function generateProtocolContent(
       
       // Refund token for the user
       try {
-        await fetch('/api/user/refund-token', {
+        const baseUrl = getBaseUrl();
+        await fetch(`${baseUrl}/api/user/refund-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          // Use the protocol data to get the user context from the session
           credentials: 'include',
         });
         console.log(`✅ Token refunded for failed protocol processing: ${protocolId}`);
