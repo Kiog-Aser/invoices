@@ -10,7 +10,7 @@ interface ButtonSigninProps {
 export default function ButtonSignin({ text = "Sign in", className = "" }: ButtonSigninProps) {
   return (
     <button
-      className={`btn btn-primary ${className}`}
+      className={`btn btn-primary font-mono ${className}`}
       onClick={() => signIn()}
     >
       {text}

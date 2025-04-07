@@ -116,17 +116,17 @@ const FaqItem = ({ item }: { item: FAQItemProps }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <li className="collapse collapse-arrow bg-base-100">
+    <li className="collapse collapse-arrow bg-base-100 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 mb-3 sm:mb-4 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-200">
       <input 
         type="checkbox" 
         checked={isOpen} 
         onChange={() => setIsOpen(!isOpen)}
       />
-      <div className="collapse-title text-xl font-medium">
+      <div className="collapse-title text-base sm:text-lg font-medium font-mono">
         {item?.question}
       </div>
       <div className="collapse-content">
-        <div className="pt-2 text-base-content/80">
+        <div className="pt-1 sm:pt-2 text-sm sm:text-base text-base-content/80 font-mono">
           {item?.answer}
         </div>
       </div>
@@ -136,16 +136,22 @@ const FaqItem = ({ item }: { item: FAQItemProps }) => {
 
 const FAQ = () => {
   return (
-    <section className="bg-base-200" id="faq">
-      <div className="py-24 px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-12">
-        <div className="flex flex-col text-left basis-1/2">
-          <p className="inline-block font-semibold text-primary mb-4">FAQ</p>
-          <p className="text-4xl font-bold text-base-content">
+    <section className="bg-base-100 min-h-[90vh] lg:min-h-screen flex items-center" id="faq">
+      <div className="w-full py-16 sm:py-20 md:py-24 lg:py-28 px-4 sm:px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 sm:gap-12">
+        <div className="flex flex-col text-left basis-full md:basis-1/2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 bg-base-200 rounded-xl shadow-md border border-base-content/10 mb-4 sm:mb-6 w-fit">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+            <span className="font-mono text-xs sm:text-sm tracking-widest">FAQ</span>
+          </div>
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-base-content font-mono mb-4 sm:mb-6">
             Frequently Asked Questions
+          </p>
+          <p className="text-base-content/70 text-sm sm:text-base max-w-md font-mono">
+            Still have questions? We're here to help you make the most of your content strategy.
           </p>
         </div>
 
-        <ul className="basis-1/2 space-y-4">
+        <ul className="basis-full md:basis-1/2 space-y-3 sm:space-y-4">
           {faqList.map((item, i) => (
             <FaqItem key={i} item={item} />
           ))}

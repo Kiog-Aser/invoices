@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import config from "@/config";
@@ -52,7 +54,7 @@ const Testimonial = () => {
 
   return (
     <section
-      className="relative isolate overflow-hidden bg-base-100 px-8 py-24 sm:py-32"
+      className="bg-base-300 min-h-[90vh] lg:min-h-screen flex items-center py-16 sm:py-20 md:py-24 lg:py-28 relative overflow-hidden"
       id="testimonials"
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.base-300),theme(colors.base-100))] opacity-20" />
