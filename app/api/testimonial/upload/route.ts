@@ -17,11 +17,9 @@ let lastCleanup = Date.now();
 
 export async function POST(req: Request) {
   try {
+    // We'll still record the session if available, but won't require it
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    
     // Run periodic cleanup if it's time
     if (Date.now() - lastCleanup > CLEANUP_INTERVAL) {
       lastCleanup = Date.now();

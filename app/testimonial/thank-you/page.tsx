@@ -3,10 +3,13 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FaTwitter } from "react-icons/fa";
+import { FaTwitter, FaLinkedin, FaHome } from "react-icons/fa";
 import confetti from "canvas-confetti";
+import { useSession } from "next-auth/react";
 
 export default function ThankYouPage() {
+  const { data: session } = useSession();
+
   useEffect(() => {
     // Trigger confetti animation
     confetti({
@@ -40,22 +43,46 @@ export default function ThankYouPage() {
 
         <div className="card bg-base-200 p-6">
           <h2 className="text-lg font-semibold mb-4">Share CreatiFun with others</h2>
-          <a
-            href={`https://x.com/intent/tweet?text=${encodeURIComponent(
-              "Just shared my experience with @CreatiFun! They're revolutionizing content creation with writing protocols that eliminate decision fatigue 🚀\n\nCheck them out:"
-            )}&url=https://systems-ai.vercel.app`}
-            target="_blank"
-            rel="noopener noreferrer" 
-            className="btn btn-primary gap-2"
-          >
-            <FaTwitter /> Share on X
-          </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a
+              href={`https://x.com/intent/tweet?text=${encodeURIComponent(
+                "Just shared my experience with @CreatiFun! They're revolutionizing content creation with writing protocols that eliminate decision fatigue 🚀\n\nCheck them out:"
+              )}&url=https://systems-ai.vercel.app`}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="btn btn-primary gap-2"
+            >
+              <FaTwitter /> Share on X
+            </a>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                "https://systems-ai.vercel.app"
+              )}&title=${encodeURIComponent(
+                "CreatiFun - Transform your content creation process"
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="btn btn-primary gap-2"
+            >
+              <FaLinkedin /> Share on LinkedIn
+            </a>
+          </div>
         </div>
 
         <div className="space-y-4">
-          <Link href="/dashboard" className="btn btn-ghost w-full">
-            Return to Dashboard
-          </Link>
+          {session ? (
+            <Link href="/dashboard" className="btn btn-ghost w-full gap-2">
+              <FaHome /> Return to Dashboard
+            </Link>
+          ) : (
+            <Link href="/" className="btn btn-ghost w-full gap-2">
+              <FaHome /> Return to Homepage
+            </Link>
+          )}
+
+          <div className="p-4 bg-base-200 rounded-lg text-sm text-base-content/70 mt-4">
+            <p>Your testimonial has been submitted for review and will be visible on our site once approved. Thank you for your contribution!</p>
+          </div>
         </div>
       </motion.div>
     </div>

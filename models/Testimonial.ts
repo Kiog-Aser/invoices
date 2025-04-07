@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export interface ITestimonial {
-  userId: string;
+  userId?: string; // Make userId optional
   name: string;
   socialHandle?: string;
   socialPlatform?: 'twitter' | 'linkedin';
@@ -15,13 +15,14 @@ export interface ITestimonial {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
+  email?: string; // Add email field for anonymous submissions
 }
 
 const testimonialSchema = new mongoose.Schema<ITestimonial>(
   {
     userId: {
       type: String,
-      required: true,
+      required: false, // Change to optional
     },
     name: {
       type: String,
@@ -56,7 +57,8 @@ const testimonialSchema = new mongoose.Schema<ITestimonial>(
       type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
-    }
+    },
+    email: String, // Add email field schema
   },
   {
     timestamps: true,

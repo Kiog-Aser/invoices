@@ -8,10 +8,11 @@ import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { FaArrowLeft, FaVideo, FaImage, FaTwitter, FaLinkedin } from "react-icons/fa";
 
-type Step = "welcome" | "personal" | "social" | "profileImage" | "review";
+type Step = "welcome" | "personal" | "contact" | "social" | "profileImage" | "review";
 
 interface FormData {
   name: string;
+  email?: string;
   socialHandle?: string;
   socialPlatform?: "twitter" | "linkedin";
   profileImage?: string;
@@ -30,7 +31,7 @@ interface UserData {
   image?: string;
 }
 
-const STEPS: Step[] = ["welcome", "personal", "social", "profileImage", "review"];
+const STEPS: Step[] = ["welcome", "personal", "contact", "social", "profileImage", "review"];
 
 export default function NewTestimonialPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function NewTestimonialPage() {
   const [formData, setFormData] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeInputRef = useRef<HTMLElement | null>(null);
 
@@ -68,6 +69,7 @@ export default function NewTestimonialPage() {
         setFormData(prev => ({
           ...prev,
           name: data.name || session.user?.name || "",
+          email: data.email || session.user?.email || "",
           profileImage: data.image || session.user?.image || "",
         }));
       } catch (error) {
@@ -77,6 +79,7 @@ export default function NewTestimonialPage() {
           setFormData(prev => ({
             ...prev,
             name: session.user?.name || "",
+            email: session.user?.email || "",
             profileImage: session.user?.image || "",
           }));
         }
@@ -85,7 +88,9 @@ export default function NewTestimonialPage() {
       }
     };
 
-    loadUserData();
+    if (session?.user?.email) {
+      loadUserData();
+    }
   }, [session]);
 
   const canProceed = useCallback(() => {
@@ -94,6 +99,8 @@ export default function NewTestimonialPage() {
         return true;
       case "personal":
         return !!formData.name;
+      case "contact":
+        return !!formData.email && /^\S+@\S+\.\S+$/.test(formData.email); // Basic email validation
       case "social":
         return true; // Optional
       case "profileImage":
@@ -109,9 +116,14 @@ export default function NewTestimonialPage() {
   const goToNextStep = useCallback(() => {
     const currentIndex = STEPS.indexOf(currentStep);
     if (currentIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentIndex + 1]);
+      // Skip contact step if user is logged in
+      if (currentStep === "personal" && session?.user) {
+        setCurrentStep(STEPS[currentIndex + 2]); // Skip to social
+      } else {
+        setCurrentStep(STEPS[currentIndex + 1]);
+      }
     }
-  }, [currentStep]);
+  }, [currentStep, session]);
 
   useEffect(() => {
     // Focus the active input when step changes
@@ -123,7 +135,7 @@ export default function NewTestimonialPage() {
     const handleKeyPress = (e: KeyboardEvent) => {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
-
+      
       // Allow cmd/ctrl + enter to proceed
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault();
@@ -154,11 +166,6 @@ export default function NewTestimonialPage() {
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
-  }
-
-  if (!session) {
-    router.push('/auth/signin');
-    return null;
   }
 
   const updateFormData = <K extends keyof FormData>(field: K, value: FormData[K]) => {
@@ -206,12 +213,6 @@ export default function NewTestimonialPage() {
     try {
       setIsSubmitting(true);
 
-      // Refresh session before making the request
-      await fetch('/api/auth/session?update=true', {
-        method: 'GET',
-        credentials: 'include'
-      });
-
       // Combine howHelped, beforeChallenge, and afterSolution into the review
       let finalReview = "";
       if (formData.reviewType === "text" && formData.howHelped && formData.beforeChallenge && formData.afterSolution) {
@@ -226,9 +227,9 @@ export default function NewTestimonialPage() {
         ...formData,
         textReview: finalReview || formData.textReview,
         // Add default values for required fields if not provided
-        howHelped: formData.howHelped || "Improved website engagement",
-        beforeChallenge: formData.beforeChallenge || "Low engagement on website",
-        afterSolution: formData.afterSolution || "Better visitor conversion",
+        howHelped: formData.howHelped || "Improved content creation process",
+        beforeChallenge: formData.beforeChallenge || "Content creation was challenging",
+        afterSolution: formData.afterSolution || "Process is more streamlined",
       };
 
       const response = await fetch('/api/testimonial', {
@@ -236,7 +237,7 @@ export default function NewTestimonialPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // This sends cookies with the request
+        credentials: 'include', // This sends cookies with the request if available
         body: JSON.stringify(dataToSubmit),
       });
 
@@ -255,6 +256,13 @@ export default function NewTestimonialPage() {
 
   const goToPrevStep = () => {
     const currentIndex = STEPS.indexOf(currentStep);
+    
+    // Handle special case when going back from social
+    if (currentStep === "social" && session?.user) {
+      setCurrentStep("personal");
+      return;
+    }
+    
     if (currentIndex > 0) {
       setCurrentStep(STEPS[currentIndex - 1]);
     }
@@ -269,6 +277,7 @@ export default function NewTestimonialPage() {
             <p className="text-xl text-base-content/70">
               Help others discover how CreatiFun transforms content creation
             </p>
+            
             <button 
               onClick={() => setCurrentStep("personal")} 
               className="btn btn-primary btn-lg"
@@ -307,8 +316,46 @@ export default function NewTestimonialPage() {
                 <FaArrowLeft /> Back
               </button>
               <button
-                onClick={() => setCurrentStep("social")}
+                onClick={() => goToNextStep()}
                 disabled={!formData.name}
+                className="btn btn-primary"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+
+      case "contact":
+        return (
+          <div className="space-y-8">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Your email address</h2>
+              <p className="text-base-content/70">
+                Won't be displayed publicly - just so we can contact you if needed
+              </p>
+            </div>
+            
+            <input
+              type="email"
+              value={formData.email || ""}
+              onChange={(e) => updateFormData("email", e.target.value)}
+              placeholder="your.email@example.com"
+              className="input input-bordered w-full"
+              ref={setActiveRef}
+              autoFocus
+            />
+
+            <div className="flex justify-between">
+              <button
+                onClick={goToPrevStep}
+                className="btn btn-ghost gap-2"
+              >
+                <FaArrowLeft /> Back
+              </button>
+              <button
+                onClick={goToNextStep}
+                disabled={!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email || "")}
                 className="btn btn-primary"
               >
                 Continue
@@ -358,7 +405,7 @@ export default function NewTestimonialPage() {
 
             <div className="flex justify-between">
               <button
-                onClick={() => setCurrentStep("personal")}
+                onClick={goToPrevStep}
                 className="btn btn-ghost gap-2"
               >
                 <FaArrowLeft /> Back
@@ -567,7 +614,10 @@ export default function NewTestimonialPage() {
       <div className="h-1 bg-base-200">
         <div
           className="h-full bg-primary transition-all duration-300"
-          style={{ width: `${((STEPS.indexOf(currentStep) + 1) / STEPS.length) * 100}%` }}
+          style={{ 
+            width: `${((STEPS.indexOf(currentStep) + 1) / 
+                    (session?.user ? STEPS.length - 1 : STEPS.length)) * 100}%` 
+          }}
         />
       </div>
 

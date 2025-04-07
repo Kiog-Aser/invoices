@@ -12,13 +12,14 @@ import path from 'path';
 export const dynamic = 'force-dynamic';
 
 const testimonialSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email is required").optional(),
   socialHandle: z.string().optional(),
   socialPlatform: z.enum(['twitter', 'linkedin']).optional(),
   profileImage: z.string().optional(),
-  howHelped: z.string().min(1),
-  beforeChallenge: z.string().min(1),
-  afterSolution: z.string().min(1),
+  howHelped: z.string().min(1, "This field is required"),
+  beforeChallenge: z.string().min(1, "This field is required"),
+  afterSolution: z.string().min(1, "This field is required"),
   reviewType: z.enum(['text', 'video']),
   textReview: z.string().optional(),
   videoUrl: z.string().optional(),
@@ -45,29 +46,25 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     console.log("Session in testimonial API:", session); // Debug log
     
-    if (!session?.user) {
-      return new NextResponse(
-        JSON.stringify({ error: "Unauthorized" }), 
-        { status: 401, headers }
-      );
-    }
-
     await connectMongo();
 
     const data = await req.json();
     const validatedData = testimonialSchema.parse(data);
 
-    // Create testimonial with status set to pending
+    // Create testimonial
     const testimonial = await Testimonial.create({
-      userId: session.user.id,
+      // Set userId if user is logged in
+      ...(session?.user?.id && { userId: session.user.id }),
       status: 'pending', // Explicitly set status to pending
       ...validatedData,
     });
 
-    // Mark user as having given testimonial
-    await User.findByIdAndUpdate(session.user.id, {
-      hasGivenTestimonial: true,
-    });
+    // If user is logged in, update their profile
+    if (session?.user?.id) {
+      await User.findByIdAndUpdate(session.user.id, {
+        hasGivenTestimonial: true,
+      });
+    }
 
     return NextResponse.json({ success: true, testimonial }, { headers });
   } catch (error) {
