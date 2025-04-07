@@ -22,6 +22,7 @@ interface User {
   isAdmin: boolean;
 }
 
+
 export default function UsersAdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -169,7 +170,7 @@ export default function UsersAdminDashboard() {
                     </td>
                     <td>
                       <div className="flex flex-col">
-                        <span>Generated: {user.protocolCount}</span>
+                      Generated: <span>{user.protocolCount}</span>
                         {!user.isUnlimited && (
                           <span className="text-sm opacity-70">Tokens: {user.tokens}</span>
                         )}
