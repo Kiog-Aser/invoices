@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { FaArrowLeft, FaChevronRight, FaHome, FaPrint, FaDownload, FaSpinner, FaCopy, FaCalendarPlus } from "react-icons/fa";
+import { FaArrowLeft, FaChevronRight, FaHome, FaPrint, FaDownload, FaSpinner, FaCopy, FaCalendarPlus, FaLinkedin, FaTwitter, FaInstagram, FaYoutube } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 
@@ -480,87 +480,111 @@ Act as a content analyst and visual metaphor designer. Your task is to:
 
       <h3 className="text-2xl font-semibold mt-8 mb-4" id="creation-step5">Step 5. Cross-Platform Adaptation</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-        <div className="card bg-base-200 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title">LinkedIn</h3>
-            <ul className="list-disc list-inside">
-              <li>Focus on professional insights</li>
-              <li>Add industry statistics</li>
-              <li>Share business lessons</li>
-              <li>Use formal tone</li>
-            </ul>
+      <div className="bg-base-200 rounded-lg p-6 mb-8">
+          <div className="mb-4">
+            <h5 className="font-bold text-base">LinkedIn Post Template</h5>
+            <p className="text-sm opacity-75">This template works for driving engagement and establishing thought leadership</p>
+          </div>
+          
+          <div className="relative bg-base-100 rounded-lg overflow-hidden group">
+            <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
+I've been seeing a massive mistake in the way most [professionals/businesses] approach [topic].
 
-            <div className="relative bg-base-300/50 rounded-lg overflow-hidden group flex items-center mt-4 p-3">
-              <pre className="text-left text-sm font-mono w-full whitespace-pre-wrap">
-                <code>{`**LinkedIn Post Framework:**
-1. Hook (First 2-3 lines visible):
-   - Start with a business insight/statistic
-   - Share a contrarian view
-   - Ask a thought-provoking question
+It's costing them [specific consequence] without them even realizing it.
 
-2. Structure:
-   - Problem → Solution → Validation
-   - Personal story → Lesson → Application
-   - Statistic → Analysis → Implication
+Here's what they're missing:
 
-3. Format:
-   • Use short paragraphs (1-2 lines)
-   • Add 3-5 bullet points
-   • Include relevant hashtags (3-5)
-   • End with a question/CTA
+• [Key insight 1 - contrarian or surprising view]
+• [Key insight 2 - statistical evidence or case example]
+• [Key insight 3 - actionable takeaway]
 
-Example:
-"73% of professionals feel stuck in their careers.
-But the real problem isn't lack of opportunities.
-It's [unexpected insight].
+The professionals who understand this aren't just getting [immediate benefit]...
 
-Here's what I mean:
-• [Point 1]
-• [Point 2]
-• [Point 3]
+They're positioning themselves for [long-term advantage] in a rapidly evolving landscape.
 
-The solution?
-[Your unique mechanism/approach]
+I implemented this approach with [brief example] and saw [specific result].
 
-What's holding YOU back from [desired outcome]?
+What's your experience with [topic]? Have you found other approaches that work well?
 
-#CareerGrowth #Leadership #PersonalDevelopment"`}</code>
-              </pre>
+#[IndustryKeyword] #[ExpertiseArea] #[TrendingTopic]</pre>
+            <button
+              onClick={() => navigator.clipboard.writeText(`I've been seeing a massive mistake in the way most [professionals/businesses] approach [topic].
+
+It's costing them [specific consequence] without them even realizing it.
+
+Here's what they're missing: 
+
+• [Key insight 1 - contrarian or surprising view]
+• [Key insight 2 - statistical evidence or case example]
+• [Key insight 3 - actionable takeaway]
+
+The professionals who understand this aren't just getting [immediate benefit]...
+
+They're positioning themselves for [long-term advantage] in a rapidly evolving landscape.
+
+I implemented this approach with [brief example] and saw [specific result].
+
+What's your experience with [topic]? Have you found other approaches that work well?
+
+#[IndustryKeyword] #[ExpertiseArea] #[TrendingTopic]`)}
+              className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              title="Copy to clipboard"
+            >
+              <FaCopy size={15} />
+            </button>
+          </div>
+          
+          <div className="mt-6">
+            <h5 className="font-bold text-base">LinkedIn Content Creation Prompt</h5>
+            <div className="relative bg-base-100 rounded-lg overflow-hidden group mt-3">
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+Create a professional LinkedIn post based on my article about [topic]. The post should:
+
+1. Open with a contrarian or surprising statement about [specific industry challenge]
+
+2. Include 3-4 bullet points highlighting the most valuable insights from the article
+
+3. Incorporate one data point or case study example to build credibility
+
+4. Close with a thought-provoking question to drive engagement
+
+5. Suggest 3 relevant hashtags that would reach my target audience of [target audience]
+
+The tone should be authoritative but conversational, and the post should establish me 
+as a thought leader in [niche]. Make sure the first 2-3 lines are especially compelling 
+since they appear in the preview.
+
+Example structure to follow:
+- Attention-grabbing opener challenging conventional wisdom
+- Brief explanation of why this matters to professionals
+- Bullet points with key insights
+- Short example or data point showing results
+- Call-to-action question
+- Hashtags</pre>
               <button
-                onClick={() => navigator.clipboard.writeText(`**LinkedIn Post Framework:**
-1. Hook (First 2-3 lines visible):
-   - Start with a business insight/statistic
-   - Share a contrarian view
-   - Ask a thought-provoking question
+                onClick={() => navigator.clipboard.writeText(`Create a professional LinkedIn post based on my article about [topic]. The post should:
 
-2. Structure:
-   - Problem → Solution → Validation
-   - Personal story → Lesson → Application
-   - Statistic → Analysis → Implication
+1. Open with a contrarian or surprising statement about [specific industry challenge]
 
-3. Format:
-   • Use short paragraphs (1-2 lines)
-   • Add 3-5 bullet points
-   • Include relevant hashtags (3-5)
-   • End with a question/CTA
+2. Include 3-4 bullet points highlighting the most valuable insights from the article
 
-Example:
-"73% of professionals feel stuck in their careers.
-But the real problem isn't lack of opportunities.
-It's [unexpected insight].
+3. Incorporate one data point or case study example to build credibility
 
-Here's what I mean:
-• [Point 1]
-• [Point 2]
-• [Point 3]
+4. Close with a thought-provoking question to drive engagement
 
-The solution?
-[Your unique mechanism/approach]
+5. Suggest 3 relevant hashtags that would reach my target audience of [target audience]
 
-What's holding YOU back from [desired outcome]?
+The tone should be authoritative but conversational, and the post should establish me 
+as a thought leader in [niche]. Make sure the first 2-3 lines are especially compelling 
+since they appear in the preview.
 
-#CareerGrowth #Leadership #PersonalDevelopment`)}
+Example structure to follow:
+- Attention-grabbing opener challenging conventional wisdom
+- Brief explanation of why this matters to professionals
+- Bullet points with key insights
+- Short example or data point showing results
+- Call-to-action question
+- Hashtags`)}
                 className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Copy to clipboard"
               >
@@ -570,82 +594,222 @@ What's holding YOU back from [desired outcome]?
           </div>
         </div>
         
-        <div className="card bg-base-200 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title">Instagram</h3>
-            <ul className="list-disc list-inside">
-              <li>Create 3-5 slide carousels</li>
-              <li>Use visually appealing templates</li>
-              <li>Include clear takeaways</li>
-              <li>End with strong CTA</li>
+        <h4 className="text-xl font-semibold mb-4 flex items-center gap-2 mt-12">
+          <FaTwitter className="text-[#1DA1F2]" /> Twitter/X Content Strategy
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Platform Best Practices</h5>
+            <ul className="mt-2">
+              <li>Focus on brevity and impact with concise statements</li>
+              <li>Create threads for detailed breakdowns (5-7 tweets ideal)</li>
+              <li>Use contrarian viewpoints to drive engagement</li>
+              <li>Incorporate current events and trending conversations</li>
+              <li>Share quick, actionable tips your audience can apply immediately</li>
+              <li>Use an authentic, direct voice with personality</li>
             </ul>
+          </div>
+          
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Content Frameworks</h5>
+            <ul className="mt-2">
+              <li><strong>Contrarian Take:</strong> Challenge common belief → Provide evidence → Share alternative approach</li>
+              <li><strong>Quick Win Thread:</strong> Hook → 5-7 implementable tips → Call-to-action</li>
+              <li><strong>Framework Breakdown:</strong> Problem → Your framework → Implementation steps</li>
+              <li><strong>The Before/After:</strong> Common scenario → Implementation → Transformed result</li>
+              <li><strong>Hot Take + Substantiation:</strong> Bold statement → Evidence → Action step</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="bg-base-200 rounded-lg p-6 mb-8">
+          <div className="mb-4">
+            <h5 className="font-bold text-base">Twitter/X Thread Template</h5>
+            <p className="text-sm opacity-75">This format works well for educational content that showcases your expertise</p>
+          </div>
+          
+          <div className="relative bg-base-100 rounded-lg overflow-hidden group">
+            <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+// First tweet
+I've spent 5 years helping [professionals] with [specific challenge].
 
-            <div className="relative bg-base-300/50 rounded-lg overflow-hidden group flex items-center mt-4 p-3">
-              <pre className="text-left text-sm font-mono w-full whitespace-pre-wrap">
-                <code>{`**Instagram Carousel Framework:**
-1. Cover Slide:
-   • Bold headline (problem/promise)
-   • Sub-headline (benefit)
-   • Clean, relevant visual
-   • Your branding
+Here are 5 unconventional strategies that actually work (while most "experts" recommend 
+the opposite): 🧵
 
-2. Content Flow (3-5 slides):
-   Slide 1: Problem/Hook
-   • What's the pain point?
-   • Why should they care?
-   
-   Slide 2-4: Core Content
-   • One key point per slide
-   • Simple visuals/icons
-   • Max 2-3 bullet points
-   
-   Final Slide: CTA
-   • Clear next step
-   • Your handle/brand
-   • "Save this post if..."
+// Tweet 2
+1/ Stop [common practice].
 
-3. Caption Template:
-   • Hook question/statement
-   • Preview value
-   • Break down key points
-   • End with engaging question
-   • 
-   Hashtags (in first comment):
-   #PersonalGrowth #Motivation
-   #Success #SelfImprovement`}</code>
-              </pre>
+Most people think this works, but here's the truth: [contrarian insight].
+
+I've found that [alternative approach] generates [specific result] instead.
+
+// Tweet 3
+2/ [Surprising fact or statistic] about [topic].
+
+This is why you should [recommendation]:
+• [Quick tip]
+• [Quick tip]
+
+I tested this with [brief example] and saw [specific outcome].
+
+// Tweet 4
+3/ The [industry] experts won't tell you this, but [counterintuitive approach] 
+is far more effective than [conventional wisdom].
+
+Why? Because [explanation].
+
+// Tweet 5
+4/ Forget [popular method].
+
+Instead, focus on [underrated strategy]. It takes less time and delivers better results.
+
+Example: [brief case study with specific numbers]
+
+// Tweet 6
+5/ Most [professionals] overcomplicate [process].
+
+The simple framework I use:
+1. [Step one]
+2. [Step two]
+3. [Step three]
+
+That's it. No fancy tools or complex systems needed.
+
+// Final tweet
+These strategies helped one of my clients go from [before state] to [after state] 
+in just [timeframe].
+
+Want more unconventional but effective [topic] tips?
+
+Follow me @[username] for daily insights most "gurus" won't share.
+
+Questions? Reply below!</pre>
+            <button
+              onClick={() => navigator.clipboard.writeText(`// First tweet
+I've spent 5 years helping [professionals] with [specific challenge].
+
+Here are 5 unconventional strategies that actually work (while most "experts" recommend 
+the opposite): 🧵
+
+// Tweet 2
+1/ Stop [common practice].
+
+Most people think this works, but here's the truth: [contrarian insight].
+
+I've found that [alternative approach] generates [specific result] instead.
+
+// Tweet 3
+2/ [Surprising fact or statistic] about [topic].
+
+This is why you should [recommendation]:
+• [Quick tip]
+• [Quick tip]
+
+I tested this with [brief example] and saw [specific outcome].
+
+// Tweet 4
+3/ The [industry] experts won't tell you this, but [counterintuitive approach] 
+is far more effective than [conventional wisdom].
+
+Why? Because [explanation].
+
+// Tweet 5
+4/ Forget [popular method].
+
+Instead, focus on [underrated strategy]. It takes less time and delivers better results.
+
+Example: [brief case study with specific numbers]
+
+// Tweet 6
+5/ Most [professionals] overcomplicate [process].
+
+The simple framework I use:
+1. [Step one]
+2. [Step two]
+3. [Step three]
+
+That's it. No fancy tools or complex systems needed.
+
+// Final tweet
+These strategies helped one of my clients go from [before state] to [after state] 
+in just [timeframe].
+
+Want more unconventional but effective [topic] tips?
+
+Follow me @[username] for daily insights most "gurus" won't share.
+
+Questions? Reply below!`)}
+              className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              title="Copy to clipboard"
+            >
+              <FaCopy size={15} />
+            </button>
+          </div>
+          
+          <div className="mt-6">
+            <h5 className="font-bold text-base">Twitter/X Thread Creation Prompt</h5>
+            <div className="relative bg-base-100 rounded-lg overflow-hidden group mt-3">
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+Create a compelling Twitter thread based on my article about [topic]. The thread should:
+
+1. Start with a bold claim or surprising statistic about [specific aspect of topic]
+
+2. Break down the content into 5-7 tweets, each containing one focused point
+
+3. Include at least one counterintuitive or contrarian insight that challenges 
+   conventional wisdom
+
+4. Use concise, punchy language with line breaks for readability
+
+5. Incorporate minimal formatting (only use • for bullet points if needed)
+
+6. Include 1-2 specific examples with real results (preferably with numbers)
+
+7. End with a strong call-to-action and invitation for engagement
+
+Guidelines:
+- Keep each tweet under 280 characters
+- Use an authoritative but conversational tone
+- Avoid hashtags except for very specific, relevant terms
+- Include the 🧵 emoji in the first tweet
+- Use simple numbering (1/, 2/, etc.) at the start of continuation tweets
+- Make sure the first tweet can stand alone as attention-grabbing content
+
+For thread structure, follow this pattern:
+- First tweet: Bold hook + promise of value + 🧵
+- Middle tweets: One key insight per tweet with supporting evidence
+- Final tweet: Result example + CTA + invitation for engagement</pre>
               <button
-                onClick={() => navigator.clipboard.writeText(`**Instagram Carousel Framework:**
-1. Cover Slide:
-   • Bold headline (problem/promise)
-   • Sub-headline (benefit)
-   • Clean, relevant visual
-   • Your branding
+                onClick={() => navigator.clipboard.writeText(`Create a compelling Twitter thread based on my article about [topic]. The thread should:
 
-2. Content Flow (3-5 slides):
-   Slide 1: Problem/Hook
-   • What's the pain point?
-   • Why should they care?
-   
-   Slide 2-4: Core Content
-   • One key point per slide
-   • Simple visuals/icons
-   • Max 2-3 bullet points
-   
-   Final Slide: CTA
-   • Clear next step
-   • Your handle/brand
-   • "Save this post if..."
+1. Start with a bold claim or surprising statistic about [specific aspect of topic]
 
-3. Caption Template:
-   • Hook question/statement
-   • Preview value
-   • Break down key points
-   • End with engaging question
-   • 
-   Hashtags (in first comment):
-   #PersonalGrowth #Motivation
-   #Success #SelfImprovement`)}
+2. Break down the content into 5-7 tweets, each containing one focused point
+
+3. Include at least one counterintuitive or contrarian insight that challenges 
+   conventional wisdom
+
+4. Use concise, punchy language with line breaks for readability
+
+5. Incorporate minimal formatting (only use • for bullet points if needed)
+
+6. Include 1-2 specific examples with real results (preferably with numbers)
+
+7. End with a strong call-to-action and invitation for engagement
+
+Guidelines:
+- Keep each tweet under 280 characters
+- Use an authoritative but conversational tone
+- Avoid hashtags except for very specific, relevant terms
+- Include the 🧵 emoji in the first tweet
+- Use simple numbering (1/, 2/, etc.) at the start of continuation tweets
+- Make sure the first tweet can stand alone as attention-grabbing content
+
+For thread structure, follow this pattern:
+- First tweet: Bold hook + promise of value + 🧵
+- Middle tweets: One key insight per tweet with supporting evidence
+- Final tweet: Result example + CTA + invitation for engagement`)}
                 className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Copy to clipboard"
               >
@@ -655,90 +819,294 @@ What's holding YOU back from [desired outcome]?
           </div>
         </div>
         
-        <div className="card bg-base-200 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title">YouTube</h3>
-            <ul className="list-disc list-inside">
-              <li>Convert articles to video scripts</li>
-              <li>Break down into 3-5 key points</li>
-              <li>Add personal stories</li>
-              <li>Include b-roll suggestions</li>
+        <h4 className="text-xl font-semibold mb-4 flex items-center gap-2 mt-12">
+          <FaInstagram className="text-[#C13584]" /> Instagram Content Strategy
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Platform Best Practices</h5>
+            <ul className="mt-2">
+              <li>Prioritize visual storytelling with high-quality images/graphics</li>
+              <li>Create carousel posts for multi-step content (7-10 slides ideal)</li>
+              <li>Use stories for behind-the-scenes content and daily insights</li>
+              <li>Maintain consistent visual branding across all content</li>
+              <li>Balance educational content with inspirational messaging</li>
+              <li>Use a warm, aspirational tone that connects emotionally</li>
             </ul>
+          </div>
+          
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Content Frameworks</h5>
+            <ul className="mt-2">
+              <li><strong>Educational Carousel:</strong> Problem → Framework → Steps → Results</li>
+              <li><strong>Before/After Transformation:</strong> Pain point → Process → Outcome</li>
+              <li><strong>Day-in-the-Life:</strong> Morning routine → Work process → Evening reflection</li>
+              <li><strong>Myth-Busting:</strong> Common belief → Truth → Action steps</li>
+              <li><strong>Quick Tips:</strong> Problem statement → 5-7 actionable tips → CTA</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="bg-base-200 rounded-lg p-6 mb-8">
+          <div className="mb-4">
+            <h5 className="font-bold text-base">Instagram Carousel Template</h5>
+            <p className="text-sm opacity-75">Educational format that delivers high value and drives saves/shares</p>
+          </div>
+          
+          <div className="relative bg-base-100 rounded-lg overflow-hidden group">
+            <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+// Caption
+The most effective [topic] framework I've used with clients who want to [achieve specific goal] 
+without [common pain point].
 
-            <div className="relative bg-base-300/50 rounded-lg overflow-hidden group flex items-center mt-4 p-3">
-              <pre className="text-left text-sm font-mono w-full whitespace-pre-wrap">
-                <code>{`**YouTube Script Template:**
-1. Hook (First 30 seconds):
-   • Pattern interrupt opening
-   • State problem/promise
-   • Preview key takeaways
-   • "Stay until the end for..."
+Save this post for the next time you're struggling with [problem]!
 
-2. Content Structure:
-   Intro (0:00-1:00)
-   • Your credibility
-   • Why this matters
-   • What they'll learn
+✅ These strategies helped my client [name/company] achieve [specific result] in just [timeframe].
 
-   Main Points (1:00-7:00)
-   • 3-5 key sections
-   • Story → Lesson format
-   • B-roll suggestions per point
-   
-   Conclusion (7:00-8:00)
-   • Recap key points
-   • Share success story
-   • Clear CTA
+Which slide was most helpful for you? Let me know in the comments!
 
-3. B-Roll Checklist:
-   • Talking head shots
-   • Screen recordings
-   • Stock footage moments
-   • Text overlays
-   • Visual metaphors
+#[niche] #[expertise] #[topic]
 
-4. Video Description Template:
-   • Timestamp chapters
-   • Resource links
-   • Social media links
-   • Keywords/tags`}</code>
-              </pre>
+// Slide 1 (Cover)
+5 PROVEN STRATEGIES TO [ACHIEVE GOAL]
+(WITHOUT [COMMON METHOD])
+
+// Slide 2
+THE PROBLEM:
+
+✗ [Common challenge people face]
+✗ [Negative outcome of this challenge]
+✗ [Why conventional approaches fail]
+
+// Slide 3
+STRATEGY #1: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 4
+STRATEGY #2: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 5
+STRATEGY #3: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 6
+STRATEGY #4: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 7
+STRATEGY #5: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 8
+IMPLEMENTATION ROADMAP:
+
+1. Start with Strategy #[number] if you're [specific situation]
+2. Combine with Strategy #[number] for best results
+3. Implement Strategy #[number] once you've [milestone]
+4. Use Strategies #[numbers] together for [specific scenario]
+
+// Slide 9 (CTA slide)
+READY TO TAKE YOUR [TOPIC] TO THE NEXT LEVEL?
+
+✓ Save this post for reference
+✓ Tag someone who needs to see this
+✓ Follow @[username] for more [topic] tips
+
+Questions? Drop them in the comments!</pre>
+            <button
+              onClick={() => navigator.clipboard.writeText(`// Caption
+The most effective [topic] framework I've used with clients who want to [achieve specific goal] 
+without [common pain point].
+
+Save this post for the next time you're struggling with [problem]!
+
+✅ These strategies helped my client [name/company] achieve [specific result] in just [timeframe].
+
+Which slide was most helpful for you? Let me know in the comments!
+
+#[niche] #[expertise] #[topic]
+
+// Slide 1 (Cover)
+5 PROVEN STRATEGIES TO [ACHIEVE GOAL]
+(WITHOUT [COMMON METHOD])
+
+// Slide 2
+THE PROBLEM:
+
+✗ [Common challenge people face]
+✗ [Negative outcome of this challenge]
+✗ [Why conventional approaches fail]
+
+// Slide 3
+STRATEGY #1: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 4
+STRATEGY #2: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 5
+STRATEGY #3: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 6
+STRATEGY #4: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 7
+STRATEGY #5: [NAME OF STRATEGY]
+
+→ [Explanation in 2-3 sentences]
+
+WHY IT WORKS:
+• [Specific reason]
+• [Specific reason]
+
+// Slide 8
+IMPLEMENTATION ROADMAP:
+
+1. Start with Strategy #[number] if you're [specific situation]
+2. Combine with Strategy #[number] for best results
+3. Implement Strategy #[number] once you've [milestone]
+4. Use Strategies #[numbers] together for [specific scenario]
+
+// Slide 9 (CTA slide)
+READY TO TAKE YOUR [TOPIC] TO THE NEXT LEVEL?
+
+✓ Save this post for reference
+✓ Tag someone who needs to see this
+✓ Follow @[username] for more [topic] tips
+
+Questions? Drop them in the comments!`)}
+              className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              title="Copy to clipboard"
+            >
+              <FaCopy size={15} />
+            </button>
+          </div>
+          
+          <div className="mt-6">
+            <h5 className="font-bold text-base">Instagram Carousel Creation Prompt</h5>
+            <div className="relative bg-base-100 rounded-lg overflow-hidden group mt-3">
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+Create an Instagram carousel post based on my article about [topic]. The post should:
+
+1. Have 7-10 slides that break down my [framework/method/approach] for 
+   [achieving specific outcome]
+
+2. Start with an eye-catching cover slide with a bold promise related to 
+   [specific pain point]
+
+3. Include a slide that outlines the problem my audience is facing with [topic]
+
+4. Break down each key strategy/step with:
+   - A clear, concise title
+   - 2-3 sentences of explanation
+   - 1-2 bullet points on why it works or how to implement
+
+5. End with a strong call-to-action slide
+
+6. Include a caption that:
+   - Starts with a hook about [specific benefit]
+   - Mentions a specific result achieved with this approach
+   - Encourages saving the post
+   - Asks an engagement question
+   - Uses 3-5 relevant hashtags
+
+Design guidelines:
+- Use a clean, minimalist design with consistent branding
+- Limit text to 15-20% of each slide
+- Use a contrasting background color for important points
+- Incorporate simple icons or visual elements to break up text
+- For the cover slide, use attention-grabbing design elements
+- Make sure all text is large enough to read on mobile
+
+The tone should be authoritative but friendly and conversational, positioning me as 
+an expert who simplifies complex topics. Focus on making each slide valuable enough 
+to stand alone.</pre>
               <button
-                onClick={() => navigator.clipboard.writeText(`**YouTube Script Template:**
-1. Hook (First 30 seconds):
-   • Pattern interrupt opening
-   • State problem/promise
-   • Preview key takeaways
-   • "Stay until the end for..."
+                onClick={() => navigator.clipboard.writeText(`Create an Instagram carousel post based on my article about [topic]. The post should:
 
-2. Content Structure:
-   Intro (0:00-1:00)
-   • Your credibility
-   • Why this matters
-   • What they'll learn
+1. Have 7-10 slides that break down my [framework/method/approach] for 
+   [achieving specific outcome]
 
-   Main Points (1:00-7:00)
-   • 3-5 key sections
-   • Story → Lesson format
-   • B-roll suggestions per point
-   
-   Conclusion (7:00-8:00)
-   • Recap key points
-   • Share success story
-   • Clear CTA
+2. Start with an eye-catching cover slide with a bold promise related to 
+   [specific pain point]
 
-3. B-Roll Checklist:
-   • Talking head shots
-   • Screen recordings
-   • Stock footage moments
-   • Text overlays
-   • Visual metaphors
+3. Include a slide that outlines the problem my audience is facing with [topic]
 
-4. Video Description Template:
-   • Timestamp chapters
-   • Resource links
-   • Social media links
-   • Keywords/tags`)}
+4. Break down each key strategy/step with:
+   - A clear, concise title
+   - 2-3 sentences of explanation
+   - 1-2 bullet points on why it works or how to implement
+
+5. End with a strong call-to-action slide
+
+6. Include a caption that:
+   - Starts with a hook about [specific benefit]
+   - Mentions a specific result achieved with this approach
+   - Encourages saving the post
+   - Asks an engagement question
+   - Uses 3-5 relevant hashtags
+
+Design guidelines:
+- Use a clean, minimalist design with consistent branding
+- Limit text to 15-20% of each slide
+- Use a contrasting background color for important points
+- Incorporate simple icons or visual elements to break up text
+- For the cover slide, use attention-grabbing design elements
+- Make sure all text is large enough to read on mobile
+
+The tone should be authoritative but friendly and conversational, positioning me as 
+an expert who simplifies complex topics. Focus on making each slide valuable enough 
+to stand alone.`)}
                 className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Copy to clipboard"
               >
@@ -748,100 +1116,318 @@ What's holding YOU back from [desired outcome]?
           </div>
         </div>
         
-        <div className="card bg-base-200 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title">Newsletter</h3>
-            <ul className="list-disc list-inside">
-              <li>Package content as exclusive insights</li>
-              <li>Add personal updates</li>
-              <li>Include behind-the-scenes content</li>
-              <li>End with next week's preview</li>
+        <h4 className="text-xl font-semibold mb-4 flex items-center gap-2 mt-12">
+          <FaYoutube className="text-[#FF0000]" /> YouTube Content Strategy
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Platform Best Practices</h5>
+            <ul className="mt-2">
+              <li>Hook viewers in the first 15-30 seconds with a compelling promise</li>
+              <li>Structure content with clear chapters/sections (use timestamps)</li>
+              <li>Balance educational content with entertainment value</li>
+              <li>Use pattern interrupts every 2-3 minutes to maintain engagement</li>
+              <li>Optimize video length based on content (8-15 minutes ideal for tutorials)</li>
+              <li>Add relevant B-roll footage to illustrate key points</li>
             </ul>
+          </div>
+          
+          <div className="prose prose-sm max-w-none">
+            <h5 className="font-semibold">Content Frameworks</h5>
+            <ul className="mt-2">
+              <li><strong>Tutorial Format:</strong> Problem → Solution overview → Step-by-step walkthrough → Results</li>
+              <li><strong>Case Study:</strong> Client situation → Approach → Implementation → Outcome + lessons</li>
+              <li><strong>Expert Interview:</strong> Topic intro → Guest background → Structured discussion → Key takeaways</li>
+              <li><strong>Myth-Busting:</strong> Common belief → Evidence against it → Better alternative</li>
+              <li><strong>Reaction/Review:</strong> Context → Analysis → Practical application</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="bg-base-200 rounded-lg p-6 mb-8">
+          <div className="mb-4">
+            <h5 className="font-bold text-base">YouTube Video Script Template</h5>
+            <p className="text-sm opacity-75">Format for creating highly engaging, educational content</p>
+          </div>
+          
+          <div className="relative bg-base-100 rounded-lg overflow-hidden group">
+            <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+TITLE: [Number] [Unconventional/Proven/Secret] Ways to [Achieve Desired Outcome] 
+Without [Common Pain Point]
 
-            <div className="relative bg-base-300/50 rounded-lg overflow-hidden group flex items-center mt-4 p-3">
-              <pre className="text-left text-sm font-mono w-full whitespace-pre-wrap">
-                <code>{`**Newsletter Framework:**
-1. Subject Line Formulas:
-   • "Inside: [Intriguing Topic]"
-   • "The Truth About [Topic]"
-   • "[Number] Lessons From [Experience]"
-   • "What Nobody Tells You About..."
+HOOK (0:00-0:30):
+• "What if I told you that [common belief about topic] is actually holding you back 
+  from [desired outcome]?"
+• "In today's video, I'm going to show you exactly how I helped [client/myself] 
+  achieve [specific result] without [common but ineffective approach]."
+• "By the end, you'll have a complete framework for [achieving goal] that you can 
+  implement immediately."
 
-2. Content Structure:
-   Opening (Personality)
-   • Personal story/update
-   • Behind-the-scenes moment
-   • Current challenge/win
+INTRO (0:30-1:30):
+• Brief personal introduction
+• Establish credibility: "I've spent [X years/helped X clients] with [topic]..."
+• Overview of what viewers will learn: "Today I'm breaking down the exact [number]-step 
+  process for..."
+• Quick mention of why this matters: "This is crucial because [pain point/common challenge]..."
 
-   Main Content (Value)
-   • Key insight of the week
-   • Resource breakdown
-   • Step-by-step guide
-   • Case study/example
+CONTENT BREAKDOWN (1:30-8:00):
+[For each main point (3-5 total)]
 
-   Community Corner
-   • Member spotlight
-   • Q&A response
-   • Challenge updates
+STRATEGY/STEP #1: [NAME] (Timestamp)
+• What it is: "[Clear definition in 1-2 sentences]"
+• Why it works: "[Explanation of mechanism/psychology]"
+• How to implement:
+  - "[Specific action step]"
+  - "[Specific action step]"
+• Common mistake to avoid: "[What people usually get wrong]"
+• Example: "[Brief real-world application]"
 
-   Closing
-   • Next week's preview
-   • Quick action step
-   • Engagement question
+[Repeat structure for each strategy/step]
 
-3. Formatting Tips:
-   • Short paragraphs
-   • Use subheadings
-   • Add bullet points
-   • Include one CTA
-   • Keep mobile-friendly`}</code>
-              </pre>
+IMPLEMENTATION ROADMAP (8:00-9:30):
+• "Now that I've covered all [number] strategies, here's exactly how to put them together:"
+• Day/Week 1: "[First implementation step]"
+• Day/Week 2-3: "[Next implementation step]"
+• Day/Week 4+: "[Advanced implementation]"
+• "The key integration point is [how strategies work together]"
+
+RESULTS & PROOF (9:30-10:30):
+• "When I implemented this with [client/myself], we saw [specific measurable results]"
+• "What I love about this approach is [unique advantage]"
+• "[Brief testimonial or case study example]"
+
+CONCLUSION & CTA (10:30-12:00):
+• Recap of the [number] key strategies
+• Final motivation: "The difference between those who [achieve goal] and those who don't 
+  is simply [key insight]"
+• Primary CTA: "If you found this helpful, make sure to subscribe for more [topic] strategies"
+• Secondary CTA: "Let me know in the comments which strategy you're going to implement first"
+• Preview next video: "Next week, I'll be covering [related topic]"</pre>
+            <button
+              onClick={() => navigator.clipboard.writeText(`TITLE: [Number] [Unconventional/Proven/Secret] Ways to [Achieve Desired Outcome] 
+Without [Common Pain Point]
+
+HOOK (0:00-0:30):
+• "What if I told you that [common belief about topic] is actually holding you back 
+  from [desired outcome]?"
+• "In today's video, I'm going to show you exactly how I helped [client/myself] 
+  achieve [specific result] without [common but ineffective approach]."
+• "By the end, you'll have a complete framework for [achieving goal] that you can 
+  implement immediately."
+
+INTRO (0:30-1:30):
+• Brief personal introduction
+• Establish credibility: "I've spent [X years/helped X clients] with [topic]..."
+• Overview of what viewers will learn: "Today I'm breaking down the exact [number]-step 
+  process for..."
+• Quick mention of why this matters: "This is crucial because [pain point/common challenge]..."
+
+CONTENT BREAKDOWN (1:30-8:00):
+[For each main point (3-5 total)]
+
+STRATEGY/STEP #1: [NAME] (Timestamp)
+• What it is: "[Clear definition in 1-2 sentences]"
+• Why it works: "[Explanation of mechanism/psychology]"
+• How to implement:
+  - "[Specific action step]"
+  - "[Specific action step]"
+• Common mistake to avoid: "[What people usually get wrong]"
+• Example: "[Brief real-world application]"
+
+[Repeat structure for each strategy/step]
+
+IMPLEMENTATION ROADMAP (8:00-9:30):
+• "Now that I've covered all [number] strategies, here's exactly how to put them together:"
+• Day/Week 1: "[First implementation step]"
+• Day/Week 2-3: "[Next implementation step]"
+• Day/Week 4+: "[Advanced implementation]"
+• "The key integration point is [how strategies work together]"
+
+RESULTS & PROOF (9:30-10:30):
+• "When I implemented this with [client/myself], we saw [specific measurable results]"
+• "What I love about this approach is [unique advantage]"
+• "[Brief testimonial or case study example]"
+
+CONCLUSION & CTA (10:30-12:00):
+• Recap of the [number] key strategies
+• Final motivation: "The difference between those who [achieve goal] and those who don't 
+  is simply [key insight]"
+• Primary CTA: "If you found this helpful, make sure to subscribe for more [topic] strategies"
+• Secondary CTA: "Let me know in the comments which strategy you're going to implement first"
+• Preview next video: "Next week, I'll be covering [related topic]"`)}
+              className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              title="Copy to clipboard"
+            >
+              <FaCopy size={15} />
+            </button>
+          </div>
+          
+          <div className="mt-6">
+            <h5 className="font-bold text-base">YouTube Script Creation Prompt</h5>
+            <div className="relative bg-base-100 rounded-lg overflow-hidden group mt-3">
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+Create a detailed YouTube script based on my article about [topic]. The video should:
+
+1. Have a total runtime of approximately 10-12 minutes
+
+2. Include timestamps for each section
+
+3. Start with a powerful hook that addresses [specific pain point] and promises 
+   a clear benefit
+
+4. Break down my [framework/method/approach] into 3-5 clear, implementable strategies
+
+5. Include specific examples and case studies that demonstrate results
+
+6. Incorporate pattern interrupts every 2-3 minutes to maintain engagement 
+   (questions, mini-stories, etc.)
+
+7. End with both a subscribing CTA and an engagement CTA
+
+For each key strategy/point, include:
+- A clear explanation of what it is
+- Why it works (scientific/psychological reasoning if applicable)
+- How to implement it with specific steps
+- A common mistake to avoid
+- A brief example or application
+
+Script structure:
+- Hook (0:00-0:30): Attention-grabbing opening that creates curiosity
+- Intro (0:30-1:30): Personal introduction, credibility statement, and video overview
+- Main Content (1:30-8:00): Breakdown of each strategy with timestamp chapters
+- Implementation Plan (8:00-9:30): How to integrate all strategies into a cohesive approach
+- Results & Proof (9:30-10:30): Evidence of effectiveness through case studies/testimonials
+- Conclusion & CTA (10:30-12:00): Recap, motivation, and clear calls-to-action
+
+The tone should be authoritative but conversational, with occasional humor and relatable 
+analogies to explain complex concepts. Make sure to include suggestions for B-roll footage 
+or visual elements that could enhance key points.
+
+Also provide 3 potential title options that use proven YouTube click patterns 
+(numbers, curiosity gap, promise of value).</pre>
               <button
-                onClick={() => navigator.clipboard.writeText(`**Newsletter Framework:**
-1. Subject Line Formulas:
-   • "Inside: [Intriguing Topic]"
-   • "The Truth About [Topic]"
-   • "[Number] Lessons From [Experience]"
-   • "What Nobody Tells You About..."
+                onClick={() => navigator.clipboard.writeText(`Create a detailed YouTube script based on my article about [topic]. The video should:
 
-2. Content Structure:
-   Opening (Personality)
-   • Personal story/update
-   • Behind-the-scenes moment
-   • Current challenge/win
+1. Have a total runtime of approximately 10-12 minutes
 
-   Main Content (Value)
-   • Key insight of the week
-   • Resource breakdown
-   • Step-by-step guide
-   • Case study/example
+2. Include timestamps for each section
 
-   Community Corner
-   • Member spotlight
-   • Q&A response
-   • Challenge updates
+3. Start with a powerful hook that addresses [specific pain point] and promises 
+   a clear benefit
 
-   Closing
-   • Next week's preview
-   • Quick action step
-   • Engagement question
+4. Break down my [framework/method/approach] into 3-5 clear, implementable strategies
 
-3. Formatting Tips:
-   • Short paragraphs
-   • Use subheadings
-   • Add bullet points
-   • Include one CTA
-   • Keep mobile-friendly`)}
+5. Include specific examples and case studies that demonstrate results
+
+6. Incorporate pattern interrupts every 2-3 minutes to maintain engagement 
+   (questions, mini-stories, etc.)
+
+7. End with both a subscribing CTA and an engagement CTA
+
+For each key strategy/point, include:
+- A clear explanation of what it is
+- Why it works (scientific/psychological reasoning if applicable)
+- How to implement it with specific steps
+- A common mistake to avoid
+- A brief example or application
+
+Script structure:
+- Hook (0:00-0:30): Attention-grabbing opening that creates curiosity
+- Intro (0:30-1:30): Personal introduction, credibility statement, and video overview
+- Main Content (1:30-8:00): Breakdown of each strategy with timestamp chapters
+- Implementation Plan (8:00-9:30): How to integrate all strategies into a cohesive approach
+- Results & Proof (9:30-10:30): Evidence of effectiveness through case studies/testimonials
+- Conclusion & CTA (10:30-12:00): Recap, motivation, and clear calls-to-action
+
+The tone should be authoritative but conversational, with occasional humor and relatable 
+analogies to explain complex concepts. Make sure to include suggestions for B-roll footage 
+or visual elements that could enhance key points.
+
+Also provide 3 potential title options that use proven YouTube click patterns 
+(numbers, curiosity gap, promise of value).`)}
                 className="absolute top-3 right-3 btn btn-primary btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Copy to clipboard"
               >
                 <FaCopy size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="alert alert-info shadow-lg my-8">
+          <div className="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current flex-shrink-0 w-6 h-6 mt-1"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+              <h3 className="font-bold mb-1">Universal Cross-Platform Adaptation Prompt</h3>
+              <p className="text-sm mb-2">Use this master prompt to adapt your main content for any platform:</p>
+              <div className="bg-base-100 p-3 rounded-lg mt-2 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+I have a piece of content about [TOPIC] that covers the following key points:
+
+1. [KEY POINT 1]
+2. [KEY POINT 2]
+3. [KEY POINT 3]
+4. [KEY POINT 4]
+
+My target audience consists of [AUDIENCE DESCRIPTION] who want to [DESIRED OUTCOME].
+
+Please help me adapt this content for [PLATFORM] by:
+
+1. Creating a [POST TYPE] that follows the platform's best practices for formatting 
+   and engagement
+
+2. Adjusting the tone and language to match what resonates with [PLATFORM] users
+
+3. Restructuring the information to highlight the most valuable insights for this 
+   specific platform
+
+4. Incorporating platform-specific features (e.g., hashtags, carousel slides, etc.)
+
+5. Providing 2-3 hook variations that would work well as openers
+
+6. Including a strong call-to-action that encourages the right type of engagement 
+   for this platform
+
+My content style is [AUTHORITATIVE/CONVERSATIONAL/EDUCATIONAL/INSPIRATIONAL], and 
+I want to position myself as an expert in [NICHE] who helps people [VALUE PROPOSITION].
+              </div>
+              <button
+                onClick={() => navigator.clipboard.writeText(`I have a piece of content about [TOPIC] that covers the following key points:
+
+1. [KEY POINT 1]
+2. [KEY POINT 2]
+3. [KEY POINT 3]
+4. [KEY POINT 4]
+
+My target audience consists of [AUDIENCE DESCRIPTION] who want to [DESIRED OUTCOME].
+
+Please help me adapt this content for [PLATFORM] by:
+
+1. Creating a [POST TYPE] that follows the platform's best practices for formatting 
+   and engagement
+
+2. Adjusting the tone and language to match what resonates with [PLATFORM] users
+
+3. Restructuring the information to highlight the most valuable insights for this 
+   specific platform
+
+4. Incorporating platform-specific features (e.g., hashtags, carousel slides, etc.)
+
+5. Providing 2-3 hook variations that would work well as openers
+
+6. Including a strong call-to-action that encourages the right type of engagement 
+   for this platform
+
+My content style is [AUTHORITATIVE/CONVERSATIONAL/EDUCATIONAL/INSPIRATIONAL], and 
+I want to position myself as an expert in [NICHE] who helps people [VALUE PROPOSITION].`)}
+                className="btn btn-primary btn-sm mt-2 gap-2"
+              >
+                <FaCopy size={15} /> Copy Master Prompt
               </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -2012,7 +2598,7 @@ ${conversionContent}`;
                             Apple Calendar
                           </a></li>
                           <li><a onClick={() => generateCalendarLink('outlook')} className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#0078D4"><path d="M21.17 3.25Q21.5 3.25 21.76 3.5 22 3.74 22 4.08v15.84q0 .36-.25.6-.25.26-.58.26H2.85q-.36 0-.6-.25-.26-.25-.26-.6V4.08q0-.34.26-.58.24-.25.59-.25h18.32M21.17 7.5L12 13.42 2.85 7.5V6.25l9.15 5.92L21.17 6.25v1.25m0 3.33v10.59H2.85V10.83l9.15 5.92z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#0078D4"><path d="M21.17 3.25Q21.5 3.25 21.76 3.5 22 3.74 22 4.08v15.84q0 .36-.25.6-.25.26-.58.26H2.85q-.36 0-.6-.25-.26-.25-.26-.6V4.08q0-.34.24-.25.24-.25.59-.25h18.32M21.17 7.5L12 13.42 2.85 7.5V6.25l9.15 5.92L21.17 6.25v1.25m0 3.33v10.59H2.85V10.83l9.15 5.92z"/></svg>
                             Outlook
                           </a></li>
                           <li><a onClick={() => generateCalendarLink('ical')} className="flex items-center gap-2">
