@@ -47,12 +47,24 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const data = await req.json();
+    const { status, comment, anonymousName } = data;
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "You must be logged in" },
-        { status: 401 }
-      );
+    // For status updates, require admin authentication
+    if (status) {
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: "You must be logged in" },
+          { status: 401 }
+        );
+      }
+      
+      if (!session.user.isAdmin) {
+        return NextResponse.json(
+          { error: "Only admins can update the status" },
+          { status: 403 }
+        );
+      }
     }
     
     // Validate the ID parameter
@@ -74,29 +86,30 @@ export async function PATCH(
       );
     }
     
-    const { status, comment } = await req.json();
-    
-    // For status updates, only admins can do it
-    if (status && !session.user.isAdmin) {
-      return NextResponse.json(
-        { error: "Only admins can update the status" },
-        { status: 403 }
-      );
-    }
-    
-    // Update status if provided
-    if (status) {
+    // Update status if provided (admin only)
+    if (status && session?.user?.isAdmin) {
       featureRequest.status = status;
     }
     
     // Add comment if provided
     if (comment) {
-      featureRequest.comments.push({
-        userId: session.user.id,
-        userEmail: session.user.email,
-        userName: session.user.name || "Anonymous",
-        text: comment,
-      });
+      if (session?.user) {
+        // For logged-in users
+        featureRequest.comments.push({
+          userId: session.user.id,
+          userEmail: session.user.email,
+          userName: session.user.name || "Anonymous",
+          text: comment,
+        });
+      } else {
+        // For anonymous users
+        featureRequest.comments.push({
+          userId: "anonymous",
+          userEmail: "anonymous",
+          userName: anonymousName || "Anonymous",
+          text: comment,
+        });
+      }
     }
     
     await featureRequest.save();
