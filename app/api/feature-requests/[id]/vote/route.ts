@@ -41,7 +41,7 @@ export async function POST(
       
       if (hasVoted) {
         // Remove vote (toggle)
-        featureRequest.votes = featureRequest.votes.filter(id => id !== anonymousId);
+        featureRequest.votes = featureRequest.votes.filter((id: string) => id !== anonymousId);
       } else {
         // Add vote
         featureRequest.votes.push(anonymousId);
@@ -63,7 +63,7 @@ export async function POST(
       
       if (hasVoted) {
         // Remove vote (toggle)
-        featureRequest.votes = featureRequest.votes.filter(id => id !== userId);
+        featureRequest.votes = featureRequest.votes.filter((id: string) => id !== userId);
       } else {
         // Add vote
         featureRequest.votes.push(userId);

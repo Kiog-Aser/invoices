@@ -243,11 +243,24 @@ export default function FeatureRequestsPage() {
   return (
     <div className="min-h-screen bg-base-100">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold">Feature Requests</h1>
-          <p className="mt-2 text-base-content/70">
-            Vote for features you'd like to see or suggest your own ideas
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <Link 
+            href="/dashboard" 
+            className="btn btn-outline btn-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Dashboard
+          </Link>
+          
+          <div className="text-center flex-1">
+            <h1 className="text-3xl md:text-4xl font-bold">Feature Requests</h1>
+            <p className="mt-2 text-base-content/70">
+              Vote for features you'd like to see or suggest your own ideas
+            </p>
+          </div>
+          <div className="w-[140px]"></div> {/* Empty div for balancing the layout */}
         </div>
         
         <div className="flex flex-col lg:flex-row gap-8">
