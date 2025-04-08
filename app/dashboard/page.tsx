@@ -290,14 +290,14 @@ export default function WritingProtocolsPage() {
           {/* Feedback Card */}
           <div 
             className="card bg-base-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 border border-base-content/10 cursor-pointer"
-            onClick={() => router.push('/feedback')}
+            onClick={() => router.push('/testimonial/new')}
           >
             <div className="card-body">
-              <h3 className="card-title font-mono">Submit Feedback</h3>
-              <p className="text-base-content/70">Share your experience and help us improve the platform.</p>
+              <h3 className="card-title font-mono">Submit A Testimonial</h3>
+              <p className="text-base-content/70">Share your experience and help others find us.</p>
               <div className="card-actions justify-end mt-4">
                 <button className="btn btn-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 font-mono">
-                  Give Feedback
+                  Let's do it!
                 </button>
               </div>
             </div>
