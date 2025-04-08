@@ -37,7 +37,7 @@ const Header = () => {
   }, [searchParams]);
 
   return (
-    <header className="bg-base-300 relative pb-0 mt-2">
+    <header className="bg-base-300 relative pb-0">
       {/* Retro grid background */}
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
       
