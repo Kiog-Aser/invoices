@@ -267,6 +267,44 @@ export default function WritingProtocolsPage() {
         </div>
       )}
 
+      {/* New Community Features Section */}
+      <div className="mt-8 mb-6">
+        <h2 className="text-xl font-bold mb-4">Community Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Feature Requests Card */}
+          <div 
+            className="card bg-base-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 border border-base-content/10 cursor-pointer"
+            onClick={() => router.push('/feature-requests')}
+          >
+            <div className="card-body">
+              <h3 className="card-title font-mono">Feature Requests</h3>
+              <p className="text-base-content/70">Vote for features you'd like to see or suggest your own ideas!</p>
+              <div className="card-actions justify-end mt-4">
+                <button className="btn btn-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 font-mono">
+                  View Features
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Feedback Card */}
+          <div 
+            className="card bg-base-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 border border-base-content/10 cursor-pointer"
+            onClick={() => router.push('/feedback')}
+          >
+            <div className="card-body">
+              <h3 className="card-title font-mono">Submit Feedback</h3>
+              <p className="text-base-content/70">Share your experience and help us improve the platform.</p>
+              <div className="card-actions justify-end mt-4">
+                <button className="btn btn-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 font-mono">
+                  Give Feedback
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {access.hasAccess === false && protocols.length > 0 && (
         <div className="mt-8 p-4 bg-base-200 rounded-lg">
           <div className="flex flex-col md:flex-row items-center justify-between">
