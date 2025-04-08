@@ -1799,14 +1799,13 @@ export default function CreateWritingProtocolPage() {
 
               {currentStep === "contentBalance" && (
                 <div className="space-y-6">
-                  <h1 className="text-3xl font-bold">
-                    Content Balance Preference
-                  </h1>
+                  <h1 className="text-3xl font-bold">Content Balance Preference</h1>
                   <p className="text-base-content/70">
                     Choose how you'd like to balance educational content with conversion-focused content.
                   </p>
                   
                   <div className="grid grid-cols-1 gap-4 mt-4">
+                    {/* Education First Option */}
                     <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "education" ? "border-primary border-2" : ""}`}>
                       <div className="flex items-center">
                         <input
@@ -1821,9 +1820,9 @@ export default function CreateWritingProtocolPage() {
                         <p className="text-base-content/70 mb-2">
                           Focus more on providing value and educating your audience (80% educational, 20% promotional content)
                         </p>
-                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
                           <div className="bg-blue-400 h-full" style={{ width: "80%" }}></div>
-                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "20%" }}></div>
+                          <div className="bg-amber-400 h-full" style={{ width: "20%" }}></div>
                         </div>
                         <div className="flex justify-between text-xs mt-1">
                           <span>Educational</span>
@@ -1831,7 +1830,8 @@ export default function CreateWritingProtocolPage() {
                         </div>
                       </div>
                     </label>
-                    
+                
+                    {/* Balanced Approach Option */}
                     <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "balanced" ? "border-primary border-2" : ""}`}>
                       <div className="flex items-center">
                         <input
@@ -1846,9 +1846,9 @@ export default function CreateWritingProtocolPage() {
                         <p className="text-base-content/70 mb-2">
                           Equal focus on educational content and promotional material (50% educational, 50% promotional)
                         </p>
-                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
                           <div className="bg-blue-400 h-full" style={{ width: "50%" }}></div>
-                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "50%" }}></div>
+                          <div className="bg-amber-400 h-full" style={{ width: "50%" }}></div>
                         </div>
                         <div className="flex justify-between text-xs mt-1">
                           <span>Educational</span>
@@ -1856,7 +1856,8 @@ export default function CreateWritingProtocolPage() {
                         </div>
                       </div>
                     </label>
-                    
+                
+                    {/* Conversion Focused Option */}
                     <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.contentBalance === "conversion" ? "border-primary border-2" : ""}`}>
                       <div className="flex items-center">
                         <input
@@ -1871,9 +1872,9 @@ export default function CreateWritingProtocolPage() {
                         <p className="text-base-content/70 mb-2">
                           More emphasis on promoting your offers and driving conversions (40% educational, 60% promotional)
                         </p>
-                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden">
+                        <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
                           <div className="bg-blue-400 h-full" style={{ width: "40%" }}></div>
-                          <div className="bg-amber-400 h-full mt-[-12px]" style={{ width: "60%" }}></div>
+                          <div className="bg-amber-400 h-full" style={{ width: "60%" }}></div>
                         </div>
                         <div className="flex justify-between text-xs mt-1">
                           <span>Educational</span>
@@ -1883,6 +1884,7 @@ export default function CreateWritingProtocolPage() {
                     </label>
                   </div>
                 </div>
+
               )}
 
               {currentStep === "processing" && (
