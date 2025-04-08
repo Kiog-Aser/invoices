@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { FaArrowLeft, FaChevronRight, FaHome, FaPrint, FaDownload, FaSpinner, FaCopy, FaCalendarPlus, FaLinkedin, FaTwitter, FaInstagram, FaYoutube } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
+import FeedbackButton from "@/components/FeedbackButton";
 
 interface Section {
   id: string;
@@ -209,7 +210,7 @@ function ContentCreationSystem() {
   return (
     <div className="prose max-w-none">
       <h2 className="text-3xl font-bold mt-12 mb-6 scroll-mt-20" id="creation">6. Content Creation System With Prompts</h2>
-      
+      <FeedbackButton pageContext="Content Creation System" />
       <h3 className="text-2xl font-semibold mt-8 mb-4" id="creation-step1">Step 1. Creating Long-Form Content</h3>
       <p>The first step is writing out a Medium article. Feeling uninspired? Here's a prompt to generate ideas:</p>
 
