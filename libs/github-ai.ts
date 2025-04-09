@@ -16,7 +16,7 @@ const akashBackupTokens = [
 
 const akashEndpoint = "https://chatapi.akash.network/api/v1";
 // Updated to use an allowed model from the error message
-const akashModelName = "meta-llama-Llama-4-Maverick-17B-128E-Instruct-FP8"; // Updated model that's in the allowed list
+const akashModelName = "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8"; // Updated model that's in the allowed list
 
 // Check if we should use Akash or GitHub AI
 const useAkash = process.env.USE_AKASH === "true" || (!githubToken && akashPrimaryToken);
