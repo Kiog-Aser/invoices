@@ -54,7 +54,7 @@ const Footer = () => {
                 <Link href="/testimonial/new" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
                   Leave A Testimonial
                 </Link>
-                <Link href="https://insigh.to/b/creatifun" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
+                <Link href="/feature-requests" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
                   Feature Request
                 </Link>
                 <Link href="/#pricing" className="font-mono text-base-content hover:text-primary transition-colors">

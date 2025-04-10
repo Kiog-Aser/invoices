@@ -86,6 +86,7 @@ export interface IWritingProtocol {
   };
   createdAt?: Date;
   updatedAt?: Date;
+  hasSeenPopup?: boolean;
 }
 
 // Schema definition for the WritingProtocol model
@@ -207,6 +208,10 @@ const writingProtocolSchema = new mongoose.Schema<IWritingProtocol>(
           callToAction: String,
         },
       },
+    },
+    hasSeenPopup: {
+      type: Boolean,
+      required: false,
     },
   },
   {

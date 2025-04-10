@@ -7,6 +7,7 @@ import { FaArrowLeft, FaChevronRight, FaHome, FaPrint, FaDownload, FaSpinner, Fa
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import FeedbackButton from "@/components/FeedbackButton";
+import StrategyCallPopup from "@/components/StrategyCallPopup";
 
 interface Section {
   id: string;
@@ -1369,6 +1370,7 @@ export default function WritingProtocolPage({ params }: { params: { id: string }
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   
   // Keep SECTIONS for sidebar structure, but don't use content property
   const sections = useMemo(() => SECTIONS, []);
@@ -1714,6 +1716,8 @@ ${conversionContent}`;
       fetchProtocol();
     }
   }, [params.id, router, status, sections]); // Track sections in dependencies
+
+
 
   const { activeSection, activeSubsection, setActiveSection, setActiveSubsection } = useActiveSection(
     sections.map(s => s.id)
@@ -2467,24 +2471,32 @@ ${conversionContent}`;
         
         {/* Header with actions - hide on print */}
         <div className="bg-base-100 border-b border-base-200 sticky top-0 z-10 print:hidden">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex justify-end gap-2">
+          <div className="max-w-4xl mx-auto mt-4 px-4 py-4 flex justify-between items-center">
             <button
-              onClick={handlePrint}
-              className="btn btn-outline btn-sm gap-2"
-            >
-              <FaPrint size={12} /> Print
-            </button>
-            <button
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF}
+              onClick={() => setIsPopupOpen(true)}
               className="btn btn-primary btn-sm gap-2"
             >
-              {isGeneratingPDF ? (
-                <><FaSpinner className="animate-spin" size={12} /> Generating...</>
-              ) : (
-                <><FaDownload size={12} /> Download PDF</>
-              )}
+              Get strategy call
             </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrint}
+                className="btn btn-outline btn-sm gap-2"
+              >
+                <FaPrint size={12} /> Print
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="btn btn-primary btn-sm gap-2"
+              >
+                {isGeneratingPDF ? (
+                  <><FaSpinner className="animate-spin" size={12} /> Generating...</>
+                ) : (
+                  <><FaDownload size={12} /> Download PDF</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2705,6 +2717,7 @@ ${conversionContent}`;
           </div>
         </div>
       </div>
+      <StrategyCallPopup isOpen={isPopupOpen} onClose={() => setIsPopupOpen(false)} />
     </div>
   );
 }
