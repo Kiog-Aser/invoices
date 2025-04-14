@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/next-auth";
 import connectMongo from "@/libs/mongoose";
-import { githubAIClient, models, getRotatingAkashClient, RotatingClient, QUALITY_MODEL } from "@/libs/github-ai";
+import { defaultAIClient, models, getRotatingAkashClient, RotatingClient, QUALITY_MODEL } from "@/libs/akash-ai";
 import WritingProtocol from "@/models/WritingProtocol";
 
 // Helper function to check if a string is valid JSON
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     // Check if AI client is available
-    if (!githubAIClient) {
+    if (!defaultAIClient) {
       return NextResponse.json(
         { error: "AI service is not configured" },
         { status: 503 }
@@ -530,13 +530,13 @@ async function generateProtocolContent(
           rotatingClient.release();
         }
       } else {
-        // Use the default client (GitHub or fallback)
-        if (!githubAIClient) {
+        // Use the default client (Akash)
+        if (!defaultAIClient) {
           throw new Error("AI service is not configured");
         }
         
         // Send request to AI using the default client
-        const completion = await githubAIClient.chat.completions.create({
+        const completion = await defaultAIClient.chat.completions.create({
           model: modelToUse,
           messages: [
             { 

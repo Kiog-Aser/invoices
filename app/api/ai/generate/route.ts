@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/next-auth";
-import { models, getRotatingAkashClient, QUALITY_MODEL } from "@/libs/github-ai";
+import { models, getRotatingAkashClient, QUALITY_MODEL } from "@/libs/akash-ai";
 
 export async function POST(req: Request) {
   try {

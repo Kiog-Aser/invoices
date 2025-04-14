@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { githubAIClient, getRotatingAkashClient } from '@/libs/github-ai';
-import { models } from '@/libs/github-ai';
+import { defaultAIClient, getRotatingAkashClient } from '@/libs/akash-ai';
+import { models } from '@/libs/akash-ai';
 
 export const runtime = 'edge';
 
@@ -87,7 +87,7 @@ ${text}`;
         console.error('Error with rotating client:', error);
         // If rotatingClient fails, release it anyway
         rotatingClient.release();
-        // Fall through to try githubAIClient
+        // Fall through to try defaultAIClient
       }
     }
     
