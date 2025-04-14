@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { headers } from 'next/headers'
 
 // Simple in-memory store for rate limiting
 const store = new Map<string, { count: number; timestamp: number }>()
@@ -10,9 +9,12 @@ const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
 const MAX_REQUESTS = 100 // Maximum requests per window
 
 export async function middleware(request: NextRequest) {
+  console.log("⚡️ Stripe webhook middleware triggered");
+  
   // Get Stripe signature from headers
   const sig = request.headers.get('stripe-signature')
   if (!sig) {
+    console.error("❌ Missing stripe signature in middleware");
     return NextResponse.json({ error: 'Missing stripe signature' }, { status: 400 })
   }
 
