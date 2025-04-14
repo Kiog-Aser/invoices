@@ -15,8 +15,8 @@ const PRICE_ID_UNLIMITED_ACCESS = "price_1RAF0yQF2yOHJOkbGp7h8r08";  // $159
 // Configuration for Next.js API route
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-// Explicitly disable body parsing to preserve raw body for Stripe
-export const bodyParser = false;
+// Note: Next.js 14+ doesn't support the bodyParser export
+// We'll handle the raw body manually
 
 // Simple file-based logging to help debug webhook issues
 const logToFile = (message: string) => {
