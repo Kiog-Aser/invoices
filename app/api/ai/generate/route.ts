@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/next-auth";
-import { githubAIClient, models, getRotatingAkashClient, QUALITY_MODEL } from "@/libs/github-ai";
+import { models, getRotatingAkashClient, QUALITY_MODEL } from "@/libs/github-ai";
 
 export async function POST(req: Request) {
   try {
@@ -11,14 +11,6 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "You must be logged in" },
         { status: 401 }
-      );
-    }
-
-    // Check if AI client is available
-    if (!githubAIClient) {
-      return NextResponse.json(
-        { error: "AI service is not configured" },
-        { status: 503 }
       );
     }
 
@@ -36,7 +28,7 @@ export async function POST(req: Request) {
     // Determine which model to use based on user's selection and preferences
     // If useAkashAPI is set to true in the request, use Akash regardless of env settings
     let forceAkash = useAkashAPI === true;
-    let modelToUse = (forceAkash || process.env.USE_AKASH === "true") ? models.akash : models.github;
+    let modelToUse = models.akash // Default to fast model
     
     // Override with QUALITY_MODEL if quality is selected
     if (modelType === 'quality') {
@@ -83,27 +75,7 @@ export async function POST(req: Request) {
           // Always release the client back to the pool
           rotatingClient.release();
         }
-      } else {
-        // Use the default client (GitHub or fallback)
-        if (!githubAIClient) {
-          throw new Error("AI service is not configured");
-        }
-        
-        // Send request to AI using the default client
-        const completion = await githubAIClient.chat.completions.create({
-          model: modelToUse,
-          messages: [
-            { 
-              role: "user", 
-              content: prompt 
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2048
-        });
-        aiResponse = completion.choices[0]?.message?.content || 
-          "Sorry, I couldn't generate a response. Please try again.";
-      }
+      };
 
       return NextResponse.json({ 
         success: true, 
