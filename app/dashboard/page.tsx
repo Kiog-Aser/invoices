@@ -1,5 +1,8 @@
 'use client';
 
+// This page contains dynamic content that shouldn't be statically built
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaArrowRight, FaPlus, FaTrash, FaSpinner, FaInfinity, FaTicketAlt } from 'react-icons/fa';

@@ -26,6 +26,11 @@ const nextConfig = {
       },
     ];
   },
+  // Configure static and dynamic rendering
+  output: 'standalone',
+  // Skip static generation for problematic paths to avoid build errors
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
   images: {
     remotePatterns: [
       {

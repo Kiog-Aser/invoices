@@ -4,6 +4,8 @@ import { authOptions } from '@/libs/next-auth';
 import User from '@/models/User';
 import connectMongo from '@/libs/mongoose';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

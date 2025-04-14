@@ -1,8 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+// This ensures the page is rendered dynamically at request time, not statically at build time
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink } from 'react-icons/fa';
-import ReactQuill from 'react-quill';
+import dynamicImport from 'next/dynamic';
+
+// Import ReactQuill dynamically with SSR disabled
+const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
+  default: ({ forwardedRef, ...props }: { forwardedRef?: React.Ref<any>; [key: string]: any }) => 
+    <mod.default ref={forwardedRef} {...props} />
+})), {
+  ssr: false,
+  loading: () => <p>Loading editor...</p>
+});
 import 'react-quill/dist/quill.snow.css';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
@@ -37,7 +49,7 @@ const ContentHub = () => {
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [selectedProtocol, setSelectedProtocol] = useState<Protocol | null>(null);
   const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
-  const quillRef = useRef<ReactQuill>(null);
+  const quillRef = useRef<any>(null);
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -655,7 +667,7 @@ Include:
     
     // Check selection on mouse up and key combinations
     editorRoot.addEventListener('mouseup', checkSelection);
-    editorRoot.addEventListener('keyup', (e) => {
+    editorRoot.addEventListener('keyup', (e: KeyboardEvent) => {
       // Only check on certain keys that might modify selection
       const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Shift'];
       if (e.key && keys.includes(e.key)) {
@@ -734,7 +746,7 @@ Include:
           setTimeout(() => {
             // Find the H2 element that was just created
             const h2Elements = editor.root.querySelectorAll('h2');
-            h2Elements.forEach(h2 => {
+            h2Elements.forEach((h2: HTMLHeadingElement) => {
               // Only add class if it doesn't already have it
               if (!h2.classList.contains('subtitle')) {
                 h2.classList.add('subtitle');
@@ -1081,9 +1093,9 @@ Include:
         {/* Clean, borderless editor with clear ending before sidebar */}
         <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
           <ReactQuill
-            ref={quillRef}
+            forwardedRef={quillRef}
             value={content}
-            onChange={(value) => {
+            onChange={(value: string) => {
               setContent(value);
               
               // Automatically extract first line as title if it's formatted as heading

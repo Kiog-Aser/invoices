@@ -1,5 +1,8 @@
 "use client";
 
+// Ensure this page is rendered dynamically at request time
+export const dynamic = 'force-dynamic';
+
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
