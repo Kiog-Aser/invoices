@@ -201,11 +201,23 @@ export async function POST(req: NextRequest) {
           };
         }
         
+        // Force-set user.protocols.tokens to be a number
+        if (typeof user.protocols.tokens !== 'number') {
+          user.protocols.tokens = 0;
+          logToFile(`🔧 Reset tokens to 0 as it was not a number`);
+        }
+        
         // Add token with clear numerical logging
         const oldTokens = user.protocols.tokens || 0;
         user.protocols.tokens = oldTokens + 1;
         
         logToFile(`🎫 Token added: ${oldTokens} → ${user.protocols.tokens}`);
+        
+        // Force-set purchased count to be a number
+        if (typeof user.protocols.purchasedCount !== 'number') {
+          user.protocols.purchasedCount = 0;
+          logToFile(`🔧 Reset purchasedCount to 0 as it was not a number`);
+        }
         
         // Increment purchased count
         user.protocols.purchasedCount = (user.protocols.purchasedCount || 0) + 1;
