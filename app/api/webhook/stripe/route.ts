@@ -192,6 +192,15 @@ export async function POST(req: NextRequest) {
       if (priceId === PRICE_ID_SINGLE_PROTOCOL) {
         logToFile(`🎫 Adding single protocol token to user ${user._id}`);
         
+        // Ensure protocols object exists
+        if (!user.protocols) {
+          user.protocols = {
+            tokens: 0,
+            isUnlimited: false,
+            purchasedCount: 0
+          };
+        }
+        
         // Add token with clear numerical logging
         const oldTokens = user.protocols.tokens || 0;
         user.protocols.tokens = oldTokens + 1;
@@ -207,9 +216,14 @@ export async function POST(req: NextRequest) {
       else if (priceId === PRICE_ID_UNLIMITED_ACCESS) {
         logToFile(`🔓 Granting unlimited protocol access to user ${user._id}`);
         
-        // Update plan to pro
-        user.plan = "pro";
-        logToFile(`⭐ Updated user plan to 'pro'`);
+        // Ensure protocols object exists
+        if (!user.protocols) {
+          user.protocols = {
+            tokens: 0,
+            isUnlimited: false,
+            purchasedCount: 0
+          };
+        }
         
         // Set unlimited access
         user.protocols.isUnlimited = true;
