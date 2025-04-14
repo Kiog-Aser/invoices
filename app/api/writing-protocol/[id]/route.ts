@@ -26,16 +26,36 @@ export async function GET(
     
     let protocol;
     try {
-      // First try with the ID directly
-      protocol = await WritingProtocol.findOne({
-        _id: params.id,
-        userId
-      });
+      // Check if the id param is a valid MongoDB ObjectId (24 hex characters)
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
       
-      // If not found, try with just the ID (ignore userId constraint for testing)
-      if (!protocol) {
-        protocol = await WritingProtocol.findById(params.id);
-        console.log("Found protocol by ID only:", !!protocol);
+      if (isValidObjectId) {
+        // First try with the ID directly
+        protocol = await WritingProtocol.findOne({
+          _id: params.id,
+          userId
+        });
+        
+        // If not found, try with just the ID (ignore userId constraint for testing)
+        if (!protocol) {
+          protocol = await WritingProtocol.findById(params.id);
+          console.log("Found protocol by ID only:", !!protocol);
+        }
+      } else {
+        // If not a valid ObjectId, try to find by title
+        console.log("Looking up protocol by title:", params.id);
+        protocol = await WritingProtocol.findOne({
+          title: params.id,
+          userId
+        });
+        
+        // If not found, try without userId constraint for testing
+        if (!protocol) {
+          protocol = await WritingProtocol.findOne({
+            title: params.id
+          });
+          console.log("Found protocol by title only:", !!protocol);
+        }
       }
     } catch (err) {
       console.error("Error finding protocol:", err);

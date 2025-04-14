@@ -1,10 +1,5 @@
 import OpenAI from "openai";
 
-// Get the GitHub token from environment variables
-const githubToken = process.env.GITHUB_TOKEN;
-const githubEndpoint = "https://models.inference.ai.azure.com";
-const githubModelName = "gpt-4o";
-
 // Get the Akash tokens from environment variables (primary + backups)
 const akashPrimaryToken = process.env.AKASH_API_KEY;
 const akashBackupTokens = [
@@ -15,18 +10,14 @@ const akashBackupTokens = [
 ].filter(Boolean) as string[]; // Filter out any undefined tokens and assert as string[]
 
 const akashEndpoint = "https://chatapi.akash.network/api/v1";
-// Updated to use an allowed model from the error message
-const akashModelName = "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8"; // Updated model that's in the allowed list
+// Use DeepSeek model for all operations
+const AKASH_MODEL = "DeepSeek-R1";
 
-// Check if we should use Akash or GitHub AI
-const useAkash = process.env.USE_AKASH === "true" || (!githubToken && akashPrimaryToken);
-const useGithubAI = process.env.USE_GITHUB_AI === "true" || !useAkash;
-
-// For quality selections, favor DeepSeek-R1 which is also in the allowed list
+// For quality selections, use DeepSeek-R1
 export const QUALITY_MODEL = "DeepSeek-R1";
 
-if (!githubToken && !akashPrimaryToken && process.env.NODE_ENV === "production") {
-  console.error("Neither GITHUB_TOKEN nor AKASH_API_KEY is set in production environment");
+if (!akashPrimaryToken && process.env.NODE_ENV === "production") {
+  console.error("AKASH_API_KEY is not set in production environment");
 }
 
 // Tracking active requests per Akash API key
@@ -78,19 +69,13 @@ function createAkashClient() {
   };
 }
 
-// Create the appropriate client based on configuration
+// Create the main client for AI completions
 export const githubAIClient = (() => {
-  if (useAkash && akashPrimaryToken) {
+  if (akashPrimaryToken) {
     console.log("Using Akash Chat API for AI completions");
     return new OpenAI({ 
       baseURL: akashEndpoint, 
       apiKey: akashPrimaryToken 
-    });
-  } else if (useGithubAI && githubToken) {
-    console.log("Using GitHub AI for completions");
-    return new OpenAI({ 
-      baseURL: githubEndpoint, 
-      apiKey: githubToken 
     });
   }
   return null;
@@ -104,10 +89,6 @@ export interface RotatingClient {
 
 // For direct access to the Akash client with rotation capability
 export async function getRotatingAkashClient(): Promise<RotatingClient | null> {
-  if (!useAkash) {
-    return null;
-  }
-
   const akashClientInfo = createAkashClient();
   if (!akashClientInfo) {
     return null;
@@ -137,8 +118,7 @@ export const akashClient = akashPrimaryToken ? new OpenAI({
   apiKey: akashPrimaryToken 
 }) : null;
 
-// Export model names for reference
+// Export model names for reference (only Akash model now)
 export const models = {
-  github: githubModelName,
-  akash: akashModelName
+  akash: AKASH_MODEL
 };

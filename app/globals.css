@@ -39,6 +39,16 @@ progress::-webkit-progress-value {
     @apply !capitalize;
   }
 
+  /* Fix for single-line height textareas with white border */
+  textarea {
+    min-height: 100px !important;
+    border-color: hsl(var(--b3)) !important;
+  }
+  
+  textarea.textarea-bordered {
+    border: 1px solid hsl(var(--b3)) !important;
+  }
+
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"] {

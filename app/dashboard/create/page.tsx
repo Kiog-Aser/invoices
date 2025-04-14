@@ -40,7 +40,6 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 // Define step types for our typeform-style form
 type Step =
   | "title"
-  | "modelSelect"
   | "role"
   | "industry"
   | "experience"        
@@ -63,13 +62,10 @@ interface FormData {
   userRole: string;
   industry: string;
   contentTypes: string[];
-  goals: string[];
-  prioritizedGoals: { goal: string; priority: number }[];
-  challenges: string[];
+  goals: string;
+  challenges: string;
   customContentTypes: string[];
-  customGoals: string[];
-  customChallenges: string[];
-  modelType: 'fast' | 'quality';
+  modelType: 'quality'; // Default to quality (deepseek)
   experience: string;
   audience: string[];
   audienceDetails: string;
@@ -222,13 +218,10 @@ export default function CreateWritingProtocolPage() {
     userRole: "",
     industry: "",
     contentTypes: [],
-    goals: [],
-    prioritizedGoals: [],
-    challenges: [],
+    goals: "",
+    challenges: "",
     customContentTypes: [],
-    customGoals: [],
-    customChallenges: [],
-    modelType: 'fast',
+    modelType: 'quality', // Default to deepseek
     experience: "",
     audience: [],
     audienceDetails: "",
@@ -255,8 +248,6 @@ export default function CreateWritingProtocolPage() {
   }>({ isUnlimited: false, tokens: 0 });
 
   const [newCustomContentType, setNewCustomContentType] = useState("");
-  const [newCustomGoal, setNewCustomGoal] = useState("");
-  const [newCustomChallenge, setNewCustomChallenge] = useState("");
 
   const [isProcessing, setIsProcessing] = useState(false);
   const activeInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
@@ -434,8 +425,6 @@ export default function CreateWritingProtocolPage() {
     switch (currentStep) {
       case "title":
         return !!formData.title && formData.title.trim().length >= 3;
-      case "modelSelect":
-        return !!formData.modelType;
       case "role":
         return !!formData.userRole && formData.userRole.trim().length >= 3;
       case "industry":
@@ -443,9 +432,9 @@ export default function CreateWritingProtocolPage() {
       case "contentTypes":
         return formData.contentTypes.length > 0;
       case "goals":
-        return formData.goals.length > 0;
+        return !!formData.goals && typeof formData.goals === 'string' && formData.goals.trim().length > 0;
       case "challenges":
-        return formData.challenges.length > 0;
+        return !!formData.challenges && typeof formData.challenges === 'string' && formData.challenges.trim().length > 0;
       case "experience":
         return !!formData.experience;
       case "audience":
@@ -477,9 +466,6 @@ export default function CreateWritingProtocolPage() {
 
     switch (currentStep) {
       case "title":
-        setCurrentStep("modelSelect");
-        break;
-      case "modelSelect":
         setCurrentStep("role");
         break;
       case "role":
@@ -544,11 +530,8 @@ export default function CreateWritingProtocolPage() {
 
   const goToPreviousStep = () => {
     switch (currentStep) {
-      case "modelSelect":
-        setCurrentStep("title");
-        break;
       case "role":
-        setCurrentStep("modelSelect");
+        setCurrentStep("title");
         break;
       case "industry":
         setCurrentStep("role");
@@ -618,7 +601,7 @@ export default function CreateWritingProtocolPage() {
   };
 
   const addCustomOption = (
-    category: 'contentTypes' | 'goals' | 'challenges',
+    category: 'contentTypes',
     value: string
   ) => {
     if (!value.trim()) return;
@@ -631,17 +614,11 @@ export default function CreateWritingProtocolPage() {
       case 'contentTypes':
         setNewCustomContentType('');
         break;
-      case 'goals':
-        setNewCustomGoal('');
-        break;
-      case 'challenges':
-        setNewCustomChallenge('');
-        break;
     }
   };
 
   const removeCustomOption = (
-    category: 'contentTypes' | 'goals' | 'challenges',
+    category: 'contentTypes',
     index: number
   ) => {
     const customFieldName = `custom${category.charAt(0).toUpperCase() + category.slice(1)}` as keyof FormData;
@@ -665,7 +642,7 @@ export default function CreateWritingProtocolPage() {
       }
       
       setIsProcessing(true);
-      toast.loading("Creating your writing protocol...");
+      toast.loading("Creating your writing protocol (this may take 2-3 minutes)...");
 
       if (!formData.title.trim()) {
         throw new Error("Title is required");
@@ -676,12 +653,9 @@ export default function CreateWritingProtocolPage() {
         contentTypes: formData.contentTypes.includes("Other") 
           ? [...formData.contentTypes.filter(type => type !== "Other"), ...formData.customContentTypes]
           : formData.contentTypes,
-        goals: formData.goals.includes("Other")
-          ? [...formData.goals.filter(goal => goal !== "Other"), ...formData.customGoals]
-          : formData.goals,
-        challenges: formData.challenges.includes("Other")
-          ? [...formData.challenges.filter(challenge => challenge !== "Other"), ...formData.customChallenges]
-          : formData.challenges,
+        // Goals and challenges are already strings, so we don't need to filter them
+        goals: formData.goals,
+        challenges: formData.challenges,
       };
 
       const response = await fetch("/api/writing-protocol", {
@@ -718,7 +692,7 @@ export default function CreateWritingProtocolPage() {
 
       toast.dismiss();
       toast.loading(
-        `Your protocol is being generated ${formData.modelType === 'quality' ? '(this may take 2-3 minutes)' : ''}...`, 
+        `Your protocol is being generated (this may take 2-3 minutes)...`, 
         { duration: 60000 }
       );
 
@@ -862,47 +836,7 @@ export default function CreateWritingProtocolPage() {
                 </div>
               )}
 
-              {currentStep === "modelSelect" && (
-                <div className="space-y-6">
-                  <h1 className="text-3xl font-bold">
-                    Choose AI Quality Level
-                  </h1>
-                  <p className="text-base-content/70">
-                    Select the AI quality level that best fits your needs.
-                  </p>
-                  <div className="grid grid-cols-1 gap-4">
-                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.modelType === "fast" ? "border-primary border-2" : ""}`}>
-                      <div className="flex items-center">
-                        <input
-                          type="radio"
-                          className="radio radio-primary mr-3"
-                          checked={formData.modelType === "fast"}
-                          onChange={() => updateFormData("modelType", "fast")}
-                        />
-                        <span className="font-bold text-lg">Fast Generation (⚡️ ~1 minute)</span>
-                      </div>
-                      <p className="text-base-content/70 mt-2 ml-8">
-                        Quick generation of writing protocols for standard use cases. Good for most situations.
-                      </p>
-                    </label>
-                    
-                    <label className={`flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors ${formData.modelType === "quality" ? "border-primary border-2" : ""}`}>
-                      <div className="flex items-center">
-                        <input
-                          type="radio"
-                          className="radio radio-primary mr-3"
-                          checked={formData.modelType === "quality"}
-                          onChange={() => updateFormData("modelType", "quality")}
-                        />
-                        <span className="font-bold text-lg">High Quality Generation (⏱️ ~2-3 minutes)</span>
-                      </div>
-                      <p className="text-base-content/70 mt-2 ml-8">
-                        Takes more time but produces more detailed and thoughtful writing protocols with deeper insights. Recommended for professional use cases.
-                      </p>
-                    </label>
-                  </div>
-                </div>
-              )}
+
 
               {currentStep === "role" && (
                 <div className="space-y-6">
@@ -1402,84 +1336,29 @@ export default function CreateWritingProtocolPage() {
                     What are your writing goals?
                   </h1>
                   <p className="text-base-content/70">
-                    Select all that apply. Your protocol will focus on these
-                    goals.
+                    Describe your writing goals in detail. Your protocol will be tailored to help you achieve these specific objectives.
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {goalOptions.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary mr-3"
-                          checked={formData.goals.includes(option)}
-                          onChange={() =>
-                            updateFormData(
-                              "goals",
-                              toggleArrayValue(formData.goals, option),
-                            )
-                          }
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors">
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-primary mr-3"
-                        checked={formData.goals.includes("Other")}
-                        onChange={() =>
-                          updateFormData(
-                            "goals",
-                            toggleArrayValue(formData.goals, "Other"),
-                          )
-                        }
-                      />
-                      <span>Other</span>
-                    </label>
-                  </div>
+                  <textarea
+                    placeholder="For example: I want to create more engaging blog content, grow my email list through content marketing, establish myself as an authority in my niche, etc."
+                    className="textarea textarea-bordered w-full h-48"
+                    value={formData.goals}
+                    onChange={(e) => updateFormData("goals", e.target.value)}
+                    ref={(el) => {
+                      activeInputRef.current = el;
+                    }}
+                  ></textarea>
                   
-                  {formData.goals.includes("Other") && (
-                    <div className="mt-4 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newCustomGoal}
-                          onChange={(e) => setNewCustomGoal(e.target.value)}
-                          placeholder="Enter custom goal"
-                          className="input input-bordered flex-1"
-                        />
-                        <button
-                          onClick={() => addCustomOption('goals', newCustomGoal)}
-                          className="btn btn-primary"
-                          disabled={!newCustomGoal.trim()}
-                        >
-                          Add
-                        </button>
+                  <div className="p-4 bg-base-200/40 rounded-lg">
+                    <div className="flex items-start">
+                      <span className="text-xl mr-2">💡</span>
+                      <div>
+                        <p className="font-semibold">Tip</p>
+                        <p className="text-sm text-base-content/80">
+                          Be specific about what you want to achieve with your writing. Include both short-term and long-term goals, as well as any metrics or outcomes that matter to you.
+                        </p>
                       </div>
-                      
-                      {formData.customGoals.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Custom goals:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {formData.customGoals.map((item, index) => (
-                              <div key={index} className="badge badge-primary badge-lg gap-1 p-3">
-                                {item}
-                                <button
-                                  onClick={() => removeCustomOption('goals', index)}
-                                  className="ml-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -1489,84 +1368,29 @@ export default function CreateWritingProtocolPage() {
                     What challenges do you face when writing?
                   </h1>
                   <p className="text-base-content/70">
-                    Select all that apply. Your protocol will include strategies
-                    to overcome these challenges.
+                    Describe any struggles or obstacles you encounter in your writing process. Your protocol will include strategies to overcome these specific challenges.
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {challengeOptions.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary mr-3"
-                          checked={formData.challenges.includes(option)}
-                          onChange={() =>
-                            updateFormData(
-                              "challenges",
-                              toggleArrayValue(formData.challenges, option),
-                            )
-                          }
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-base-200 transition-colors">
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-primary mr-3"
-                        checked={formData.challenges.includes("Other")}
-                        onChange={() =>
-                          updateFormData(
-                            "challenges",
-                            toggleArrayValue(formData.challenges, "Other"),
-                          )
-                        }
-                      />
-                      <span>Other</span>
-                    </label>
-                  </div>
+                  <textarea
+                    placeholder="For example: I struggle with writer's block, I find it difficult to maintain a consistent writing schedule, I have trouble organizing my thoughts, etc."
+                    className="textarea textarea-bordered w-full h-48"
+                    value={formData.challenges}
+                    onChange={(e) => updateFormData("challenges", e.target.value)}
+                    ref={(el) => {
+                      activeInputRef.current = el;
+                    }}
+                  ></textarea>
                   
-                  {formData.challenges.includes("Other") && (
-                    <div className="mt-4 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newCustomChallenge}
-                          onChange={(e) => setNewCustomChallenge(e.target.value)}
-                          placeholder="Enter custom challenge"
-                          className="input input-bordered flex-1"
-                        />
-                        <button
-                          onClick={() => addCustomOption('challenges', newCustomChallenge)}
-                          className="btn btn-primary"
-                          disabled={!newCustomChallenge.trim()}
-                        >
-                          Add
-                        </button>
+                  <div className="p-4 bg-base-200/40 rounded-lg">
+                    <div className="flex items-start">
+                      <span className="text-xl mr-2">💡</span>
+                      <div>
+                        <p className="font-semibold">Tip</p>
+                        <p className="text-sm text-base-content/80">
+                          Be honest about your challenges - identifying your specific pain points will help us create a protocol that addresses your actual needs and helps you overcome your unique obstacles.
+                        </p>
                       </div>
-                      
-                      {formData.customChallenges.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Custom challenges:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {formData.customChallenges.map((item, index) => (
-                              <div key={index} className="badge badge-primary badge-lg gap-1 p-3">
-                                {item}
-                                <button
-                                  onClick={() => removeCustomOption('challenges', index)}
-                                  className="ml-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -1900,13 +1724,11 @@ export default function CreateWritingProtocolPage() {
                     <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
                     <div className="w-full max-w-xs bg-base-200 rounded-full h-2.5 mb-2">
                       <div className="bg-primary h-2.5 rounded-full" style={{ 
-                        width: `${Math.min(processingTimePassed / (formData.modelType === 'quality' ? 120 : 60) * 100, 98)}%` 
+                        width: `${Math.min(processingTimePassed / 120 * 100, 98)}%` 
                       }}></div>
                     </div>
                     <p className="text-sm text-base-content/50">
-                      {formData.modelType === 'quality' 
-                        ? `This may take up to 3 minutes (${Math.floor(processingTimePassed)} seconds elapsed)`
-                        : `This may take up to 1 minute (${Math.floor(processingTimePassed)} seconds elapsed)`}
+                      This may take up to 3 minutes ({Math.floor(processingTimePassed)} seconds elapsed)
                     </p>
                   </div>
                   <div className="text-sm text-base-content/70 p-4 bg-base-200 rounded-lg">
@@ -1957,7 +1779,6 @@ export default function CreateWritingProtocolPage() {
 
 const STEPS: Step[] = [
   "title",
-  "modelSelect",
   "role",
   "industry",
   "experience",

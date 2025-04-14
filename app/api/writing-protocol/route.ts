@@ -285,8 +285,8 @@ async function generateProtocolContent(
     - Experience level: ${data.experience || "Not specified"}
     - Time availability: ${data.timeAvailability || "Not specified"}
     - Writes content types: ${data.contentTypes.join(", ")}
-    - Content goals: ${data.goals.join(", ")}
-    - Writing challenges: ${data.challenges.join(", ")}
+    - Content goals: ${typeof data.goals === 'string' ? data.goals : data.goals.join(", ")}
+    - Writing challenges: ${typeof data.challenges === 'string' ? data.challenges : data.challenges.join(", ")}
     
     AUDIENCE INFORMATION:
     - Target audience categories: ${data.audience ? data.audience.join(", ") : "Not specified"}
@@ -433,16 +433,9 @@ async function generateProtocolContent(
       }
     }`;
 
-    // Determine which model to use based on user's selection
-    let modelToUse = process.env.USE_AKASH === "true" ? models.akash : models.github;
-    
-    // Override with QUALITY_MODEL if quality is selected
-    if (data.modelType === 'quality') {
-      modelToUse = QUALITY_MODEL;
-      console.log(`Using higher quality model: ${modelToUse} for writing protocol generation`);
-    } else {
-      console.log(`Using fast model: ${modelToUse} for writing protocol generation`);
-    }
+    // Determine which model to use - always use the quality model (deepseek)
+    let modelToUse = QUALITY_MODEL;
+    console.log(`Using quality model: ${modelToUse} for writing protocol generation`);
 
     try {
       let aiGeneratedContent: any;
