@@ -5,6 +5,14 @@ const nextConfig = {
     // Intentionally returning an empty array to remove the problematic redirect
     return [];
   },
+  // Define which routes are static and which are dynamic
+  // By default all routes are static in Next.js 13+
+  staticPageGenerationTimeout: 300,
+  experimental: {
+    // This setting controls which routes use static or dynamic features
+    serverComponentsExternalPackages: ['mongoose'],
+  },
+  // CORS headers applied only to API routes (dynamic)
   async headers() {
     return [
       {
