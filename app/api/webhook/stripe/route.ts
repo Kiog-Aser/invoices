@@ -249,12 +249,27 @@ export async function POST(req: NextRequest) {
       
       // Save the user with error handling
       try {
-        const updatedUser = await user.save();
+        // Use a direct MongoDB update to ensure nested fields are updated correctly
+        const updateResult = await User.updateOne(
+          { _id: user._id },
+          { 
+            $set: {
+              customerId: user.customerId, // Ensure customerId is saved
+              'protocols.tokens': user.protocols.tokens,
+              'protocols.isUnlimited': user.protocols.isUnlimited,
+              'protocols.purchasedCount': user.protocols.purchasedCount
+            }
+          }
+        );
+        
+        logToFile(`✅ Database update result: ${JSON.stringify(updateResult)}`);
+        
+        // Get the fresh user data to confirm changes
+        const updatedUser = await User.findById(user._id);
         logToFile(`✅ Successfully saved user ${user._id} with new access:
-        - Plan: ${updatedUser.plan}
-        - Tokens: ${updatedUser.protocols.tokens}
-        - Unlimited: ${updatedUser.protocols.isUnlimited}
-        - Purchased count: ${updatedUser.protocols.purchasedCount}`);
+        - Tokens: ${updatedUser.protocols?.tokens}
+        - Unlimited: ${updatedUser.protocols?.isUnlimited}
+        - Purchased count: ${updatedUser.protocols?.purchasedCount}`);
       } catch (saveError) {
         logToFile(`❌ Error saving user: ${saveError instanceof Error ? saveError.message : String(saveError)}`);
         return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
