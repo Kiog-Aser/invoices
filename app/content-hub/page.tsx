@@ -8,6 +8,7 @@ import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaT
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability } from '../../utils/readability';
+import ReactDOM from 'react-dom';
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -67,6 +68,9 @@ const ContentHub = () => {
 
   // Readability state
   const [readability, setReadability] = useState<null | ReturnType<typeof getReadability>>(null);
+
+  // Earning optimiser AI insights state
+  const [aiEarningInsights, setAIEarningInsights] = useState<string | null>(null);
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -328,6 +332,7 @@ const ContentHub = () => {
     }
 
     setLoading(action);
+    if (action === 'earning-optimiser') setAIEarningInsights(null); // Reset insights
 
     try {
       const personalContext = selectedProtocol ? getPersonalizedPrompt(action) : {};
@@ -349,6 +354,40 @@ const ContentHub = () => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to process with AI' }));
         throw new Error(errorData.error || 'Failed to process with AI');
+      }
+
+      // Special handling for earning-optimiser: stream and set HTML
+      if (action === 'earning-optimiser') {
+        let html = '';
+        if (!response.body) throw new Error('No response body');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+        let accumulatedMarkdown = '';
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            accumulatedMarkdown += chunk;
+            // Handle both sync and async marked
+            const htmlResult = marked(accumulatedMarkdown);
+            if (htmlResult instanceof Promise) {
+              htmlResult.then(res => setAIEarningInsights(res));
+            } else {
+              setAIEarningInsights(htmlResult);
+            }
+          }
+        }
+        // Final update
+        const finalHtml = marked(accumulatedMarkdown);
+        if (finalHtml instanceof Promise) {
+          finalHtml.then(res => setAIEarningInsights(res));
+        } else {
+          setAIEarningInsights(finalHtml);
+        }
+        toast.success('Earning optimisation complete!');
+        return;
       }
 
       // Handle the streaming response
@@ -901,15 +940,16 @@ const ContentHub = () => {
 
   // Function to handle text selection changes for the floating toolbar
   const handleSelectionChange = useCallback((range: any, oldRange: any, source: string) => {
+    console.log('[FloatingToolbar] selection-change', { range, oldRange, source }); // Debug log
     const quill = quillRef.current?.getEditor();
     const editorContainer = editorContainerRef.current;
     if (!quill || !editorContainer) return;
-    // Always update the title/subtitle indicator based on caret position
     addEditorLabels();
     if (range && range.length > 0 && source === 'user') {
       const bounds = quill.getBounds(range.index, range.length);
       const editorRect = editorContainer.getBoundingClientRect();
       const toolbarWidth = 250;
+      // Use the previous working logic: fixed offset of 50px above selection
       const top = editorRect.top + window.scrollY + bounds.top - 50;
       const left = Math.max(
         editorRect.left + window.scrollX,
@@ -932,6 +972,7 @@ const ContentHub = () => {
     }
   }, []);
 
+  // Register selection-change event whenever quillRef.current or handleSelectionChange changes
   useEffect(() => {
     const quill = quillRef.current?.getEditor();
     if (quill) {
@@ -940,7 +981,7 @@ const ContentHub = () => {
         quill.off('selection-change', handleSelectionChange);
       };
     }
-  }, [handleSelectionChange]);
+  }, [quillRef.current, handleSelectionChange]);
 
   // Handle content changes in the editor
   const handleContentChange = (value: string, delta: any, source: string, editor: any) => {
@@ -1043,98 +1084,102 @@ const ContentHub = () => {
     setReadability(getReadability(text));
   };
 
+  // Floating toolbar JSX as a function for portal rendering
+  const floatingToolbarJSX = floatingToolbar.visible && (
+    <div 
+      ref={toolbarRef}
+      className="floating-toolbar z-[99999]"
+      style={{ 
+        top: `${floatingToolbar.top}px`,
+        left: `${floatingToolbar.left}px`
+      }}
+      onMouseDown={e => e.preventDefault()} 
+    >
+      {isLinkMode ? (
+        /* Link input mode - more compact and matches toolbar width */
+        <div className="flex items-center w-full">
+          <input
+            ref={linkInputRef}
+            type="text"
+            value={linkInputValue}
+            onChange={(e) => setLinkInputValue(e.target.value)}
+            placeholder="Enter URL..."
+            className="text-sm bg-transparent text-white border-b border-white/30 focus:border-white focus:outline-none py-1 px-2 flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                applyLink(linkInputValue);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsLinkMode(false);
+                setLinkInputValue('');
+              }
+            }}
+            autoFocus
+          />
+          <button 
+            onClick={() => {
+              setIsLinkMode(false);
+              setLinkInputValue('');
+            }} 
+            title="Cancel"
+            className="ml-2 hover:bg-white/20 p-1 rounded"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      ) : (
+        /* Normal formatting toolbar */
+        <>
+          {/* Text formatting group */}
+          <button onClick={() => handleFormatText('bold')} title="Bold">
+            <strong>B</strong>
+          </button>
+          <button onClick={() => handleFormatText('italic')} title="Italic">
+            <em>i</em>
+          </button>
+          {/* Link button with special color when active */}
+          <button 
+            onClick={() => handleFormatText('link')} 
+            title="Link"
+            className={isTextLinked() ? "text-green-400" : ""}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+          
+          {/* Separator */}
+          <div className="divider"></div>
+          
+          {/* Structure formatting group */}
+          <button onClick={() => handleFormatText('header', 1)} title="Title">
+            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
+          </button>
+          <button onClick={() => handleFormatText('header', 2)} title="Subtitle">
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>T</span>
+          </button>
+          <button onClick={() => handleFormatText('blockquote')} title="Quote">
+            <span style={{ fontSize: '16px' }}>"</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
-      {/* Floating toolbar for text selection */}
-      {floatingToolbar.visible && ( // Use floatingToolbar.visible
-        <div 
-          ref={toolbarRef}
-          className="floating-toolbar"
-          style={{ 
-            top: `${floatingToolbar.top}px`, // Use floatingToolbar.top
-            left: `${floatingToolbar.left}px` // Use floatingToolbar.left
-          }}
-          // Prevent clicks inside toolbar from causing editor to lose focus/selection
-          onMouseDown={e => e.preventDefault()} 
-        >
-          {isLinkMode ? (
-            /* Link input mode - more compact and matches toolbar width */
-            <div className="flex items-center w-full">
-              <input
-                ref={linkInputRef}
-                type="text"
-                value={linkInputValue}
-                onChange={(e) => setLinkInputValue(e.target.value)}
-                placeholder="Enter URL..."
-                className="text-sm bg-transparent text-white border-b border-white/30 focus:border-white focus:outline-none py-1 px-2 flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    applyLink(linkInputValue);
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setIsLinkMode(false);
-                    setLinkInputValue('');
-                  }
-                }}
-                autoFocus
-              />
-              <button 
-                onClick={() => {
-                  setIsLinkMode(false);
-                  setLinkInputValue('');
-                }} 
-                title="Cancel"
-                className="ml-2 hover:bg-white/20 p-1 rounded"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          ) : (
-            /* Normal formatting toolbar */
-            <>
-              {/* Text formatting group */}
-              <button onClick={() => handleFormatText('bold')} title="Bold">
-                <strong>B</strong>
-              </button>
-              <button onClick={() => handleFormatText('italic')} title="Italic">
-                <em>i</em>
-              </button>
-              {/* Link button with special color when active */}
-              <button 
-                onClick={() => handleFormatText('link')} 
-                title="Link"
-                className={isTextLinked() ? "text-green-400" : ""}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                </svg>
-              </button>
-              
-              {/* Separator */}
-              <div className="divider"></div>
-              
-              {/* Structure formatting group */}
-              <button onClick={() => handleFormatText('header', 1)} title="Title">
-                <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
-              </button>
-              <button onClick={() => handleFormatText('header', 2)} title="Subtitle">
-                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>T</span>
-              </button>
-              <button onClick={() => handleFormatText('blockquote')} title="Quote">
-                <span style={{ fontSize: '16px' }}>"</span>
-              </button>
-            </>
-          )}
-        </div>
+      {/* Floating toolbar for text selection rendered as a portal */}
+      {typeof window !== 'undefined' && ReactDOM.createPortal(
+        floatingToolbarJSX,
+        document.body
       )}
-      
       {/* Sidebar with tabbed navigation */}
-      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100">
+      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50">
         {/* Tab bar with icons */}
         <div className="flex mb-4 gap-1 justify-between">
           <button
@@ -1327,19 +1372,39 @@ const ContentHub = () => {
         {activeSidebarTab === 'earning' && (
           <div className="p-4">
             <h2 className="text-lg font-semibold mb-2">Earning Optimiser</h2>
-            <p className="text-base-content/70 text-sm mb-2">Tips to optimise your content for monetisation.</p>
-            <ul className="list-disc ml-5 text-sm text-base-content/70">
-              <li>Include clear calls-to-action</li>
-              <li>Link to your offers or products</li>
-              <li>Use persuasive language</li>
-              <li>Build trust with testimonials</li>
-            </ul>
+            <p className="text-base-content/70 text-sm mb-2">
+              Get advanced, AI-powered suggestions to maximise your content's earning potential. The AI will analyse your content and provide:
+              <ul className="list-disc ml-5 mt-2 text-sm text-base-content/70">
+                <li>Actionable CTA improvements for higher conversions</li>
+                <li>Affiliate program and partnership recommendations</li>
+                <li>Ideas for digital products, services, or offers</li>
+                <li>Upsell/cross-sell and funnel suggestions</li>
+                <li>Platform-specific monetisation tips</li>
+                <li>Audience segmentation and targeting advice</li>
+                <li>Lead magnet and content upgrade ideas</li>
+                <li>SEO/traffic strategies for monetisation</li>
+                <li>Trust-building and authority signals</li>
+              </ul>
+            </p>
+            <button
+              className={`btn btn-primary btn-sm w-full mb-4 ${loading === 'earning-optimiser' ? 'loading' : ''}`}
+              onClick={() => generateWithAI('earning-optimiser')}
+              disabled={!!loading}
+            >
+              {loading === 'earning-optimiser' ? 'Analysing...' : 'Run Earning Optimiser'}
+            </button>
+            {loading === 'earning-optimiser' && (
+              <div className="text-center py-4">Analysing your content for monetisation opportunities...</div>
+            )}
+            {activeSidebarTab === 'earning' && !loading && content && aiEarningInsights && (
+              <EarningInsightsSidebar markdown={aiEarningInsights} />
+            )}
           </div>
         )}
       </div>
       
       {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
-      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[30%]">
+      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem]"> {/* Increased right margin to 22rem to match sidebar width */}
         {/* Clean, borderless editor with clear ending before sidebar */}
         <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
           <ReactQuill
@@ -1430,3 +1495,78 @@ const ContentHub = () => {
 };
 
 export default ContentHub;
+
+// Add this component at the bottom of the file
+function EarningInsightsSidebar({ markdown }: { markdown: string }) {
+  // Parse the markdown for score, explanation, improvements, and a short AI insight
+  // Expecting format:
+  // ---\nMonetisation Score: <score>\n---\nScore Explanation: <short explanation>\n---\nTop Monetisation Improvements:\n- <improvement 1>\n- <improvement 2>\n...\n---\nAI Insight: <insight>
+  let score = null;
+  let explanation = '';
+  let improvements: string[] = [];
+  let aiInsight = '';
+
+  const scoreMatch = markdown.match(/Monetisation Score:\s*(\d{1,3})/i);
+  if (scoreMatch) {
+    score = parseInt(scoreMatch[1], 10);
+  }
+  const explanationMatch = markdown.match(/Score Explanation:\s*([\s\S]*?)---/i);
+  if (explanationMatch) {
+    explanation = explanationMatch[1].replace(/\n/g, ' ').trim();
+  } else {
+    // fallback: try to get after 'Score Explanation:'
+    const fallback = markdown.match(/Score Explanation:\s*([\s\S]*)/i);
+    if (fallback) explanation = fallback[1].split('\n')[0].trim();
+  }
+  const improvementsMatch = markdown.match(/Top Monetisation Improvements:[\s\S]*?((?:- .*(?:\n|$))+)/i);
+  if (improvementsMatch) {
+    improvements = improvementsMatch[1].split(/\n/).map(l => l.replace(/^- /, '').trim()).filter(Boolean);
+  }
+  // Try to extract a short AI insight (optional, after last ---)
+  const aiInsightMatch = markdown.match(/AI Insight:\s*([\s\S]*)/i);
+  if (aiInsightMatch) {
+    aiInsight = aiInsightMatch[1].split('\n')[0].trim();
+  }
+
+  // Score color logic
+  let scoreColor = 'bg-gray-200 text-gray-700 border-gray-300';
+  if (typeof score === 'number') {
+    if (score >= 80) scoreColor = 'bg-green-50 text-green-700 border-green-400';
+    else if (score >= 60) scoreColor = 'bg-yellow-50 text-yellow-700 border-yellow-400';
+    else if (score >= 40) scoreColor = 'bg-orange-50 text-orange-700 border-orange-400';
+    else scoreColor = 'bg-red-50 text-red-700 border-red-400';
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 mt-2">
+      {score !== null && (
+        <div className="flex flex-col items-center">
+          <div className={`w-20 h-20 flex items-center justify-center rounded-full text-3xl font-bold shadow-lg border-4 ${scoreColor}`}>
+            {score}
+          </div>
+          <span className="mt-2 text-xs font-medium text-base-content/70">Monetisation Score</span>
+        </div>
+      )}
+      {explanation && (
+        <div className="text-sm text-base-content/80 text-center mb-2">
+          {explanation}
+        </div>
+      )}
+      {improvements.length > 0 && (
+        <div className="w-full">
+          <h4 className="font-semibold text-sm mb-1">Top Monetisation Improvements</h4>
+          <ul className="list-disc ml-5 text-sm text-base-content/80">
+            {improvements.map((imp, i) => (
+              <li key={i}>{imp}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {aiInsight && (
+        <div className="w-full mt-2 p-2 rounded bg-base-200 text-xs text-base-content/70 italic text-center">
+          <span>AI Insight: {aiInsight}</span>
+        </div>
+      )}
+    </div>
+  );
+}

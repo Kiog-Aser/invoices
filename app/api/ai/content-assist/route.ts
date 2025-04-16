@@ -156,6 +156,23 @@ Include:
 
 ${text ? `Use this text as inspiration: ${text}` : ''}`;
         break;
+      case 'earning-optimiser':
+        prompt = `You are a content monetization expert. Analyze the following content and respond in this exact format:
+---
+Monetisation Score: <score>
+---
+Score Explanation: <short explanation>
+---
+Top Monetisation Improvements:
+- <improvement 1>
+- <improvement 2>
+- <improvement 3>
+---
+AI Insight: <one concise actionable insight summarizing the biggest monetisation opportunity>
+
+Content:
+${text}`;
+        break;
       default:
         return NextResponse.json(
           { error: 'Invalid action' },
