@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useRef, useEffect, Suspense, useCallback } from 'react';
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading } from 'react-icons/fa';
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 
@@ -56,8 +56,8 @@ const ContentHub = () => {
   // State for the floating toolbar
   const [floatingToolbar, setFloatingToolbar] = useState<{ visible: boolean; top: number; left: number }>({ visible: false, top: 0, left: 0 });
 
-  // Add state for slash command popup
-  const [slashCommand, setSlashCommand] = useState<{show: boolean, top: number, left: number, text: string}>({show: false, top: 0, left: 0, text: ''});
+  // Add tab state for sidebar
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'ai' | 'grammar' | 'readability' | 'earning'>('ai');
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -554,12 +554,13 @@ const ContentHub = () => {
       }
       
       /* Special styling for subtitle (second line with h2) */
+      .medium-style-editor .ql-editor h2,
       .medium-style-editor .ql-editor h2.subtitle {
-        color: rgba(75, 85, 99, 0.5); /* More grey to match the subtitle label */
-        font-size: 1.75rem;
+        color: #9ca3af; /* More grey for subtitle */
+        font-size: 1.5rem;
         font-weight: 600;
-        margin-top: -0.75em; /* Reduced spacing to bring it closer to title */
-        margin-bottom: 1.25em;
+        margin-top: -0.5em; /* Less space above subtitle */
+        margin-bottom: 0.5em; /* Less space below subtitle */
       }
       
       /* Style links with understated black underline */
@@ -638,8 +639,11 @@ const ContentHub = () => {
       }
       
       /* Editor side labels (Title/Subtitle indicators) */
+      .editor-labels-container {
+        pointer-events: none;
+      }
       .editor-side-label {
-        position: fixed;
+        position: absolute;
         left: -85px; /* Position just to the left of editor content */
         display: flex;
         flex-direction: row-reverse; /* Text first, then line */
@@ -674,6 +678,16 @@ const ContentHub = () => {
       .subtitle-label {
         font-weight: 500; /* Slightly bolder */
         color: #9ca3af;
+      }
+      .editor-side-label span {
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+      .editor-side-label.subtitle-label span {
+        color: #9ca3af;
+        font-weight: 400;
       }
     `;
     document.head.appendChild(style);
@@ -791,96 +805,89 @@ const ContentHub = () => {
   // Function to add the title/subtitle indicators
   const addEditorLabels = () => {
     if (!quillRef.current) return;
-    
     const editor = quillRef.current.getEditor();
     const editorRoot = editor.root;
     const text = editor.getText();
-    
+  
     // Remove any existing labels first
-    const existingLabels = document.querySelectorAll('.editor-side-label');
+    const existingLabels = document.querySelectorAll('.editor-labels-container');
     existingLabels.forEach(label => label.remove());
-    
-    // Get the editor bounds
-    const editorBounds = editorRoot.getBoundingClientRect();
-    const editorContainer = editorRoot.parentElement;
-    
-    if (!editorContainer) return;
-    
+  
+    // Get the current selection
+    const selection = editor.getSelection();
+    if (!selection) return;
+  
     // Find the first line break to determine title and subtitle positions
     const firstLineBreakPos = text.indexOf('\n');
-    
-    if (firstLineBreakPos !== -1) {
-      // We have at least a title
-      const titleBounds = editor.getBounds(0, firstLineBreakPos);
-      
-      // Find if there's a second line that might be a subtitle
-      const secondLineBreakPos = text.indexOf('\n', firstLineBreakPos + 1);
-      const secondLineLength = secondLineBreakPos === -1 ? 
-        text.length - (firstLineBreakPos + 1) : 
-        secondLineBreakPos - (firstLineBreakPos + 1);
-      
-      let hasSubtitle = false;
-      let subtitleBounds = null;
-      
-      // Check if second line exists and is formatted as a subtitle (h2)
-      if (secondLineLength > 0) {
-        const secondLineFormat = editor.getFormat(firstLineBreakPos + 1, 1);
-        
-        if (secondLineFormat.header === 2) {
-          hasSubtitle = true;
-          subtitleBounds = editor.getBounds(firstLineBreakPos + 1, secondLineLength);
-        }
-      }
-      
-      // Create a single container that will hold both labels and a single line
-      const labelContainer = document.createElement('div');
-      labelContainer.className = 'editor-labels-container';
-      labelContainer.style.position = 'fixed';
-      labelContainer.style.left = '265px';
-      labelContainer.style.top = `${titleBounds.top + editorBounds.top}px`;
-      labelContainer.style.zIndex = '5';
-      labelContainer.style.pointerEvents = 'none';
-      
-      // Calculate the height to cover both title and subtitle if present
-      const containerHeight = hasSubtitle && subtitleBounds ? 
-        (subtitleBounds.top + subtitleBounds.height) - titleBounds.top : 
-        titleBounds.height;
-      
-      labelContainer.style.height = `${containerHeight}px`;
-      
-      // Create a single line that spans the whole container height
-      const labelLine = document.createElement('div');
-      labelLine.style.position = 'absolute';
-      labelLine.style.right = '0';
-      labelLine.style.top = '0';
-      labelLine.style.width = '2px';
-      labelLine.style.height = '100%';
-      labelLine.style.backgroundColor = '#d1d5db';
-      
-      labelContainer.appendChild(labelLine);
-      
-      // Create title label
-      const titleLabel = document.createElement('div');
-      titleLabel.className = 'editor-side-label title-label';
-      titleLabel.innerHTML = '<span>Title</span>';
-      titleLabel.style.position = 'absolute';
-      titleLabel.style.top = '0';
-      titleLabel.style.right = '12px';
-      
-      // Create subtitle label if needed
-      if (hasSubtitle && subtitleBounds) {
-        const subtitleLabel = document.createElement('div');
-        subtitleLabel.className = 'editor-side-label subtitle-label';
-        subtitleLabel.innerHTML = '<span>Subtitle</span>';
-        subtitleLabel.style.position = 'absolute';
-        subtitleLabel.style.top = `${subtitleBounds.top - titleBounds.top}px`;
-        subtitleLabel.style.right = '12px';
-        labelContainer.appendChild(subtitleLabel);
-      }
-      
-      labelContainer.appendChild(titleLabel);
-      document.body.appendChild(labelContainer);
+    if (firstLineBreakPos === -1) return;
+  
+    // Determine if selection is in title or subtitle
+    const isInTitle = selection.index <= firstLineBreakPos;
+    let isInSubtitle = false;
+    let subtitleStart = firstLineBreakPos + 1;
+    let subtitleEnd = text.indexOf('\n', subtitleStart);
+    if (subtitleEnd === -1) subtitleEnd = text.length;
+    if (selection.index >= subtitleStart && selection.index <= subtitleEnd) {
+      isInSubtitle = true;
     }
+  
+    if (!isInTitle && !isInSubtitle) return; // Only show when editing title or subtitle
+  
+    // Get bounds for title and subtitle
+    const titleBounds = editor.getBounds(0, firstLineBreakPos);
+    let hasSubtitle = false;
+    let subtitleBounds = null;
+    const secondLineLength = subtitleEnd - subtitleStart;
+    if (secondLineLength > 0) {
+      const secondLineFormat = editor.getFormat(subtitleStart, 1);
+      if (secondLineFormat.header === 2) {
+        hasSubtitle = true;
+        subtitleBounds = editor.getBounds(subtitleStart, secondLineLength);
+      }
+    }
+  
+    // Create a single container that will hold both labels and a single line
+    const labelContainer = document.createElement('div');
+    labelContainer.className = 'editor-labels-container';
+    labelContainer.style.position = 'absolute'; // Use absolute so it scrolls with content
+    labelContainer.style.left = '-25px';
+    labelContainer.style.top = `${titleBounds.top}px`;
+    labelContainer.style.zIndex = '5';
+    labelContainer.style.pointerEvents = 'none';
+    labelContainer.style.height = hasSubtitle && subtitleBounds ? `${(subtitleBounds.top + subtitleBounds.height) - titleBounds.top}px` : `${titleBounds.height}px`;
+  
+    // Create a single line that spans the whole container height
+    const labelLine = document.createElement('div');
+    labelLine.style.position = 'absolute';
+    labelLine.style.right = '0';
+    labelLine.style.top = '0';
+    labelLine.style.width = '2px';
+    labelLine.style.height = '100%';
+    labelLine.style.backgroundColor = '#d1d5db';
+    labelContainer.appendChild(labelLine);
+  
+    // Create title label
+    const titleLabel = document.createElement('div');
+    titleLabel.className = 'editor-side-label title-label';
+    titleLabel.innerHTML = '<span>Title</span>';
+    titleLabel.style.position = 'absolute';
+    titleLabel.style.top = '0';
+    titleLabel.style.right = '12px';
+    labelContainer.appendChild(titleLabel);
+  
+    // Create subtitle label if needed
+    if (hasSubtitle && subtitleBounds) {
+      const subtitleLabel = document.createElement('div');
+      subtitleLabel.className = 'editor-side-label subtitle-label';
+      subtitleLabel.innerHTML = '<span>Subtitle</span>';
+      subtitleLabel.style.position = 'absolute';
+      subtitleLabel.style.top = `${subtitleBounds.top - titleBounds.top}px`;
+      subtitleLabel.style.right = '12px';
+      labelContainer.appendChild(subtitleLabel);
+    }
+  
+    // Attach to the editor root (so it scrolls with content)
+    editorRoot.parentElement?.appendChild(labelContainer);
   };
 
   // Function to handle text selection changes for the floating toolbar
@@ -888,6 +895,8 @@ const ContentHub = () => {
     const quill = quillRef.current?.getEditor();
     const editorContainer = editorContainerRef.current;
     if (!quill || !editorContainer) return;
+    // Always update the title/subtitle indicator based on caret position
+    addEditorLabels();
     if (range && range.length > 0 && source === 'user') {
       const bounds = quill.getBounds(range.index, range.length);
       const editorRect = editorContainer.getBoundingClientRect();
@@ -959,53 +968,6 @@ const ContentHub = () => {
       // setFloatingToolbar(prev => ({ ...prev, visible: false }));
     }
   };
-
-  // --- SLASH COMMAND HANDLER ---
-  useEffect(() => {
-    if (!quillRef.current) return;
-    const editor = quillRef.current.getEditor();
-    // Attach only once on mount
-    const handleSlashCommand = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSlashCommand(s => ({...s, show: false}));
-      }
-      if (e.key === 'Enter') {
-        const selection = editor.getSelection();
-        if (selection && selection.length === 0) {
-          const [line, offset] = editor.getLine(selection.index);
-          const lineText = line.domNode.innerText.trim();
-          if (lineText.startsWith('/')) {
-            if (lineText === '/ideas') {
-              const lineStart = selection.index - offset;
-              editor.deleteText(lineStart, lineText.length + 1);
-              setTimeout(() => generateWithAI('ideas'), 0);
-              setSlashCommand(s => ({...s, show: false}));
-              e.preventDefault();
-            } else if (lineText === '/outline') {
-              const lineStart = selection.index - offset;
-              editor.deleteText(lineStart, lineText.length + 1);
-              setTimeout(() => generateWithAI('article'), 0);
-              setSlashCommand(s => ({...s, show: false}));
-              e.preventDefault();
-            }
-          }
-        }
-      }
-    };
-    editor.root.addEventListener('keydown', handleSlashCommand);
-    return () => editor.root.removeEventListener('keydown', handleSlashCommand);
-  }, []); // Only run once on mount
-
-  // Ensure selection-change handler is always attached when editor is ready
-  useEffect(() => {
-    const quill = quillRef.current?.getEditor();
-    if (quill) {
-      quill.on('selection-change', handleSelectionChange);
-      return () => {
-        quill.off('selection-change', handleSelectionChange);
-      };
-    }
-  }, [quillRef.current, handleSelectionChange]);
 
   return (
     <div className="min-h-screen bg-base-100 flex relative">
@@ -1097,74 +1059,136 @@ const ContentHub = () => {
         </div>
       )}
       
-      {/* Sidebar with AI tools - now on the right */}
-      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
-        {/* Protocol Selection */}
-        <div className="mb-6">
-          <button 
-            onClick={() => setIsProtocolModalOpen(true)}
-            className={`btn ${selectedProtocol ? 'btn-primary' : 'btn-outline'} btn-sm w-full`}
+      {/* Sidebar with tabbed navigation */}
+      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100">
+        {/* Tab bar with icons */}
+        <div className="flex mb-4 gap-1 justify-between">
+          <button
+            className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'ai' ? 'tab-active text-primary' : 'text-base-content/60'}`}
+            onClick={() => setActiveSidebarTab('ai')}
+            title="AI Tools"
           >
-            {selectedProtocol ? (
-              <>
-                <FaLink className="mr-2" /> {selectedProtocol.title}
-              </>
-            ) : (
-              <>
-                <FaLink className="mr-2" /> Connect Protocol
-              </>
-            )}
+            <FaRobot />
+          </button>
+          <button
+            className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'grammar' ? 'tab-active text-primary' : 'text-base-content/60'}`}
+            onClick={() => setActiveSidebarTab('grammar')}
+            title="Grammar Checker"
+          >
+            <FaCheckCircle />
+          </button>
+          <button
+            className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'readability' ? 'tab-active text-primary' : 'text-base-content/60'}`}
+            onClick={() => setActiveSidebarTab('readability')}
+            title="Readability Grade"
+          >
+            <FaChartBar />
+          </button>
+          <button
+            className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'earning' ? 'tab-active text-primary' : 'text-base-content/60'}`}
+            onClick={() => setActiveSidebarTab('earning')}
+            title="Earning Optimiser"
+          >
+            <FaDollarSign />
           </button>
         </div>
-        {/* Enhance Content Section (restored) */}
-        <div className="space-y-2 mb-6">
-          <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance Content</h3>
-          <button 
-            onClick={() => generateWithAI('improve')}
-            disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'btn-primary loading' : 'btn-outline'}`}
-          >
-            <FaMagic className="mr-2" /> Improve Writing
-          </button>
-          <button 
-            onClick={() => generateWithAI('rewrite')} 
-            disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'btn-primary loading' : 'btn-outline'}`}
-          >
-            <FaPen className="mr-2" /> Rewrite Content
-          </button>
-          <button 
-            onClick={() => generateWithAI('shorten')} 
-            disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'btn-primary loading' : 'btn-outline'}`}
-          >
-            <FaCut className="mr-2" /> Summarize & Shorten
-          </button>
-        </div>
-        {/* Only show Ideas and Outline in content generation/templates */}
-        <div className="space-y-2 mb-6">
-          <h3 className="text-sm font-medium text-base-content/70 mb-1">
-            <div className="flex items-center">
-              <FaLightbulb className="mr-2 text-yellow-400" /> Content Generation
+        {/* Tab content */}
+        {activeSidebarTab === 'ai' && (
+          <>
+            <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
+            {/* Protocol Selection */}
+            <div className="mb-6">
+              <button 
+                onClick={() => setIsProtocolModalOpen(true)}
+                className={`btn ${selectedProtocol ? 'btn-primary' : 'btn-outline'} btn-sm w-full`}
+              >
+                {selectedProtocol ? (
+                  <>
+                    <FaLink className="mr-2" /> {selectedProtocol.title}
+                  </>
+                ) : (
+                  <>
+                    <FaLink className="mr-2" /> Connect Protocol
+                  </>
+                )}
+              </button>
             </div>
-          </h3>
-          <button 
-            onClick={() => generateWithAI('ideas')}
-            disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'btn-primary loading' : 'btn-outline'}`}
-          >
-            Generate Content Ideas
-          </button>
-          <button 
-            onClick={() => generateWithAI('article')}
-            disabled={!!loading || !title}
-            className={`btn btn-sm w-full justify-start ${loading === 'article' ? 'btn-primary loading' : 'btn-outline'}`}
-            title={title ? '' : 'Enter a title in the editor to generate an outline'}
-          >
-            Generate Outline
-          </button>
-        </div>
+            {/* Enhance Content Section */}
+            <div className="space-y-2 mb-6">
+              <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance Content</h3>
+              <button 
+                onClick={() => generateWithAI('improve')}
+                disabled={!!loading}
+                className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'btn-primary loading' : 'btn-outline'}`}
+              >
+                <FaMagic className="mr-2" /> Improve Writing
+              </button>
+              <button 
+                onClick={() => generateWithAI('rewrite')} 
+                disabled={!!loading}
+                className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'btn-primary loading' : 'btn-outline'}`}
+              >
+                <FaPen className="mr-2" /> Rewrite Content
+              </button>
+              <button 
+                onClick={() => generateWithAI('shorten')} 
+                disabled={!!loading}
+                className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'btn-primary loading' : 'btn-outline'}`}
+              >
+                <FaCut className="mr-2" /> Summarize & Shorten
+              </button>
+            </div>
+            {/* Content Generation Section */}
+            <div className="space-y-2 mb-6">
+              <h3 className="text-sm font-medium text-base-content/70 mb-1">
+                <div className="flex items-center">
+                  <FaLightbulb className="mr-2 text-yellow-400" /> Content Generation
+                </div>
+              </h3>
+              <button 
+                onClick={() => generateWithAI('ideas')}
+                disabled={!!loading}
+                className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'btn-primary loading' : 'btn-outline'}`}
+              >
+                Generate Content Ideas
+              </button>
+              <button 
+                onClick={() => generateWithAI('article')}
+                disabled={!!loading || !title}
+                className={`btn btn-sm w-full justify-start ${loading === 'article' ? 'btn-primary loading' : 'btn-outline'}`}
+                title={title ? '' : 'Enter a title in the editor to generate an outline'}
+              >
+                Generate Outline
+              </button>
+            </div>
+          </>
+        )}
+        {activeSidebarTab === 'grammar' && (
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-2">Grammar Checker</h2>
+            <p className="text-base-content/70 text-sm mb-2">Check your content for grammar issues.</p>
+            <button className="btn btn-outline btn-sm w-full mb-2" disabled>Check Grammar (coming soon)</button>
+          </div>
+        )}
+        {activeSidebarTab === 'readability' && (
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-2">Readability Grade</h2>
+            <p className="text-base-content/70 text-sm mb-2">See how easy your content is to read.</p>
+            <button className="btn btn-outline btn-sm w-full mb-2" disabled>Check Readability (coming soon)</button>
+          </div>
+        )}
+        {activeSidebarTab === 'earning' && (
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-2">Earning Optimiser</h2>
+            <p className="text-base-content/70 text-sm mb-2">Tips to optimise your content for monetisation.</p>
+            <ul className="list-disc ml-5 text-sm text-base-content/70">
+              <li>Include clear calls-to-action</li>
+              <li>Link to your offers or products</li>
+              <li>Use persuasive language</li>
+              <li>Build trust with testimonials</li>
+            </ul>
+          </div>
+        )}
       </div>
       
       {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
@@ -1183,17 +1207,6 @@ const ContentHub = () => {
                 if (selection) {
                   const [line, offset] = editor.getLine(selection.index);
                   const lineText = line.domNode.innerText;
-                  if (lineText.trim().startsWith('/')) {
-                    const bounds = editor.getBounds(selection.index);
-                    setSlashCommand({
-                      show: true,
-                      top: bounds.top + bounds.height,
-                      left: bounds.left,
-                      text: lineText.trim()
-                    });
-                  } else {
-                    setSlashCommand(s => ({...s, show: false}));
-                  }
                 }
                 // Always extract the first line of text as the title, regardless of formatting
                 const text = editor.getText();
@@ -1201,8 +1214,6 @@ const ContentHub = () => {
                 if (firstLine !== title) {
                   setTitle(firstLine);
                 }
-                // Update the title/subtitle indicators
-                setTimeout(() => addEditorLabels(), 10);
               }
             }}
             onFocus={() => {
@@ -1211,6 +1222,8 @@ const ContentHub = () => {
                 const editor = quillRef.current.getEditor();
                 editor.format('header', 1);
               }
+              // Always update indicator on focus
+              addEditorLabels();
             }}
             modules={quillModules}
             formats={quillFormats}
@@ -1219,44 +1232,6 @@ const ContentHub = () => {
             theme="bubble"
             style={editorStyles}
           />
-          {/* Slash command suggestion popup */}
-          {slashCommand.show && (
-            <div
-              style={{
-                position: 'fixed',
-                top: slashCommand.top + (editorContainerRef.current?.getBoundingClientRect().top || 0) + window.scrollY,
-                left: slashCommand.left + (editorContainerRef.current?.getBoundingClientRect().left || 0) + window.scrollX,
-                zIndex: 10000,
-                background: '#fff',
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                padding: 8,
-                minWidth: 180,
-              }}
-            >
-              <div
-                className="cursor-pointer hover:bg-base-200 px-2 py-1 rounded"
-                onMouseDown={e => {
-                  e.preventDefault();
-                  setSlashCommand(s => ({...s, show: false}));
-                  generateWithAI('ideas');
-                }}
-              >
-                <strong>/ideas</strong> – Generate Content Ideas
-              </div>
-              <div
-                className="cursor-pointer hover:bg-base-200 px-2 py-1 rounded"
-                onMouseDown={e => {
-                  e.preventDefault();
-                  setSlashCommand(s => ({...s, show: false}));
-                  generateWithAI('article');
-                }}
-              >
-                <strong>/outline</strong> – Generate Outline
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
