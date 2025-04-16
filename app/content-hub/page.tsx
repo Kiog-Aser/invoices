@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect, Suspense, useCallback } from 'react
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
+import { getReadability } from '../../utils/readability';
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -63,6 +64,9 @@ const ContentHub = () => {
   const [grammarSuggestions, setGrammarSuggestions] = useState<any[]>([]);
   const [isGrammarModalOpen, setIsGrammarModalOpen] = useState(false);
   const [grammarLoading, setGrammarLoading] = useState(false);
+
+  // Readability state
+  const [readability, setReadability] = useState<null | ReturnType<typeof getReadability>>(null);
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -1027,6 +1031,18 @@ const ContentHub = () => {
     toast.success('All suggestions applied!');
   };
 
+  // Function to check readability
+  const checkReadability = () => {
+    let text = '';
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      text = editor.getText();
+    } else {
+      text = content;
+    }
+    setReadability(getReadability(text));
+  };
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
       {/* Floating toolbar for text selection */}
@@ -1258,8 +1274,54 @@ const ContentHub = () => {
         {activeSidebarTab === 'readability' && (
           <div className="p-4">
             <h2 className="text-lg font-semibold mb-2">Readability Grade</h2>
-            <p className="text-base-content/70 text-sm mb-2">See how easy your content is to read.</p>
-            <button className="btn btn-outline btn-sm w-full mb-2" disabled>Check Readability (coming soon)</button>
+            <p className="text-base-content/70 text-sm mb-4">See how easy your content is to read.</p>
+            <button className="btn btn-primary btn-sm w-full mb-4" onClick={checkReadability}>Check Readability</button>
+            {readability && (
+              <div className="flex flex-col items-center gap-6 mt-4">
+                <div className="flex gap-8 justify-center">
+                  {/* Flesch Reading Ease Circle */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-20 h-20 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-4
+                        ${readability.fleschReadingEase >= 80 ? 'border-green-400 bg-green-50 text-green-700' :
+                          readability.fleschReadingEase >= 60 ? 'border-yellow-400 bg-yellow-50 text-yellow-700' :
+                          readability.fleschReadingEase >= 30 ? 'border-orange-400 bg-orange-50 text-orange-700' :
+                          'border-red-400 bg-red-50 text-red-700'}`}
+                    >
+                      {readability.fleschReadingEase}
+                    </div>
+                    <span className="mt-2 text-xs font-medium text-base-content/70">Reading Ease</span>
+                  </div>
+                  {/* Flesch-Kincaid Grade Circle */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-20 h-20 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-4
+                        ${readability.fleschKincaidGrade < 6 ? 'border-green-400 bg-green-50 text-green-700' :
+                          readability.fleschKincaidGrade < 9 ? 'border-yellow-400 bg-yellow-50 text-yellow-700' :
+                          readability.fleschKincaidGrade < 13 ? 'border-orange-400 bg-orange-50 text-orange-700' :
+                          'border-red-400 bg-red-50 text-red-700'}`}
+                    >
+                      {readability.fleschKincaidGrade}
+                    </div>
+                    <span className="mt-2 text-xs font-medium text-base-content/70">Grade Level</span>
+                  </div>
+                </div>
+                {/* Description and stats */}
+                <div className="w-full mt-2">
+                  <div className="flex justify-center gap-4 text-xs text-base-content/60 mb-2">
+                    <span>Words: {readability.wordCount}</span>
+                    <span>Sentences: {readability.sentenceCount}</span>
+                    <span>Syllables: {readability.syllableCount}</span>
+                  </div>
+                  <div className="text-center text-sm mt-2">
+                    {readability.fleschKincaidGrade < 6 && <span className="text-green-600 font-medium">Very easy to read (Elementary level)</span>}
+                    {readability.fleschKincaidGrade >= 6 && readability.fleschKincaidGrade < 9 && <span className="text-yellow-600 font-medium">Fairly easy (Middle school)</span>}
+                    {readability.fleschKincaidGrade >= 9 && readability.fleschKincaidGrade < 13 && <span className="text-orange-600 font-medium">Somewhat difficult (High school)</span>}
+                    {readability.fleschKincaidGrade >= 13 && <span className="text-red-600 font-medium">Difficult (College+)</span>}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {activeSidebarTab === 'earning' && (

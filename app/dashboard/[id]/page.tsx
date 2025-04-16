@@ -2640,6 +2640,17 @@ ${conversionContent}`;
                         <span>Podcast</span>
                       </div>
                     </div>
+                    <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl shadow-sm">
+                      <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex-shrink-0 p-3 bg-white dark:bg-base-100 rounded-full shadow-md">
+                          <FaCalendarPlus size={24} className="text-primary" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold mb-1">Streamline Your Content Workflow</h4>
+                          <p className="text-base-content/80">Looking for an easy way to schedule content across multiple platforms? <a href="https://hypefury.com/?via=mil" target="_blank" className="link link-primary font-medium">Try Hypefury</a> to automate your publishing and save hours each week.</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               }
