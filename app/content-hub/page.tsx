@@ -3,12 +3,13 @@
 // This ensures the page is rendered dynamically at request time, not statically at build time
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useRef, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useRef, useEffect, Suspense, useCallback, Ref } from 'react'; // Added Ref
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability } from '../../utils/readability';
 import ReactDOM from 'react-dom';
+import Quill from 'quill'; // Import Quill core library
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -22,6 +23,134 @@ import 'react-quill/dist/quill.snow.css';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+
+// --- Register Custom Quill Format for Grammar Suggestions ---
+let Inline = Quill.import('blots/inline');
+
+// Define interfaces for the handlers we expect on the root node
+interface EditorRootWithPopupHandlers extends HTMLElement {
+  showSuggestionPopup?: (suggestionData: any, targetElement: HTMLElement) => void;
+  // No longer need hideSuggestionPopup on the root for the blot
+}
+
+class GrammarSuggestionBlot extends Inline {
+  static blotName = 'grammar-suggestion';
+  static tagName = 'span';
+  static className = 'grammar-suggestion-underline';
+
+  static create(value: any) {
+    let node = super.create() as HTMLElement; // Cast to HTMLElement
+    node.dataset.suggestion = JSON.stringify(value);
+
+    // --- Change Listener to Click ---
+    node.addEventListener('click', (event) => {
+      event.stopPropagation(); // Prevent editor focus changes or other clicks
+      const root = node.closest('.ql-editor') as EditorRootWithPopupHandlers | null;
+      if (root?.showSuggestionPopup && node.dataset.suggestion) {
+        try {
+          const suggestionData = JSON.parse(node.dataset.suggestion);
+          root.showSuggestionPopup(suggestionData, node);
+        } catch (e) {
+          console.error("Error parsing suggestion data on click", e);
+        }
+      }
+    });
+    // --- Removed mouseout listener ---
+
+    return node;
+  }
+
+  // ... formats and format methods remain the same ...
+  static formats(domNode: HTMLElement) {
+    // Retrieve suggestion data from the DOM node
+    if (domNode.dataset.suggestion) {
+      try {
+        return JSON.parse(domNode.dataset.suggestion);
+      } catch (e) {
+        console.error('Error parsing suggestion data from DOM', e);
+      }
+    }
+    // It's important to return the blotName for Quill to recognize the format
+    return super.formats(domNode); // Keep existing formats
+  }
+
+  format(name: string, value: any) {
+    if (name === GrammarSuggestionBlot.blotName && value) {
+      // Ensure domNode is typed correctly if needed, but it should exist on Inline Blot
+      (this.domNode as HTMLElement).dataset.suggestion = JSON.stringify(value);
+    } else {
+      super.format(name, value);
+    }
+  }
+}
+
+Quill.register(GrammarSuggestionBlot);
+// --- End Custom Quill Format ---
+
+// +++ Suggestion Popup Component (Updated Design) +++
+interface SuggestionPopupProps {
+  suggestion: any;
+  position: { top: number; left: number };
+  onApply: (suggestion: any) => void;
+  onDismiss: () => void; // Add dismiss handler prop
+}
+
+const SuggestionPopup: React.FC<SuggestionPopupProps> = ({
+  suggestion,
+  position,
+  onApply,
+  onDismiss
+}) => {
+  if (!suggestion) return null;
+
+  const replacement = suggestion.replacements?.[0]?.value;
+  const category = suggestion.rule?.category?.name || 'Suggestion'; // Get category name if available
+
+  // Prevent click propagation to avoid closing the popup immediately
+  const handlePopupClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  return (
+    <div
+      className="absolute z-[10000] bg-white rounded-lg shadow-xl border border-gray-200 p-4 text-sm text-gray-700 w-64" // Adjusted width and padding
+      style={{ top: position.top, left: position.left }}
+      onClick={handlePopupClick} // Prevent clicks inside from closing it
+      // Removed onMouseEnter/onMouseLeave as it's click-based now
+    >
+      {/* Category/Title */}
+      <p className="text-xs text-gray-500 mb-2">{category}</p>
+
+      {/* Suggestion Message */}
+      <p className="mb-3 font-medium">{suggestion.message}</p>
+
+      {/* Replacement Button */}
+      {replacement && (
+        <button
+          onClick={() => onApply(suggestion)}
+          className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-2 px-3 rounded text-left mb-3 transition-colors"
+        >
+          {replacement}
+        </button>
+      )}
+
+      {/* Dismiss Button */}
+      <button
+        onClick={onDismiss}
+        className="w-full flex items-center text-gray-500 hover:text-gray-700 py-1 px-1 rounded transition-colors text-xs"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+        Dismiss
+      </button>
+    </div>
+  );
+};
+// +++ End Suggestion Popup Component +++
 
 interface Protocol {
   id: string;
@@ -66,11 +195,80 @@ const ContentHub = () => {
   const [isGrammarModalOpen, setIsGrammarModalOpen] = useState(false);
   const [grammarLoading, setGrammarLoading] = useState(false);
 
+  // +++ State for Suggestion Popup +++
+  const [popupSuggestion, setPopupSuggestion] = useState<any | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+  // Removed hidePopupTimeoutRef
+  // +++ End State +++
+
   // Readability state
   const [readability, setReadability] = useState<null | ReturnType<typeof getReadability>>(null);
 
   // Earning optimiser AI insights state
   const [aiEarningInsights, setAIEarningInsights] = useState<string | null>(null);
+
+  // +++ Popup Handler Functions (Updated) +++
+  // Simple dismiss function - Moved earlier
+  const dismissSuggestionPopup = useCallback(() => {
+    setPopupSuggestion(null);
+    setPopupPosition(null);
+  }, []);
+
+  const showSuggestionPopup = useCallback((suggestionData: any, targetElement: HTMLElement) => {
+    // If the same suggestion is clicked again, hide it
+    if (popupSuggestion?.id === suggestionData.id) {
+        setPopupSuggestion(null);
+        setPopupPosition(null);
+        return;
+    }
+
+    const rect = targetElement.getBoundingClientRect();
+    const popupTopOffset = 10; // Pixels above the element
+    const popupLeftOffset = 0; // Adjust if needed
+
+    setPopupSuggestion(suggestionData);
+    setPopupPosition({
+      // Position popup slightly above the clicked element
+      top: window.scrollY + rect.top - popupTopOffset,
+      left: window.scrollX + rect.left + popupLeftOffset
+    });
+  }, [popupSuggestion]); // Depend on popupSuggestion to toggle visibility
+
+  // Attach show handler to editor root node
+  useEffect(() => {
+    const editor = quillRef.current?.getEditor();
+    if (editor) {
+      const root = editor.root as EditorRootWithPopupHandlers;
+      root.showSuggestionPopup = showSuggestionPopup;
+
+      // Cleanup function
+      return () => {
+        delete root.showSuggestionPopup;
+      };
+    }
+  }, [quillRef.current, showSuggestionPopup]);
+
+  // Effect to close popup on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Check if the click is outside the popup and not on an underline
+      const target = event.target as HTMLElement;
+      const popupElement = document.querySelector('.suggestion-popup-container'); // Add a class to the portal div if needed
+      const isUnderline = target.classList.contains('grammar-suggestion-underline');
+
+      if (popupSuggestion && !popupElement?.contains(target) && !isUnderline) {
+        dismissSuggestionPopup();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [popupSuggestion, dismissSuggestionPopup]); // Re-run if popup state changes
+
+  // +++ End Popup Handler Functions +++
+
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -246,13 +444,9 @@ const ContentHub = () => {
         editor.formatLine(targetIndex, 1, 'header', false);
         
         // Now set the selection at our target position
-        editor.setSelection(targetIndex, 0);
-        
-        // Set up for typing animation
-        const insertIndex = targetIndex;
         
         // Use typing effect animation for AI responses
-        typeTextEffect(editor, text, insertIndex, () => {
+        typeTextEffect(editor, text, targetIndex, () => {
           // After typing is complete, format any bullet points or lists
           const formattedText = editor.getText();
           
@@ -629,6 +823,14 @@ const ContentHub = () => {
         background-color: rgba(0, 0, 0, 0.03);
         border-radius: 0 4px 4px 0;
       }
+
+      /* Style for grammar suggestion underlines */
+      .medium-style-editor .ql-editor .grammar-suggestion-underline {
+        text-decoration: underline wavy red;
+        text-decoration-skip-ink: none; /* Make sure underline is continuous */
+        background-color: rgba(255, 0, 0, 0.05); /* Optional subtle background */
+        cursor: pointer; /* Indicate it's interactive */
+      }
       
       /* Floating toolbar styles */
       .floating-toolbar {
@@ -947,18 +1149,21 @@ const ContentHub = () => {
     addEditorLabels();
     if (range && range.length > 0 && source === 'user') {
       const bounds = quill.getBounds(range.index, range.length);
-      const editorRect = editorContainer.getBoundingClientRect();
+      const toolbarElement = toolbarRef.current;
       const toolbarWidth = 250;
-      // Use the previous working logic: fixed offset of 50px above selection
-      const top = editorRect.top + window.scrollY + bounds.top - 50;
-      const left = Math.max(
-        editorRect.left + window.scrollX,
-        Math.min(
-          editorRect.left + window.scrollX + bounds.left + (bounds.width / 2) - (toolbarWidth / 2),
-          window.innerWidth + window.scrollX - toolbarWidth - 10
-        )
-      );
-      setFloatingToolbar({ visible: true, top: Math.max(0, top), left: Math.max(0, left) });
+      const toolbarHeight = toolbarElement?.offsetHeight || 40;
+      // Always position above selection, with extra space
+      const extraSpace = 16; // px
+      const editorRoot = quill.root;
+      const rootRect = editorRoot.getBoundingClientRect();
+      // Calculate position relative to the viewport for position: fixed
+      let top = rootRect.top + bounds.top - toolbarHeight - extraSpace;
+      let left = rootRect.left + bounds.left + (bounds.width / 2) - (toolbarWidth / 2);
+      // Clamp horizontally to viewport
+      left = Math.max(8, Math.min(left, window.innerWidth - toolbarWidth - 8));
+      // Clamp to top of viewport (never below selection)
+      top = Math.max(8, top);
+      setFloatingToolbar({ visible: true, top, left });
     } else {
       setTimeout(() => {
         const activeElement = document.activeElement;
@@ -970,7 +1175,19 @@ const ContentHub = () => {
         }
       }, 150);
     }
-  }, []);
+
+    // Close suggestion popup if selection changes significantly or becomes zero
+    if (popupSuggestion && (!range || range.length === 0 || source === 'user')) {
+       // Add a small delay to allow applying suggestion without immediate close
+       setTimeout(() => {
+           // Check if popup is still meant to be open before closing
+           if (popupSuggestion) {
+               dismissSuggestionPopup();
+           }
+       }, 100);
+    }
+
+  }, [popupSuggestion, dismissSuggestionPopup]); // Add dependencies
 
   // Register selection-change event whenever quillRef.current or handleSelectionChange changes
   useEffect(() => {
@@ -1003,7 +1220,8 @@ const ContentHub = () => {
 
   // Quill formats - Keep formats you want to support with the floating toolbar
   const quillFormats = [
-    'header', 'bold', 'italic', 'link', 'blockquote'
+    'header', 'bold', 'italic', 'link', 'blockquote',
+    'grammar-suggestion' // Add our custom format
     // Add other formats as needed (e.g., list, strike)
   ];
 
@@ -1024,9 +1242,16 @@ const ContentHub = () => {
     if (!quillRef.current) return;
     setGrammarLoading(true);
     setGrammarSuggestions([]);
-    setIsGrammarModalOpen(true);
+    // Don't open modal immediately, apply underlines first
+    // setIsGrammarModalOpen(true); 
+    const editor = quillRef.current.getEditor();
+
+    // --- Clear previous grammar underlines --- 
+    const length = editor.getLength();
+    editor.formatText(0, length, 'grammar-suggestion', false, 'silent'); // Clear format
+    // --- End Clear --- 
+
     try {
-      const editor = quillRef.current.getEditor();
       const text = editor.getText();
       const res = await fetch('https://api.languagetool.org/v2/check', {
         method: 'POST',
@@ -1037,9 +1262,41 @@ const ContentHub = () => {
         }),
       });
       const data = await res.json();
-      setGrammarSuggestions(data.matches || []);
+      const suggestions = data.matches || [];
+      setGrammarSuggestions(suggestions);
+
+      // --- Apply new underlines --- 
+      if (suggestions.length > 0) {
+        editor.history.cutoff(); // Prevent underlining from being a single undo step
+        suggestions.forEach((suggestion: any, index: number) => {
+          const suggestionData = {
+            id: `suggestion-${Date.now()}-${index}`, // Unique ID for reference
+            message: suggestion.message,
+            replacements: suggestion.replacements,
+            context: suggestion.context,
+            offset: suggestion.offset,
+            length: suggestion.length
+          };
+          editor.formatText(
+            suggestion.offset,
+            suggestion.length,
+            'grammar-suggestion',
+            suggestionData, // Pass suggestion data as the value
+            'silent' // Use silent to prevent triggering text-change event
+          );
+        });
+        editor.history.cutoff();
+        // Optionally open the sidebar/modal now
+        setIsGrammarModalOpen(true); 
+        setActiveSidebarTab('grammar'); // Switch to grammar tab
+      } else {
+        toast.success('No grammar issues found!');
+      }
+      // --- End Apply --- 
+
     } catch (e) {
       toast.error('Grammar check failed.');
+      console.error('Grammar check error:', e);
     } finally {
       setGrammarLoading(false);
     }
@@ -1051,23 +1308,50 @@ const ContentHub = () => {
     const editor = quillRef.current.getEditor();
     const { offset, length, replacements } = suggestion;
     if (replacements && replacements.length > 0) {
-      editor.deleteText(offset, length);
-      editor.insertText(offset, replacements[0].value);
+      // --- Dismiss popup ---
+      dismissSuggestionPopup();
+      // --- End Dismiss ---
+
+      // Remove the underline format first
+      editor.formatText(offset, length, 'grammar-suggestion', false, 'user');
+      // Apply the text change
+      editor.deleteText(offset, length, 'user');
+      editor.insertText(offset, replacements[0].value, 'user');
+
+      // Remove the suggestion from the list in the sidebar
+      setGrammarSuggestions(prev => prev.filter(s => s.offset !== offset || s.length !== length));
+
+      // Also remove from the main list if applying from popup
+      setGrammarSuggestions(prev => prev.filter(s => s.offset !== suggestion.offset || s.length !== suggestion.length));
+
     }
   };
 
   // Apply all suggestions
-  const applyAllGrammarSuggestions = () => {
+   const applyAllGrammarSuggestions = () => {
     if (!quillRef.current) return;
+
+    // --- Dismiss popup ---
+    dismissSuggestionPopup();
+    // --- End Dismiss ---
+
     const editor = quillRef.current.getEditor();
     // Sort by offset descending to avoid messing up positions
     const sorted = [...grammarSuggestions].sort((a, b) => b.offset - a.offset);
+    
+    editor.history.cutoff(); // Group changes
     sorted.forEach(suggestion => {
       if (suggestion.replacements && suggestion.replacements.length > 0) {
-        editor.deleteText(suggestion.offset, suggestion.length);
-        editor.insertText(suggestion.offset, suggestion.replacements[0].value);
+        // Remove the underline format first
+        editor.formatText(suggestion.offset, suggestion.length, 'grammar-suggestion', false, 'silent');
+        // Apply the text change
+        editor.deleteText(suggestion.offset, suggestion.length, 'silent');
+        editor.insertText(suggestion.offset, suggestion.replacements[0].value, 'silent');
       }
     });
+    editor.history.cutoff();
+
+    setGrammarSuggestions([]); // Clear suggestions list
     setIsGrammarModalOpen(false);
     toast.success('All suggestions applied!');
   };
@@ -1178,6 +1462,21 @@ const ContentHub = () => {
         floatingToolbarJSX,
         document.body
       )}
+      {/* +++ Suggestion Popup Portal (Updated Props) +++ */}
+      {typeof window !== 'undefined' && popupSuggestion && popupPosition && ReactDOM.createPortal(
+        // Add a container div if needed for the outside click listener
+        <div className="suggestion-popup-container">
+            <SuggestionPopup
+              suggestion={popupSuggestion}
+              position={popupPosition}
+              onApply={applyGrammarSuggestion}
+              onDismiss={dismissSuggestionPopup} // Pass dismiss handler
+              // Removed onMouseEnter/onMouseLeave
+            />
+        </div>,
+        document.body
+      )}
+      {/* +++ End Suggestion Popup Portal +++ */}
       {/* Sidebar with tabbed navigation */}
       <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50">
         {/* Tab bar with icons */}
@@ -1498,51 +1797,65 @@ export default ContentHub;
 
 // Add this component at the bottom of the file
 function EarningInsightsSidebar({ markdown }: { markdown: string }) {
-  // Parse the markdown for score, explanation, improvements, and a short AI insight
-  // Expecting format:
-  // ---\nMonetisation Score: <score>\n---\nScore Explanation: <short explanation>\n---\nTop Monetisation Improvements:\n- <improvement 1>\n- <improvement 2>\n...\n---\nAI Insight: <insight>
-  let score = null;
-  let explanation = '';
-  let improvements: string[] = [];
-  let aiInsight = '';
+  // Parse plain text sections (no markdown)
+  function extractSection(title: string) {
+    if (title === 'Monetisation Score') {
+      const match = markdown.match(/Monetisation Score:\s*(\d{1,3})/i);
+      return match ? match[1] : '';
+    }
+    if (title === 'Score Explanation') {
+      const match = markdown.match(/Score Explanation:\s*([\s\S]*?)(?=\n[A-Z][A-Za-z ]+:|$)/i);
+      return match ? match[1].trim() : '';
+    }
+    return '';
+  }
 
-  const scoreMatch = markdown.match(/Monetisation Score:\s*(\d{1,3})/i);
-  if (scoreMatch) {
-    score = parseInt(scoreMatch[1], 10);
-  }
-  const explanationMatch = markdown.match(/Score Explanation:\s*([\s\S]*?)---/i);
-  if (explanationMatch) {
-    explanation = explanationMatch[1].replace(/\n/g, ' ').trim();
-  } else {
-    // fallback: try to get after 'Score Explanation:'
-    const fallback = markdown.match(/Score Explanation:\s*([\s\S]*)/i);
-    if (fallback) explanation = fallback[1].split('\n')[0].trim();
-  }
-  const improvementsMatch = markdown.match(/Top Monetisation Improvements:[\s\S]*?((?:- .*(?:\n|$))+)/i);
-  if (improvementsMatch) {
-    improvements = improvementsMatch[1].split(/\n/).map(l => l.replace(/^- /, '').trim()).filter(Boolean);
-  }
-  // Try to extract a short AI insight (optional, after last ---)
-  const aiInsightMatch = markdown.match(/AI Insight:\s*([\s\S]*)/i);
-  if (aiInsightMatch) {
-    aiInsight = aiInsightMatch[1].split('\n')[0].trim();
-  }
+  const score = extractSection('Monetisation Score');
+  const explanation = extractSection('Score Explanation');
 
   // Score color logic
   let scoreColor = 'bg-gray-200 text-gray-700 border-gray-300';
-  if (typeof score === 'number') {
-    if (score >= 80) scoreColor = 'bg-green-50 text-green-700 border-green-400';
-    else if (score >= 60) scoreColor = 'bg-yellow-50 text-yellow-700 border-yellow-400';
-    else if (score >= 40) scoreColor = 'bg-orange-50 text-orange-700 border-orange-400';
+  const scoreNum = parseInt(score, 10);
+  if (!isNaN(scoreNum)) {
+    if (scoreNum >= 80) scoreColor = 'bg-green-50 text-green-700 border-green-400';
+    else if (scoreNum >= 60) scoreColor = 'bg-yellow-50 text-yellow-700 border-yellow-400';
+    else if (scoreNum >= 40) scoreColor = 'bg-orange-50 text-orange-700 border-orange-400';
     else scoreColor = 'bg-red-50 text-red-700 border-red-400';
   }
 
+  const suggestions = (() => {
+    const match = markdown.match(/Suggestions:\s*([\s\S]*?)(?=\n[A-Z][A-Za-z ]+:|$)/i);
+    return match ? match[1].trim() : '';
+  })();
+
+  // Helper to render suggestions with markdown bold support
+  function renderSuggestions(section: string) {
+    if (!section || section.trim() === '' || section.trim().toLowerCase() === 'none') {
+      return null;
+    }
+    // Split into lines, filter empty and lines that are just '-', and render markdown bold
+    const items = section
+      .split(/\n|\r/)
+      .map(line => line.replace(/^[-*]\s*/, '').trim())
+      .filter(line => line.length > 0 && line !== '-');
+    if (items.length === 0) return null;
+    return (
+      <ul className="list-disc ml-5 text-xs">
+        {items.map((line, i) => {
+          // Replace **bold** with <strong> for React rendering
+          const html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          return <li key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+        })}
+      </ul>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center gap-4 mt-2">
-      {score !== null && (
+    <div className="flex flex-col gap-4 mt-2 w-full">
+      {!isNaN(scoreNum) && (
         <div className="flex flex-col items-center">
           <div className={`w-20 h-20 flex items-center justify-center rounded-full text-3xl font-bold shadow-lg border-4 ${scoreColor}`}>
-            {score}
+            {scoreNum}
           </div>
           <span className="mt-2 text-xs font-medium text-base-content/70">Monetisation Score</span>
         </div>
@@ -1552,21 +1865,7 @@ function EarningInsightsSidebar({ markdown }: { markdown: string }) {
           {explanation}
         </div>
       )}
-      {improvements.length > 0 && (
-        <div className="w-full">
-          <h4 className="font-semibold text-sm mb-1">Top Monetisation Improvements</h4>
-          <ul className="list-disc ml-5 text-sm text-base-content/80">
-            {improvements.map((imp, i) => (
-              <li key={i}>{imp}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {aiInsight && (
-        <div className="w-full mt-2 p-2 rounded bg-base-200 text-xs text-base-content/70 italic text-center">
-          <span>AI Insight: {aiInsight}</span>
-        </div>
-      )}
+      {renderSuggestions(suggestions)}
     </div>
   );
 }

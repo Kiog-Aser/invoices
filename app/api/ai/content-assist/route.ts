@@ -55,16 +55,20 @@ ${contextInfo.niche ? `\nContext: This is for a ${contextInfo.role} in the ${con
 ${text}`;
         break;
       case 'ideas':
-        prompt = `Generate 3-5 content ideas (1-2 sentences each) for a ${contextInfo.role} in the ${contextInfo.niche || 'your'} industry.
+        prompt = `Generate 3-5 content ideas for a ${contextInfo.role} in the ${contextInfo.niche || 'your'} industry.
 ${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
 ${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
 
-Include:
-1. Expertise ideas (frameworks, step-by-step guides, tips)
-2. Personal journey ideas (your story, lessons learned, case studies) 
-3. Client proof ideas (success stories, results, transformations)
+For each idea:
+- Start with a short, bolded headline (use **markdown bold**)
+- Follow with a 1-2 sentence description expanding on the idea
+- Use a numbered list (1. 2. 3. etc)
+- Group ideas by type: Expertise, Personal Journey, Client Proof (if possible)
 
-Only respond with the content ideas, no additional text. Format the ideas in a numbered list (1. 2. 3. etc), and use markdown for readability.`;
+Only respond with the ideas, no extra text. Use markdown formatting for clarity.`;
+        break;
+      case 'article':
+        prompt = `Generate a structured outline for an article titled "${title || '[Insert Title]'}" for a ${contextInfo.role} in the ${contextInfo.niche} industry.\n\n1. **Hook**: Write a bold, curiosity-driven opening that addresses the reader's pain points or goals.\n2. **Core Message**: Summarize the article's key lesson or value proposition in 1 sentence.\n3. **Actionable Sections**: Include 3-5 subheadings with practical advice (e.g., step-by-step systems, frameworks, or relatable stories).\n4. **Closing**: End with a strong call-to-action encouraging immediate next steps.\n\nOnly respond with the outline, no extra text. Use markdown and a numbered list for clarity.`;
         break;
       case 'shorten':
         prompt = `Summarize the following text to about half its length while preserving the key points and main message, only give back the rewritten text without any additional comments or explanations, don't put it in quotes. Format properly, and use markdown for readability:
@@ -77,101 +81,22 @@ ${contextInfo.niche ? `\nContext: This is for a ${contextInfo.role} in the ${con
 
 ${text}`;
         break;
-      case 'article':
-        prompt = `Generate a structured outline for an article titled "${title || '[Insert Title]'}" for a ${contextInfo.role} in the ${contextInfo.niche} industry.
-
-1. **Hook**: Write a bold, curiosity-driven opening that addresses the reader's pain points or goals.
-2. **Core Message**: Summarize the article's key lesson or value proposition in 1 sentence.
-3. **Actionable Sections**: Include 3-5 subheadings with practical advice (e.g., step-by-step systems, frameworks, or relatable stories).
-4. **Closing**: End with a strong call-to-action encouraging immediate next steps.
-
-Only respond with the content ideas, no additional text. Format the ideas in a numbered list (1. 2. 3. etc), and use markdown for readability.`;
-        break;
-      case 'social':
-        prompt = `Generate 3 social media post templates for a ${contextInfo.role} in the ${contextInfo.niche} industry.
-${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
-${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
-
-For each post include:
-1. Attention-grabbing hook (first line)
-2. Main content that delivers value (2-3 paragraphs)
-3. Compelling call-to-action
-4. Relevant hashtag suggestions
-
-${text ? `Use this text as inspiration: ${text}` : ''}`;
-        break;
-      case 'email':
-        prompt = `Write an email campaign template for a ${contextInfo.role} in the ${contextInfo.niche} industry.
-${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
-${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
-
-Include:
-1. Subject line options (3 variations)
-2. Personalized greeting
-3. Engaging opening paragraph that hooks the reader
-4. Value-driven body content (2-3 paragraphs)
-5. Clear call-to-action
-6. Professional signature
-
-${text ? `Use this text as inspiration: ${text}` : ''}`;
-        break;
-      case 'carousel':
-        prompt = `Design a 5-slide carousel post outline for a ${contextInfo.role} in the ${contextInfo.niche} industry.
-${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
-${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
-
-For each slide include:
-1. Slide 1: Attention-grabbing headline and hook
-2. Slide 2-4: Key points, tips, or steps (one main point per slide)
-3. Slide 5: Summary and call-to-action
-4. Caption text for the entire carousel post
-
-${text ? `Use this text as inspiration: ${text}` : ''}`;
-        break;
-      case 'storytelling':
-        prompt = `Create a compelling story framework for a ${contextInfo.role} in the ${contextInfo.niche} industry that connects with ${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? contextInfo.targetAudience.join(', ') : 'your audience'}.
-${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
-
-Structure your story with:
-1. The Setup: Describe the status quo and the challenge that needed to be overcome
-2. The Struggle: Detail the obstacles and difficulties faced
-3. The Solution: Explain how the problem was solved and what was learned
-4. The Success: Share the positive outcome and transformation
-5. The Significance: Connect to the bigger picture and why it matters
-
-${text ? `Use this text as inspiration: ${text}` : ''}`;
-        break;
-      case 'expert-breakdown':
-        prompt = `Create an expert breakdown on a topic for a ${contextInfo.role} in the ${contextInfo.niche} industry.
-${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
-${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
-
-Include:
-1. Topic introduction that establishes your expertise
-2. Common misconceptions people have about this topic
-3. Key principles that most people overlook
-4. Step-by-step breakdown of your approach or framework
-5. Real-world application example
-6. Key takeaways for the reader
-
-${text ? `Use this text as inspiration: ${text}` : ''}`;
-        break;
       case 'earning-optimiser':
-        prompt = `You are a content monetization expert. Analyze the following content and respond in this exact format:
----
-Monetisation Score: <score>
----
-Score Explanation: <short explanation>
----
-Top Monetisation Improvements:
-- <improvement 1>
-- <improvement 2>
-- <improvement 3>
----
-AI Insight: <one concise actionable insight summarizing the biggest monetisation opportunity>
+        prompt = `You are a world-class content monetization strategist. Analyze the following content and provide:
+- A Monetisation Score (0-100)
+- 3-5 concise, high-impact suggestions to improve monetisation. Each suggestion should be a single sentence, actionable, and valuable. Use markdown to bold the key action or concept in each suggestion (e.g., **Add a clear CTA**: ...). Do not use generic or empty responses. If the content is missing information, make smart assumptions based on typical online businesses. Use plain text and markdown for bolding only.
 
-Content:
-${text}`;
+Format your response as:
+Monetisation Score: <number>
+Suggestions:
+- **<action 1>**: <short explanation>
+- **<action 2>**: <short explanation>
+- **<action 3>**: <short explanation>
+- **<action 4>**: <short explanation>
+- **<action 5>**: <short explanation>
+
+Don't add any extra text or explanations. Only respond with the score and suggestions, no empty bullet points as well.
+Content:\n${text}`;
         break;
       default:
         return NextResponse.json(
