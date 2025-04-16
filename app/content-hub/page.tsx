@@ -59,6 +59,11 @@ const ContentHub = () => {
   // Add tab state for sidebar
   const [activeSidebarTab, setActiveSidebarTab] = useState<'ai' | 'grammar' | 'readability' | 'earning'>('ai');
 
+  // Grammar checker state
+  const [grammarSuggestions, setGrammarSuggestions] = useState<any[]>([]);
+  const [isGrammarModalOpen, setIsGrammarModalOpen] = useState(false);
+  const [grammarLoading, setGrammarLoading] = useState(false);
+
   // Fetch user's writing protocols
   useEffect(() => {
     if (status === "authenticated") {
@@ -969,6 +974,59 @@ const ContentHub = () => {
     }
   };
 
+  // Grammar check function using free LanguageTool public API
+  const checkGrammar = async () => {
+    if (!quillRef.current) return;
+    setGrammarLoading(true);
+    setGrammarSuggestions([]);
+    setIsGrammarModalOpen(true);
+    try {
+      const editor = quillRef.current.getEditor();
+      const text = editor.getText();
+      const res = await fetch('https://api.languagetool.org/v2/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          text,
+          language: 'en-US',
+        }),
+      });
+      const data = await res.json();
+      setGrammarSuggestions(data.matches || []);
+    } catch (e) {
+      toast.error('Grammar check failed.');
+    } finally {
+      setGrammarLoading(false);
+    }
+  };
+
+  // Apply a single suggestion
+  const applyGrammarSuggestion = (suggestion: any) => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const { offset, length, replacements } = suggestion;
+    if (replacements && replacements.length > 0) {
+      editor.deleteText(offset, length);
+      editor.insertText(offset, replacements[0].value);
+    }
+  };
+
+  // Apply all suggestions
+  const applyAllGrammarSuggestions = () => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    // Sort by offset descending to avoid messing up positions
+    const sorted = [...grammarSuggestions].sort((a, b) => b.offset - a.offset);
+    sorted.forEach(suggestion => {
+      if (suggestion.replacements && suggestion.replacements.length > 0) {
+        editor.deleteText(suggestion.offset, suggestion.length);
+        editor.insertText(suggestion.offset, suggestion.replacements[0].value);
+      }
+    });
+    setIsGrammarModalOpen(false);
+    toast.success('All suggestions applied!');
+  };
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
       {/* Floating toolbar for text selection */}
@@ -1167,7 +1225,34 @@ const ContentHub = () => {
           <div className="p-4">
             <h2 className="text-lg font-semibold mb-2">Grammar Checker</h2>
             <p className="text-base-content/70 text-sm mb-2">Check your content for grammar issues.</p>
-            <button className="btn btn-outline btn-sm w-full mb-2" disabled>Check Grammar (coming soon)</button>
+            <button className="btn btn-primary btn-sm w-full mb-2" onClick={checkGrammar} disabled={grammarLoading}>{grammarLoading ? 'Checking...' : 'Check Grammar'}</button>
+            {/* Suggestions now in sidebar, not modal */}
+            {grammarLoading ? (
+              <div className="text-center py-4">Checking grammar...</div>
+            ) : grammarSuggestions.length === 0 && !grammarLoading ? null : (
+              <div className="mt-2">
+                {grammarSuggestions.length === 0 ? (
+                  <div className="text-center py-8">No issues found!</div>
+                ) : (
+                  <>
+                    <button className="btn btn-success btn-sm mb-4 w-full" onClick={applyAllGrammarSuggestions}>Apply All</button>
+                    <ul className="divide-y">
+                      {grammarSuggestions.map((s, i) => (
+                        <li key={i} className="py-2">
+                          <div className="mb-1 text-base-content/80">{s.message}</div>
+                          <div className="mb-1 text-xs text-base-content/60">Context: <span className="font-mono bg-base-200 px-1 rounded">{s.context.text}</span></div>
+                          {s.replacements && s.replacements.length > 0 && (
+                            <div className="flex gap-2 mt-1">
+                              <button className="btn btn-xs btn-primary" onClick={() => applyGrammarSuggestion(s)}>Apply: {s.replacements[0].value}</button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
         {activeSidebarTab === 'readability' && (
