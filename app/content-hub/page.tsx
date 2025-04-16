@@ -3,9 +3,10 @@
 // This ensures the page is rendered dynamically at request time, not statically at build time
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useRef, useEffect, Suspense } from 'react';
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink } from 'react-icons/fa';
+import React, { useState, useRef, useEffect, Suspense, useCallback } from 'react';
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
+import { marked } from 'marked'; // Import marked library
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -50,6 +51,13 @@ const ContentHub = () => {
   const [selectedProtocol, setSelectedProtocol] = useState<Protocol | null>(null);
   const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
   const quillRef = useRef<any>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null); // Ref for the editor container
+
+  // State for the floating toolbar
+  const [floatingToolbar, setFloatingToolbar] = useState<{ visible: boolean; top: number; left: number }>({ visible: false, top: 0, left: 0 });
+
+  // Add state for slash command popup
+  const [slashCommand, setSlashCommand] = useState<{show: boolean, top: number, left: number, text: string}>({show: false, top: 0, left: 0, text: ''});
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -288,20 +296,33 @@ const ContentHub = () => {
   };
 
   // AI enhancement functions
-  const enhanceWithAI = async (action: string) => {
-    const selectedText = getSelectedText();
-    
-    // For ideas generation, we don't need any text selected
-    if (!selectedText.trim() && action !== 'ideas') {
-      toast.error('Please select some text or write content first');
+  const generateWithAI = async (action: string) => {
+    const selectedText = action === 'ideas' ||
+                         action === 'article' ||
+                         action === 'social' ||
+                         action === 'email' ||
+                         action === 'carousel' ||
+                         action === 'storytelling' ||
+                         action === 'expert-breakdown'
+                         ? '' : getSelectedText();
+
+    if (!selectedText.trim() &&
+        action !== 'ideas' &&
+        action !== 'article' &&
+        action !== 'social' &&
+        action !== 'email' &&
+        action !== 'carousel' &&
+        action !== 'storytelling' &&
+        action !== 'expert-breakdown') {
+      toast.error('Please select some text or write content first for this action.');
       return;
     }
-    
+
     setLoading(action);
-    
+
     try {
       const personalContext = selectedProtocol ? getPersonalizedPrompt(action) : {};
-      
+
       const response = await fetch('/api/ai/content-assist', {
         method: 'POST',
         headers: {
@@ -310,29 +331,117 @@ const ContentHub = () => {
         body: JSON.stringify({
           text: selectedText,
           action,
-          title,
-          personalContext
+          title, // Pass the current document title
+          personalContext,
+          stream: true // Explicitly request streaming
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process with AI');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to process with AI' }));
+        throw new Error(errorData.error || 'Failed to process with AI');
       }
 
-      const data = await response.json();
-      
-      if (data.text) {
-        insertText(data.text, true); // Mark as AI response
+      // Handle the streaming response
+      await handleStreamingResponse(response, () => {
         toast.success(`Content ${action} complete!`);
-      }
-    } catch (error) {
-      console.error('Error enhancing content:', error);
-      toast.error('Something went wrong. Please try again.');
+      });
+
+    } catch (error: any) {
+      console.error('Error generating content:', error);
+      toast.error(error.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(null);
     }
   };
-  
+
+  // Function to handle streaming AI responses
+  const handleStreamingResponse = async (response: Response, onComplete?: () => void) => {
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    let accumulatedMarkdown = ''; // Store raw markdown
+    let insertionIndex: number | null = null;
+    let initialInsertion = true; // Flag to handle initial insertion differently
+
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      const range = editor.getSelection(true); // Get current cursor position
+      insertionIndex = range.index; // Store initial insertion point
+
+      // Add null check for insertionIndex before using it
+      if (insertionIndex !== null) {
+        // Ensure we are not inserting into a header line initially
+        const lineFormats = editor.getFormat(insertionIndex);
+        if (lineFormats.header) {
+          editor.insertText(insertionIndex, '\n'); // Add a newline if cursor is in header
+          insertionIndex++;
+          editor.formatLine(insertionIndex, 1, 'header', false); // Ensure the new line is not a header
+          editor.setSelection(insertionIndex, 0); // Move cursor to the new line
+        }
+      }
+    }
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedMarkdown += chunk;
+
+        if (quillRef.current && insertionIndex !== null) {
+          const editor = quillRef.current.getEditor();
+          // Convert the *entire accumulated* markdown to HTML
+          const htmlContent = marked(accumulatedMarkdown);
+
+          // For the first chunk, just insert
+          if (initialInsertion) {
+            // Use dangerouslyPasteHTML to insert the parsed HTML
+            // We need to delete any potential placeholder newline added before
+            const currentLength = editor.getLength();
+            editor.deleteText(insertionIndex, currentLength - insertionIndex); // Clear anything after initial index
+            editor.clipboard.dangerouslyPasteHTML(insertionIndex, htmlContent);
+            initialInsertion = false;
+          } else {
+            // For subsequent chunks, replace the previously inserted HTML
+            // Find the length of the previously inserted HTML to replace it
+            // This is tricky and might be inefficient. A better approach might involve deltas.
+            // Let's try replacing from the initial insertion point.
+            const currentLength = editor.getLength();
+            editor.deleteText(insertionIndex, currentLength - insertionIndex); // Clear old content
+            editor.clipboard.dangerouslyPasteHTML(insertionIndex, htmlContent); // Insert new full content
+          }
+
+          // Update cursor position to the end of the inserted content
+          // Getting the length *after* paste might be asynchronous, use a small delay
+          setTimeout(() => {
+            const newLength = editor.getLength();
+            editor.setSelection(newLength, 0); // Move cursor to the very end
+          }, 0);
+        }
+      }
+    }
+
+    // Final cleanup: Ensure the final HTML is rendered correctly
+    if (quillRef.current && insertionIndex !== null && !initialInsertion) {
+        const editor = quillRef.current.getEditor();
+        const finalHtmlContent = marked(accumulatedMarkdown);
+        const currentLength = editor.getLength();
+        editor.deleteText(insertionIndex, currentLength - insertionIndex);
+        editor.clipboard.dangerouslyPasteHTML(insertionIndex, finalHtmlContent);
+        setTimeout(() => {
+            const finalLength = editor.getLength();
+            editor.setSelection(finalLength, 0);
+        }, 0);
+    }
+
+
+    if (onComplete) onComplete();
+  };
+
   // Handle protocol selection
   const selectProtocol = (protocol: Protocol) => {
     setSelectedProtocol(protocol);
@@ -340,41 +449,7 @@ const ContentHub = () => {
     toast.success(`Connected to "${protocol.title}" protocol`);
   };
 
-  // Get template prompt for specialized content
-  const getSpecializedPrompt = (type: string) => {
-    if (!selectedProtocol?.aiGeneratedContent) {
-      return "Generate professional content...";
-    }
-
-    const niche = selectedProtocol.aiGeneratedContent.nicheAuthority?.fullNiche || selectedProtocol.industry;
-    const role = selectedProtocol.userRole;
-    const coreMessage = selectedProtocol.aiGeneratedContent.nicheAuthority?.coreMessage || '';
-    const targetAudience = selectedProtocol.aiGeneratedContent.nicheAuthority?.targetAudience || [];
-
-    switch(type) {
-      case 'article':
-        return `Generate a structured outline for an article titled "${title || '[Insert Title]'}" for a ${role} in the ${niche} industry.
-
-1. **Hook**: Write a bold, curiosity-driven opening that addresses the reader's pain points or goals.
-2. **Core Message**: Summarize the article's key lesson or value proposition in 1 sentence.
-3. **Actionable Sections**: Include 3-5 subheadings with practical advice (e.g., step-by-step systems, frameworks, or relatable stories).
-4. **Closing**: End with a strong call-to-action encouraging immediate next steps.`;
-      
-      case 'ideas':
-        return `Generate 3-5 content ideas (1-2 sentences each) for a ${role} in the ${niche} industry.
-${coreMessage ? `Core message: ${coreMessage}` : ''}
-${targetAudience.length > 0 ? `Target audience: ${targetAudience.join(', ')}` : ''}
-
-Include:
-1. Expertise ideas (frameworks, step-by-step guides, tips)
-2. Personal journey ideas (your story, lessons learned, case studies)
-3. Client proof ideas (success stories, results, transformations)`;
-      
-      
-      default:
-        return `Generate professional content about "${title || '[topic]'}" for a ${role} in the ${niche} industry.`;
-    }
-  };
+  // This function was duplicated. Removed second instance.
 
   // Custom toolbar that only shows on text selection
   const [showToolbar, setShowToolbar] = useState(false);
@@ -383,7 +458,7 @@ Include:
 
   // Configure editor with our custom toolbar handler
   const modules = {
-    toolbar: false, // Hide the default toolbar
+    toolbar: null, // Disable default toolbar
     keyboard: {
       bindings: {
         // You could add custom keyboard shortcuts here if needed
@@ -391,9 +466,6 @@ Include:
     }
   };
   
-  // Track if we need to apply subtitle styling
-  const [isSecondLine, setIsSecondLine] = useState(false);
-
   const formats = [
     'header',
     'bold', 'italic', 'underline',
@@ -474,6 +546,11 @@ Include:
         font-size: 1.75rem;
         font-weight: 700;
         margin-bottom: 0.5em;
+      }
+
+      /* Add margin to paragraphs for spacing */
+      .medium-style-editor .ql-editor p {
+        margin-bottom: 1em; /* Adjust as needed */
       }
       
       /* Special styling for subtitle (second line with h2) */
@@ -606,100 +683,6 @@ Include:
     };
   }, []);
   
-  // Handle text selection to show the toolbar
-  useEffect(() => {
-    if (!quillRef.current) return;
-    
-    const editor = quillRef.current.getEditor();
-    const editorRoot = editor.root;
-    
-    const checkSelection = () => {
-      // Get current selection
-      const selection = editor.getSelection();
-      
-      if (selection && selection.length > 0) {
-        // Text is selected, position the toolbar above the selection
-        const bounds = editor.getBounds(selection.index, selection.length);
-        
-        // Make sure we have valid bounds
-        if (bounds && bounds.width > 0) {
-          setTimeout(() => {
-            // Get the toolbar width (or use an estimated width if not yet rendered)
-            const toolbarWidth = toolbarRef.current ? toolbarRef.current.offsetWidth : 250;
-            const editorBounds = editorRoot.getBoundingClientRect();
-            
-            // Calculate position centered above the selection
-            const left = Math.max(
-              0, 
-              Math.min(
-                editorBounds.left + bounds.left + (bounds.width / 2) - (toolbarWidth / 2),
-                window.innerWidth - toolbarWidth - 20
-              )
-            );
-            
-            // Set position and show toolbar
-            setToolbarPosition({
-              left,
-              top: editorBounds.top + bounds.top - 45 // Position above with offset
-            });
-            
-            setShowToolbar(true);
-            
-            // Detect if we're on the second line
-            const text = editor.getText();
-            const firstLineBreakPos = text.indexOf('\n');
-            
-            // If there's a line break and our selection starts after it
-            if (firstLineBreakPos !== -1 && selection.index > firstLineBreakPos && 
-                // But before any possible second line break
-                (text.indexOf('\n', firstLineBreakPos + 1) === -1 || 
-                 selection.index < text.indexOf('\n', firstLineBreakPos + 1))) {
-              setIsSecondLine(true);
-            } else {
-              setIsSecondLine(false);
-            }
-          }, 0);
-        }
-      } else {
-        setShowToolbar(false);
-      }
-    };
-    
-    // Check selection on mouse up and key combinations
-    editorRoot.addEventListener('mouseup', checkSelection);
-    editorRoot.addEventListener('keyup', (e: KeyboardEvent) => {
-      // Only check on certain keys that might modify selection
-      const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Shift'];
-      if (e.key && keys.includes(e.key)) {
-        checkSelection();
-      }
-    });
-    
-    // Explicitly check after mousedown to catch selection changes
-    editorRoot.addEventListener('mousedown', () => {
-      setTimeout(checkSelection, 10);
-    });
-    
-    // Hide toolbar when clicking outside editor
-    const handleClickOutside = (e: MouseEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node) && e.target !== editorRoot) {
-        setShowToolbar(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    // Clean up
-    return () => {
-      editorRoot.removeEventListener('mouseup', checkSelection);
-      editorRoot.removeEventListener('mousedown', () => {
-        setTimeout(checkSelection, 10);
-      });
-      editorRoot.removeEventListener('keyup', checkSelection);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   // Track if we're in link input mode
   const [isLinkMode, setIsLinkMode] = useState(false);
   const [linkInputValue, setLinkInputValue] = useState('');
@@ -740,20 +723,6 @@ Include:
         // Apply header formatting
         editor.format('header', shouldRemove ? false : value);
         
-        // Special case: if this is the second line and we're applying h2 (small T)
-        if (value === 2 && isSecondLine && !shouldRemove) {
-          // We need to add the subtitle class
-          setTimeout(() => {
-            // Find the H2 element that was just created
-            const h2Elements = editor.root.querySelectorAll('h2');
-            h2Elements.forEach((h2: HTMLHeadingElement) => {
-              // Only add class if it doesn't already have it
-              if (!h2.classList.contains('subtitle')) {
-                h2.classList.add('subtitle');
-              }
-            });
-          }, 10);
-        }
       } else if (format === 'blockquote') {
         // Toggle blockquote formatting
         const currentFormat = editor.getFormat(selection.index, selection.length);
@@ -914,18 +883,143 @@ Include:
     }
   };
 
+  // Function to handle text selection changes for the floating toolbar
+  const handleSelectionChange = useCallback((range: any, oldRange: any, source: string) => {
+    const quill = quillRef.current?.getEditor();
+    const editorContainer = editorContainerRef.current;
+    if (!quill || !editorContainer) return;
+    if (range && range.length > 0 && source === 'user') {
+      const bounds = quill.getBounds(range.index, range.length);
+      const editorRect = editorContainer.getBoundingClientRect();
+      const toolbarWidth = 250;
+      const top = editorRect.top + window.scrollY + bounds.top - 50;
+      const left = Math.max(
+        editorRect.left + window.scrollX,
+        Math.min(
+          editorRect.left + window.scrollX + bounds.left + (bounds.width / 2) - (toolbarWidth / 2),
+          window.innerWidth + window.scrollX - toolbarWidth - 10
+        )
+      );
+      setFloatingToolbar({ visible: true, top: Math.max(0, top), left: Math.max(0, left) });
+    } else {
+      setTimeout(() => {
+        const activeElement = document.activeElement;
+        const toolbarElement = toolbarRef.current;
+        if (toolbarElement && toolbarElement.contains(activeElement)) {
+          // Don't hide if focus is inside the toolbar
+        } else {
+          setFloatingToolbar(prev => ({ ...prev, visible: false }));
+        }
+      }, 150);
+    }
+  }, []);
+
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      quill.on('selection-change', handleSelectionChange);
+      return () => {
+        quill.off('selection-change', handleSelectionChange);
+      };
+    }
+  }, [handleSelectionChange]);
+
+  // Handle content changes in the editor
+  const handleContentChange = (value: string, delta: any, source: string, editor: any) => {
+    setContent(value);
+    // Title extraction logic removed - Medium uses placeholder text, not first line as title
+    // Add auto-save logic here if needed
+  };
+
+  // Quill modules - Toolbar is now disabled (null)
+  const quillModules = {
+    toolbar: null, // Disable default toolbar
+    // Consider adding history module for undo/redo if needed
+    history: {
+      delay: 2000,
+      maxStack: 500,
+      userOnly: true
+    }
+  };
+
+  // Quill formats - Keep formats you want to support with the floating toolbar
+  const quillFormats = [
+    'header', 'bold', 'italic', 'link', 'blockquote'
+    // Add other formats as needed (e.g., list, strike)
+  ];
+
+  // Function to apply format from floating toolbar
+  const applyFormat = (format: string, value?: any) => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      quill.format(format, value || !quill.getFormat()[format]); // Toggle boolean formats
+      // Keep focus on the editor after applying format
+      quill.focus();
+      // Optionally hide toolbar immediately after action
+      // setFloatingToolbar(prev => ({ ...prev, visible: false }));
+    }
+  };
+
+  // --- SLASH COMMAND HANDLER ---
+  useEffect(() => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    // Attach only once on mount
+    const handleSlashCommand = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSlashCommand(s => ({...s, show: false}));
+      }
+      if (e.key === 'Enter') {
+        const selection = editor.getSelection();
+        if (selection && selection.length === 0) {
+          const [line, offset] = editor.getLine(selection.index);
+          const lineText = line.domNode.innerText.trim();
+          if (lineText.startsWith('/')) {
+            if (lineText === '/ideas') {
+              const lineStart = selection.index - offset;
+              editor.deleteText(lineStart, lineText.length + 1);
+              setTimeout(() => generateWithAI('ideas'), 0);
+              setSlashCommand(s => ({...s, show: false}));
+              e.preventDefault();
+            } else if (lineText === '/outline') {
+              const lineStart = selection.index - offset;
+              editor.deleteText(lineStart, lineText.length + 1);
+              setTimeout(() => generateWithAI('article'), 0);
+              setSlashCommand(s => ({...s, show: false}));
+              e.preventDefault();
+            }
+          }
+        }
+      }
+    };
+    editor.root.addEventListener('keydown', handleSlashCommand);
+    return () => editor.root.removeEventListener('keydown', handleSlashCommand);
+  }, []); // Only run once on mount
+
+  // Ensure selection-change handler is always attached when editor is ready
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      quill.on('selection-change', handleSelectionChange);
+      return () => {
+        quill.off('selection-change', handleSelectionChange);
+      };
+    }
+  }, [quillRef.current, handleSelectionChange]);
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
       {/* Floating toolbar for text selection */}
-      {showToolbar && (
+      {floatingToolbar.visible && ( // Use floatingToolbar.visible
         <div 
           ref={toolbarRef}
           className="floating-toolbar"
           style={{ 
-            top: `${toolbarPosition.top}px`, 
-            left: `${toolbarPosition.left}px` 
+            top: `${floatingToolbar.top}px`, // Use floatingToolbar.top
+            left: `${floatingToolbar.left}px` // Use floatingToolbar.left
           }}
-          onClick={e => e.preventDefault()}
+          // Prevent clicks inside toolbar from causing editor to lose focus/selection
+          onMouseDown={e => e.preventDefault()} 
         >
           {isLinkMode ? (
             /* Link input mode - more compact and matches toolbar width */
@@ -1004,14 +1098,13 @@ Include:
       )}
       
       {/* Sidebar with AI tools - now on the right */}
-      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0">
+      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
-        
         {/* Protocol Selection */}
         <div className="mb-6">
           <button 
             onClick={() => setIsProtocolModalOpen(true)}
-            className="btn btn-outline btn-sm w-full"
+            className={`btn ${selectedProtocol ? 'btn-primary' : 'btn-outline'} btn-sm w-full`}
           >
             {selectedProtocol ? (
               <>
@@ -1024,72 +1117,58 @@ Include:
             )}
           </button>
         </div>
-        
-        {/* AI Tools */}
+        {/* Enhance Content Section (restored) */}
         <div className="space-y-2 mb-6">
-          <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance</h3>
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance Content</h3>
           <button 
-            onClick={() => enhanceWithAI('improve')}
+            onClick={() => generateWithAI('improve')}
             disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'loading' : ''}`}
+            className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'btn-primary loading' : 'btn-outline'}`}
           >
             <FaMagic className="mr-2" /> Improve Writing
           </button>
           <button 
-            onClick={() => enhanceWithAI('ideas')}
+            onClick={() => generateWithAI('rewrite')} 
             disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'loading' : ''}`}
+            className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'btn-primary loading' : 'btn-outline'}`}
           >
-            <FaLightbulb className="mr-2" /> Generate Ideas
+            <FaPen className="mr-2" /> Rewrite Content
           </button>
           <button 
-            onClick={() => enhanceWithAI('shorten')} 
+            onClick={() => generateWithAI('shorten')} 
             disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'loading' : ''}`}
+            className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'btn-primary loading' : 'btn-outline'}`}
           >
-            <FaCut className="mr-2" /> Shorten
-          </button>
-          <button 
-            onClick={() => enhanceWithAI('rewrite')} 
-            disabled={!!loading}
-            className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'loading' : ''}`}
-          >
-            <FaPen className="mr-2" /> Rewrite
+            <FaCut className="mr-2" /> Summarize & Shorten
           </button>
         </div>
-        
-        {/* Template Buttons */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-base-content/70 mb-1">Templates</h3>
+        {/* Only show Ideas and Outline in content generation/templates */}
+        <div className="space-y-2 mb-6">
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">
+            <div className="flex items-center">
+              <FaLightbulb className="mr-2 text-yellow-400" /> Content Generation
+            </div>
+          </h3>
           <button 
-            onClick={() => insertText(getSpecializedPrompt('article'))}
-            className="btn btn-sm btn-outline w-full justify-start"
+            onClick={() => generateWithAI('ideas')}
+            disabled={!!loading}
+            className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'btn-primary loading' : 'btn-outline'}`}
           >
-            Article Template
+            Generate Content Ideas
           </button>
           <button 
-            onClick={() => insertText(getSpecializedPrompt('social'))}
-            className="btn btn-sm btn-outline w-full justify-start"
+            onClick={() => generateWithAI('article')}
+            disabled={!!loading || !title}
+            className={`btn btn-sm w-full justify-start ${loading === 'article' ? 'btn-primary loading' : 'btn-outline'}`}
+            title={title ? '' : 'Enter a title in the editor to generate an outline'}
           >
-            Social Media Template
-          </button>
-          <button 
-            onClick={() => insertText(getSpecializedPrompt('email'))}
-            className="btn btn-sm btn-outline w-full justify-start"
-          >
-            Email Template
-          </button>
-          <button 
-            onClick={() => insertText(getSpecializedPrompt('carousel'))}
-            className="btn btn-sm btn-outline w-full justify-start"
-          >
-            Carousel Template
+            Generate Outline
           </button>
         </div>
       </div>
       
       {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
-      <div className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[30%]">
+      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[30%]">
         {/* Clean, borderless editor with clear ending before sidebar */}
         <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
           <ReactQuill
@@ -1097,25 +1176,31 @@ Include:
             value={content}
             onChange={(value: string) => {
               setContent(value);
-              
-              // Automatically extract first line as title if it's formatted as heading
+
               if (quillRef.current) {
                 const editor = quillRef.current.getEditor();
-                const delta = editor.getContents();
-                
-                // Check if first line is formatted as a heading
-                if (delta.ops && delta.ops.length > 0) {
-                  // If first line is a heading, extract it as title
-                  const firstOp = delta.ops[0];
-                  if (firstOp.insert && typeof firstOp.insert === 'string' && 
-                      firstOp.attributes && firstOp.attributes.header) {
-                    const firstLine = firstOp.insert.split('\n')[0].trim();
-                    if (firstLine !== title) {
-                      setTitle(firstLine);
-                    }
+                const selection = editor.getSelection();
+                if (selection) {
+                  const [line, offset] = editor.getLine(selection.index);
+                  const lineText = line.domNode.innerText;
+                  if (lineText.trim().startsWith('/')) {
+                    const bounds = editor.getBounds(selection.index);
+                    setSlashCommand({
+                      show: true,
+                      top: bounds.top + bounds.height,
+                      left: bounds.left,
+                      text: lineText.trim()
+                    });
+                  } else {
+                    setSlashCommand(s => ({...s, show: false}));
                   }
                 }
-                
+                // Always extract the first line of text as the title, regardless of formatting
+                const text = editor.getText();
+                const firstLine = text.split('\n')[0].trim();
+                if (firstLine !== title) {
+                  setTitle(firstLine);
+                }
                 // Update the title/subtitle indicators
                 setTimeout(() => addEditorLabels(), 10);
               }
@@ -1127,13 +1212,51 @@ Include:
                 editor.format('header', 1);
               }
             }}
-            modules={modules}
-            formats={formats}
+            modules={quillModules}
+            formats={quillFormats}
             placeholder="Title"
             className="h-full medium-style-editor"
             theme="bubble"
             style={editorStyles}
           />
+          {/* Slash command suggestion popup */}
+          {slashCommand.show && (
+            <div
+              style={{
+                position: 'fixed',
+                top: slashCommand.top + (editorContainerRef.current?.getBoundingClientRect().top || 0) + window.scrollY,
+                left: slashCommand.left + (editorContainerRef.current?.getBoundingClientRect().left || 0) + window.scrollX,
+                zIndex: 10000,
+                background: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: 6,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                padding: 8,
+                minWidth: 180,
+              }}
+            >
+              <div
+                className="cursor-pointer hover:bg-base-200 px-2 py-1 rounded"
+                onMouseDown={e => {
+                  e.preventDefault();
+                  setSlashCommand(s => ({...s, show: false}));
+                  generateWithAI('ideas');
+                }}
+              >
+                <strong>/ideas</strong> – Generate Content Ideas
+              </div>
+              <div
+                className="cursor-pointer hover:bg-base-200 px-2 py-1 rounded"
+                onMouseDown={e => {
+                  e.preventDefault();
+                  setSlashCommand(s => ({...s, show: false}));
+                  generateWithAI('article');
+                }}
+              >
+                <strong>/outline</strong> – Generate Outline
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

@@ -43,8 +43,8 @@ const ButtonCheckout = ({
         body: JSON.stringify({
           priceId,
           mode: "payment",
-          successUrl: successUrl || `${domain}/dashboard?success=true`,
-          cancelUrl: cancelUrl || `${domain}/dashboard?canceled=true`,
+          successUrl: successUrl || `${domain}/dashboard/success`,
+          cancelUrl: cancelUrl || `${domain}/dashboard`,
           // Pass the user ID in the request so it can be included in client_reference_id
           userId: session?.user?.id
         }),
