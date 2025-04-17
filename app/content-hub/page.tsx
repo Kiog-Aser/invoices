@@ -10,8 +10,6 @@ import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaT
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability } from '../../utils/readability';
-import ReactDOM from 'react-dom';
-import Quill from 'quill'; // Import Quill core library
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -27,66 +25,55 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 // --- Register Custom Quill Format for Grammar Suggestions ---
-let Inline = Quill.import('blots/inline');
+let Inline: any;
+if (typeof window !== 'undefined') {
+  // Only import Quill and register the blot on the client
+  // @ts-ignore
+  const Quill = require('quill');
+  Inline = Quill.import('blots/inline');
 
-// Define interfaces for the handlers we expect on the root node
-interface EditorRootWithPopupHandlers extends HTMLElement {
-  showSuggestionPopup?: (suggestionData: any, targetElement: HTMLElement) => void;
-  // No longer need hideSuggestionPopup on the root for the blot
-}
+  class GrammarSuggestionBlot extends Inline {
+    static blotName = 'grammar-suggestion';
+    static tagName = 'span';
+    static className = 'grammar-suggestion-underline';
 
-class GrammarSuggestionBlot extends Inline {
-  static blotName = 'grammar-suggestion';
-  static tagName = 'span';
-  static className = 'grammar-suggestion-underline';
-
-  static create(value: any) {
-    let node = super.create() as HTMLElement; // Cast to HTMLElement
-    node.dataset.suggestion = JSON.stringify(value);
-
-    // --- Change Listener to Click ---
-    node.addEventListener('click', (event) => {
-      event.stopPropagation(); // Prevent editor focus changes or other clicks
-      const root = node.closest('.ql-editor') as EditorRootWithPopupHandlers | null;
-      if (root?.showSuggestionPopup && node.dataset.suggestion) {
+    static create(value: any) {
+      let node = super.create() as HTMLElement;
+      node.dataset.suggestion = JSON.stringify(value);
+      node.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const root = node.closest('.ql-editor') as EditorRootWithPopupHandlers | null;
+        if (root?.showSuggestionPopup && node.dataset.suggestion) {
+          try {
+            const suggestionData = JSON.parse(node.dataset.suggestion);
+            root.showSuggestionPopup(suggestionData, node);
+          } catch (e) {
+            console.error("Error parsing suggestion data on click", e);
+          }
+        }
+      });
+      return node;
+    }
+    static formats(domNode: HTMLElement) {
+      if (domNode.dataset.suggestion) {
         try {
-          const suggestionData = JSON.parse(node.dataset.suggestion);
-          root.showSuggestionPopup(suggestionData, node);
+          return JSON.parse(domNode.dataset.suggestion);
         } catch (e) {
-          console.error("Error parsing suggestion data on click", e);
+          console.error('Error parsing suggestion data from DOM', e);
         }
       }
-    });
-    // --- Removed mouseout listener ---
-
-    return node;
-  }
-
-  // ... formats and format methods remain the same ...
-  static formats(domNode: HTMLElement) {
-    // Retrieve suggestion data from the DOM node
-    if (domNode.dataset.suggestion) {
-      try {
-        return JSON.parse(domNode.dataset.suggestion);
-      } catch (e) {
-        console.error('Error parsing suggestion data from DOM', e);
+      return super.formats(domNode);
+    }
+    format(name: string, value: any) {
+      if (name === GrammarSuggestionBlot.blotName && value) {
+        (this.domNode as HTMLElement).dataset.suggestion = JSON.stringify(value);
+      } else {
+        super.format(name, value);
       }
     }
-    // It's important to return the blotName for Quill to recognize the format
-    return super.formats(domNode); // Keep existing formats
   }
-
-  format(name: string, value: any) {
-    if (name === GrammarSuggestionBlot.blotName && value) {
-      // Ensure domNode is typed correctly if needed, but it should exist on Inline Blot
-      (this.domNode as HTMLElement).dataset.suggestion = JSON.stringify(value);
-    } else {
-      super.format(name, value);
-    }
-  }
+  Quill.register(GrammarSuggestionBlot);
 }
-
-Quill.register(GrammarSuggestionBlot);
 // --- End Custom Quill Format ---
 
 // +++ Suggestion Popup Component (Updated Design) +++
@@ -172,6 +159,11 @@ interface Protocol {
       };
     };
   };
+}
+
+// Define EditorRootWithPopupHandlers for type safety
+interface EditorRootWithPopupHandlers extends HTMLElement {
+  showSuggestionPopup?: (suggestionData: any, targetElement: HTMLElement) => void;
 }
 
 const ContentHub = () => {
@@ -1370,6 +1362,9 @@ const ContentHub = () => {
     setReadability(getReadability(text));
   };
 
+  // Use dynamic import for ReactDOM.createPortal
+  const createPortal = typeof window !== 'undefined' ? require('react-dom').createPortal : () => null;
+
   // Floating toolbar JSX as a function for portal rendering
   const floatingToolbarJSX = floatingToolbar.visible && (
     <div 
@@ -1460,17 +1455,17 @@ const ContentHub = () => {
   return (
     <div className="min-h-screen bg-base-100 flex relative">
       {/* Floating toolbar for text selection rendered as a portal */}
-      {typeof window !== 'undefined' && ReactDOM.createPortal(
+      {typeof window !== 'undefined' && createPortal(
         floatingToolbarJSX,
         document.body
       )}
       {/* +++ Suggestion Popup Portal (Updated Props) +++ */}
-      {typeof window !== 'undefined' && popupSuggestion && popupPosition && ReactDOM.createPortal(
+      {typeof window !== 'undefined' && popupSuggestion && popupPosition && createPortal(
         // Add a container div if needed for the outside click listener
         <div className="suggestion-popup-container">
             <SuggestionPopup
               suggestion={popupSuggestion}
-              position={popupPosition}
+              position={popupPosition as { top: number; left: number }}
               onApply={applyGrammarSuggestion}
               onDismiss={dismissSuggestionPopup} // Pass dismiss handler
               // Removed onMouseEnter/onMouseLeave
@@ -1816,8 +1811,8 @@ function EarningInsightsSidebar({ markdown }: { markdown: string }) {
   const explanation = extractSection('Score Explanation');
 
   // Score color logic
-  let scoreColor = 'bg-gray-200 text-gray-700 border-gray-300';
   const scoreNum = parseInt(score, 10);
+  let scoreColor = 'bg-gray-200 text-gray-700 border-gray-300';
   if (!isNaN(scoreNum)) {
     if (scoreNum >= 80) scoreColor = 'bg-green-50 text-green-700 border-green-400';
     else if (scoreNum >= 60) scoreColor = 'bg-yellow-50 text-yellow-700 border-yellow-400';
