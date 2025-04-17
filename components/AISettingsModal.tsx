@@ -20,6 +20,7 @@ interface AISettingsModalProps {
   onSave: (configs: { configs: AIProviderConfig[], defaultModelId: string }) => Promise<void>; 
   initialConfigs?: AIProviderConfig[]; 
   initialDefaultModelId?: string;
+  defaultModelId?: string;
 }
 
 // State for individual test status
