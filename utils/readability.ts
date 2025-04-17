@@ -22,6 +22,22 @@ const simpleAlternatives: { [key: string]: string } = {
   // Add more pairs as needed
 };
 
+// +++ Add lists for custom detection +++
+// Common forms of 'to be' for passive voice check
+const formsOfToBe = ['am', 'is', 'are', 'was', 'were', 'been', 'being'];
+// Common past participles (simplified list, can be expanded)
+// Note: This is very basic and won't catch irregular verbs well.
+const commonPastParticiples = /(\w+ed)\b/g;
+// List of common weakener words/phrases
+const weakenerWords = [
+  'just', 'maybe', 'stuff', 'things', 'really', 'very', 'quite', 'somewhat',
+  'actually', 'literally', 'basically', 'generally', 'usually', 'often',
+  'i think', 'i feel', 'i believe', 'in my opinion', 'it seems', 'it appears'
+  // Add more as needed
+];
+const weakenerRegex = new RegExp(`\\b(${weakenerWords.join('|')})\\b`, 'gi');
+// +++ End lists +++
+
 export interface ReadabilityIssue {
   index: number;
   offset: number;
@@ -80,8 +96,8 @@ export function analyzeReadability(text: string): ReadabilityResult {
   const issues: ReadabilityIssue[] = [];
   let hardSentenceCount = 0;
   let veryHardSentenceCount = 0;
-  let passiveVoiceCount = 0; // Will remain 0
-  let weakenerCount = 0; // Will remain 0
+  let passiveVoiceCount = 0; // Reset to 0, will be incremented by new logic
+  let weakenerCount = 0; // Reset to 0, will be incremented by new logic
   let simpleAlternativeCount = 0;
 
   // --- Improved Sentence Detection ---
@@ -110,6 +126,8 @@ export function analyzeReadability(text: string): ReadabilityResult {
   const fleschReadingEase = Math.round((206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (syllableCount / wordCount)) * 10) / 10;
   const fleschKincaidGrade = Math.round((0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59) * 10) / 10;
 
+  // --- Analyze Issues ---
+
   // 1. Hard and Very Hard Sentences (by word count)
   const HARD_THRESHOLD = 20;
   const VERY_HARD_THRESHOLD = 25;
@@ -137,52 +155,79 @@ export function analyzeReadability(text: string): ReadabilityResult {
     }
   });
 
-  // 2. Weakeners, Passive Voice (using write-good) - REMOVED
-  /* 
-  let writeGoodSuggestions: any[] = [];
-  if (typeof window !== 'undefined') {
-    // Only require write-good on the client
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    try { // Add try-catch for safety, though we are removing it
-      const writeGood = require('write-good');
-      writeGoodSuggestions = writeGood(text);
-    } catch (e) {
-      console.error("Error loading or running write-good:", e);
-      // Handle error - maybe notify user or skip this check
+  // 2. Passive Voice (Basic Custom Detection)
+  sentences.forEach(sentence => {
+    const sentenceLower = sentence.text.toLowerCase();
+    formsOfToBe.forEach(verb => {
+      const verbIndex = sentenceLower.indexOf(` ${verb} `); // Look for verb surrounded by spaces
+      if (verbIndex !== -1) {
+        // Very basic check: look for a word ending in 'ed' shortly after
+        const potentialParticipleMatch = sentence.text.substring(verbIndex + verb.length + 1).match(commonPastParticiples);
+        if (potentialParticipleMatch) {
+          // Find the actual index of the participle within the original sentence text
+          const participleIndexInSentence = sentence.text.indexOf(potentialParticipleMatch[0], verbIndex + verb.length + 1);
+          if (participleIndexInSentence !== -1) {
+             const issueIndex = sentence.start + verbIndex + 1; // Start index in full text
+             const issueOffset = (participleIndexInSentence + potentialParticipleMatch[0].length) - (verbIndex + 1); // Length from 'be' verb to end of participle
+
+             // Avoid adding duplicate issues for the same spot
+             if (!issues.some(i => i.index === issueIndex && i.type === 'passive')) {
+                 issues.push({
+                   index: issueIndex,
+                   offset: issueOffset,
+                   reason: `Potential passive voice: "${sentence.text.substring(verbIndex + 1, participleIndexInSentence + potentialParticipleMatch[0].length)}"`,
+                   text: sentence.text.substring(verbIndex + 1, participleIndexInSentence + potentialParticipleMatch[0].length),
+                   type: 'passive',
+                 });
+                 passiveVoiceCount++;
+             }
+          }
+        }
+      }
+    });
+  });
+
+  // 3. Weakeners (Basic Custom Detection)
+  let weakenerMatch;
+  while ((weakenerMatch = weakenerRegex.exec(text)) !== null) {
+    // Avoid adding duplicate issues for the same spot
+    if (!issues.some(i => i.index === weakenerMatch!.index && i.type === 'weakener')) {
+        issues.push({
+          index: weakenerMatch.index,
+          offset: weakenerMatch[0].length,
+          reason: `Weakener word: "${weakenerMatch[0]}"`,
+          text: weakenerMatch[0],
+          type: 'weakener',
+        });
+        weakenerCount++;
+    }
+    // Ensure regex progresses
+    if (weakenerMatch.index === weakenerRegex.lastIndex) {
+        weakenerRegex.lastIndex++;
     }
   }
-  writeGoodSuggestions.forEach(suggestion => {
-    const isPassive = suggestion.reason.includes('passive voice');
-    const type = isPassive ? 'passive' : 'weakener';
-    issues.push({
-      index: suggestion.index,
-      offset: suggestion.offset,
-      reason: suggestion.reason,
-      text: text.substring(suggestion.index, suggestion.index + suggestion.offset),
-      type: type,
-    });
-    if (isPassive) {
-      passiveVoiceCount++;
-    } else {
-      weakenerCount++;
-    }
-  });
-  */
 
-  // 3. Simpler Alternatives (using regex and word list)
+  // 4. Simpler Alternatives (using regex and word list) - Renumbered
   const wordRegex = /\b(\w+)\b/g;
   while ((match = wordRegex.exec(text)) !== null) {
     const word = match[1].toLowerCase();
     if (simpleAlternatives[word]) {
-      issues.push({
-        index: match.index,
-        offset: match[1].length,
-        reason: `"${match[1]}" has a simpler alternative.`,
-        text: match[1],
-        type: 'simpler-alternative',
-        suggestion: simpleAlternatives[word],
-      });
-      simpleAlternativeCount++;
+      // Avoid adding duplicate issues for the same spot
+      if (!issues.some(i => i.index === match!.index && i.type === 'simpler-alternative')) {
+          issues.push({
+            index: match.index,
+            offset: match[1].length,
+            reason: `"${match[1]}" has a simpler alternative.`,
+            text: match[1],
+            type: 'simpler-alternative',
+            suggestion: simpleAlternatives[word],
+          });
+          simpleAlternativeCount++;
+      }
+    }
+    // Ensure regex progresses
+    if (match.index === wordRegex.lastIndex) {
+        wordRegex.lastIndex++;
     }
   }
 
@@ -201,8 +246,8 @@ export function analyzeReadability(text: string): ReadabilityResult {
     issues,
     hardSentenceCount,
     veryHardSentenceCount,
-    passiveVoiceCount, // Will be 0
-    weakenerCount, // Will be 0
+    passiveVoiceCount, // Now updated by custom logic
+    weakenerCount, // Now updated by custom logic
     simpleAlternativeCount,
   };
 }
