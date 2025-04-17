@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaPlus, FaTrash, FaSyncAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast'; // Import toast for feedback
+import AIProviderConfigItem from './AIProviderConfigItem'; // Import the new component
 
 // Export the interface so it can be imported elsewhere
 export interface AIProviderConfig { 
@@ -18,52 +19,43 @@ interface AISettingsModalProps {
   onClose: () => void;
   onSave: (configs: { configs: AIProviderConfig[], defaultModelId: string }) => Promise<void>; 
   initialConfigs?: AIProviderConfig[]; 
+  initialDefaultModelId?: string;
 }
 
 // State for individual test status
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
-const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSave, initialConfigs = [] }) => {
-  const [configs, setConfigs] = useState<AIProviderConfig[]>(initialConfigs);
+const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSave, initialConfigs = [], initialDefaultModelId = 'default' }) => {
+  const [configs, setConfigs] = useState<AIProviderConfig[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [testStatuses, setTestStatuses] = useState<Record<string, TestStatus>>({}); // Store test status per config ID
-  const [testMessages, setTestMessages] = useState<Record<string, string>>({}); // Store test messages per config ID
+  const [testStatuses, setTestStatuses] = useState<Record<string, TestStatus>>({});
+  const [testMessages, setTestMessages] = useState<Record<string, string>>({});
+  const [defaultModelId, setDefaultModelId] = useState<string>(initialDefaultModelId);
 
-  const [defaultModelId, setDefaultModelId] = useState<string>('default');
-
+  // Load initial configs and default model ID
   useEffect(() => {
-    // Ensure unique IDs when loading initial configs
-    const initialisedConfigs = initialConfigs.map(config => ({
+    const initialisedConfigs = (initialConfigs || []).map(config => ({
        ...config,
        id: config.id || `${Date.now()}-${Math.random()}`
      }));
     setConfigs(initialisedConfigs);
-    // Initialize test statuses for loaded configs
+    setDefaultModelId(initialDefaultModelId || 'default');
+
     const initialStatuses: Record<string, TestStatus> = {};
     initialisedConfigs.forEach(c => initialStatuses[c.id] = 'idle');
     setTestStatuses(initialStatuses);
-    setTestMessages({}); // Clear old messages
-
-    // Try to load defaultModelId from initialConfigs (if you store it separately, adjust as needed)
-    if (initialConfigs && initialConfigs.length > 0 && (initialConfigs as any).defaultModelId) {
-      setDefaultModelId((initialConfigs as any).defaultModelId);
-    } else {
-      setDefaultModelId('default');
-    }
-  }, [initialConfigs, isOpen]); // Also reset when modal opens
-
+    setTestMessages({});
+  }, [initialConfigs, initialDefaultModelId, isOpen]);
 
   const handleAddConfig = () => {
     const newId = `${Date.now()}-${Math.random()}`;
     setConfigs([...configs, { id: newId, name: '', endpoint: '', models: '', apiKey: '' }]);
-    // Add test status for the new config
     setTestStatuses(prev => ({ ...prev, [newId]: 'idle' }));
     setTestMessages(prev => ({ ...prev, [newId]: '' }));
   };
 
   const handleRemoveConfig = (id: string) => {
     setConfigs(configs.filter(config => config.id !== id));
-    // Remove test status for the removed config
     setTestStatuses(prev => {
       const { [id]: _, ...rest } = prev;
       return rest;
@@ -72,11 +64,14 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
       const { [id]: _, ...rest } = prev;
       return rest;
     });
+    // If the removed config was the default, reset default to system default
+    if (defaultModelId.startsWith(`${id}::`)) {
+        setDefaultModelId('default');
+    }
   };
 
   const handleConfigChange = (id: string, field: keyof Omit<AIProviderConfig, 'id'>, value: string) => {
     setConfigs(configs.map(config => config.id === id ? { ...config, [field]: value } : config));
-    // Reset test status if config changes
     setTestStatuses(prev => ({ ...prev, [id]: 'idle' }));
     setTestMessages(prev => ({ ...prev, [id]: '' }));
   };
@@ -174,128 +169,18 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
           {configs.map((config) => {
             const status = testStatuses[config.id] || 'idle';
             const message = testMessages[config.id] || '';
-            // Local state for models for this config
-            const [modelInput, setModelInput] = useState('');
-            const [models, setModels] = useState<string[]>(config.models ? config.models.split(',').map(m => m.trim()).filter(Boolean) : []);
-
-            // Sync models to config.models
-            useEffect(() => {
-              handleConfigChange(config.id, 'models', models.join(', '));
-              // eslint-disable-next-line
-            }, [models]);
-
-            const handleModelInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-              const value = e.target.value;
-              if (value.endsWith(',') || value.endsWith('\n')) {
-                const newModel = value.replace(/,|\n/g, '').trim();
-                if (newModel && !models.includes(newModel)) {
-                  setModels([...models, newModel]);
-                }
-                setModelInput('');
-              } else {
-                setModelInput(value);
-              }
-            };
-            const removeModel = (model: string) => setModels(models.filter(m => m !== model));
-
+            // Use the new component here
             return (
-              <div key={config.id} className="p-4 border border-base-300 rounded-lg relative">
-                <button
-                  className="btn btn-xs btn-error btn-circle absolute -top-2 -right-2"
-                  onClick={() => handleRemoveConfig(config.id)}
-                  disabled={isLoading || status === 'testing'}
-                  aria-label="Remove Provider"
-                >
-                  <FaTrash size={10} />
-                </button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">Provider Name</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., My OpenAI"
-                      className="input input-bordered w-full"
-                      value={config.name}
-                      onChange={(e) => handleConfigChange(config.id, 'name', e.target.value)}
-                      disabled={isLoading || status === 'testing'}
-                    />
-                  </div>
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">Models (comma-separated, press Enter or comma to add)</span>
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {models.map(model => (
-                        <span key={model} className="bg-base-200 px-2 py-1 rounded-full flex items-center">
-                          {model}
-                          <button onClick={() => removeModel(model)} className="ml-1 text-error">×</button>
-                        </span>
-                      ))}
-                    </div>
-                    <input
-                      value={modelInput}
-                      onChange={handleModelInput}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ',') {
-                          e.preventDefault();
-                          const newModel = modelInput.replace(/,|\n/g, '').trim();
-                          if (newModel && !models.includes(newModel)) {
-                            setModels([...models, newModel]);
-                          }
-                          setModelInput('');
-                        }
-                      }}
-                      placeholder="Type model and press Enter or comma"
-                      className="input input-bordered w-full"
-                    />
-                  </div>
-                  <div className="form-control md:col-span-2">
-                    <label className="label">
-                      <span className="label-text">API Endpoint URL</span>
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://api.openai.com/v1"
-                      className="input input-bordered w-full"
-                      value={config.endpoint}
-                      onChange={(e) => handleConfigChange(config.id, 'endpoint', e.target.value)}
-                      disabled={isLoading || status === 'testing'}
-                    />
-                  </div>
-                  <div className="form-control md:col-span-2">
-                    <label className="label">
-                      <span className="label-text">API Key</span>
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="Enter your API key"
-                      className="input input-bordered w-full"
-                      value={config.apiKey}
-                      onChange={(e) => handleConfigChange(config.id, 'apiKey', e.target.value)}
-                      disabled={isLoading || status === 'testing'}
-                    />
-                  </div>
-                </div>
-                {/* Test Connection Button and Status */}
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    className={`btn btn-xs btn-outline ${status === 'testing' ? 'loading' : ''}`}
-                    onClick={() => handleTestConnection(config.id)}
-                    disabled={isLoading || status === 'testing'}
-                  >
-                    {status === 'testing' ? 'Testing...' : <><FaSyncAlt className="mr-1" /> Test</>}
-                  </button>
-                  {status !== 'idle' && (
-                    <span
-                      className={`text-xs ${status === 'success' ? 'text-success' : status === 'error' ? 'text-error' : 'text-base-content/60'}`}
-                    >
-                      {status === 'success' ? `✅ ${message}` : status === 'error' ? `❌ ${message}` : ''} 
-                    </span>
-                  )}
-                </div>
-              </div>
+              <AIProviderConfigItem
+                key={config.id}
+                config={config}
+                status={status}
+                message={message}
+                isLoading={isLoading}
+                onConfigChange={handleConfigChange}
+                onRemoveConfig={handleRemoveConfig}
+                onTestConnection={handleTestConnection}
+              />
             );
           })}
         </div>

@@ -61,11 +61,9 @@ ${text}`;
 ${contextInfo.coreMessage ? `Core message: ${contextInfo.coreMessage}` : ''}
 ${Array.isArray(contextInfo.targetAudience) && contextInfo.targetAudience.length > 0 ? `Target audience: ${contextInfo.targetAudience.join(', ')}` : ''}
 
-For each idea:
-- Start with a short, bolded headline (use **markdown bold**)
-- Follow with a 1-2 sentence description expanding on the idea
+- Give me high-level, headline-expert quality headlines, use **markdown bold**)
 - Use a numbered list (1. 2. 3. etc)
-- Group ideas by type: Expertise, Personal Journey, Client Proof (if possible)
+- Group ideas by type: Expertise, Personal Journey, Client Proof (give 5 ideas for each type)
 
 Only respond with the ideas, no extra text. Use markdown formatting for clarity.`;
         break;
