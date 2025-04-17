@@ -1302,49 +1302,39 @@ const ContentHub = () => {
     const editor = quillRef.current.getEditor();
     const { offset, length, replacements } = suggestion;
     if (replacements && replacements.length > 0) {
-      // --- Dismiss popup ---
+      // --- Dismiss popup before making changes ---
       dismissSuggestionPopup();
       // --- End Dismiss ---
 
+      editor.history.cutoff(); // Start a new undo step
       // Remove the underline format first
       editor.formatText(offset, length, 'grammar-suggestion', false, 'user');
-      // Apply the text change
+      // Apply the text change atomically
       editor.deleteText(offset, length, 'user');
       editor.insertText(offset, replacements[0].value, 'user');
+      editor.history.cutoff(); // End the undo step
 
-      // Remove the suggestion from the list in the sidebar
+      // Remove the suggestion from the list in the sidebar (by offset/length)
       setGrammarSuggestions(prev => prev.filter(s => s.offset !== offset || s.length !== length));
-
-      // Also remove from the main list if applying from popup
-      setGrammarSuggestions(prev => prev.filter(s => s.offset !== suggestion.offset || s.length !== suggestion.length));
-
     }
   };
 
   // Apply all suggestions
-   const applyAllGrammarSuggestions = () => {
+  const applyAllGrammarSuggestions = () => {
     if (!quillRef.current) return;
-
-    // --- Dismiss popup ---
     dismissSuggestionPopup();
-    // --- End Dismiss ---
-
     const editor = quillRef.current.getEditor();
     // Sort by offset descending to avoid messing up positions
     const sorted = [...grammarSuggestions].sort((a, b) => b.offset - a.offset);
-    
-    editor.history.cutoff(); // Group changes
+    editor.history.cutoff(); // Start a new undo step
     sorted.forEach(suggestion => {
       if (suggestion.replacements && suggestion.replacements.length > 0) {
-        // Remove the underline format first
         editor.formatText(suggestion.offset, suggestion.length, 'grammar-suggestion', false, 'silent');
-        // Apply the text change
         editor.deleteText(suggestion.offset, suggestion.length, 'silent');
         editor.insertText(suggestion.offset, suggestion.replacements[0].value, 'silent');
       }
     });
-    editor.history.cutoff();
-
+    editor.history.cutoff(); // End the undo step
     setGrammarSuggestions([]); // Clear suggestions list
     setIsGrammarModalOpen(false);
     toast.success('All suggestions applied!');
