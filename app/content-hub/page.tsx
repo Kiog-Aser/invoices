@@ -1231,22 +1231,90 @@ const ContentHub = () => {
     }
   };
 
+  // Helper function to apply underlines based on suggestions
+  const applyUnderlines = (suggestions: any[]) => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const length = editor.getLength();
+  
+    // Clear previous underlines first
+    editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+  
+    // Apply new underlines
+    if (suggestions.length > 0) {
+      editor.history.cutoff(); // Prevent underlining from being a single undo step
+      suggestions.forEach((suggestion: any, index: number) => {
+        // Ensure suggestion has a unique ID if it doesn't already
+        const suggestionId = suggestion.id || `suggestion-${Date.now()}-${index}`;
+        const suggestionData = {
+          ...suggestion, // Include all original suggestion data
+          id: suggestionId, // Ensure ID is present
+          // Make sure offset and length are numbers
+          offset: Number(suggestion.offset),
+          length: Number(suggestion.length),
+        };
+        // Check if offset and length are valid before formatting
+        if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length > 0) {
+           // Check bounds to prevent errors
+           if (suggestionData.offset + suggestionData.length <= length) {
+              editor.formatText(
+                suggestionData.offset,
+                suggestionData.length,
+                'grammar-suggestion',
+                suggestionData, // Pass suggestion data as the value
+                'silent' // Use silent to prevent triggering text-change event
+              );
+           } else {
+              console.warn("Skipping suggestion underline due to out-of-bounds:", suggestionData);
+           }
+        } else {
+           console.warn("Skipping suggestion underline due to invalid offset/length:", suggestionData);
+        }
+      });
+      editor.history.cutoff();
+    }
+  };
+
   // Grammar check function using free LanguageTool public API
   const checkGrammar = async () => {
     if (!quillRef.current) return;
     setGrammarLoading(true);
-    setGrammarSuggestions([]);
-    // Don't open modal immediately, apply underlines first
-    // setIsGrammarModalOpen(true); 
+    // Keep existing suggestions while loading to avoid flicker if cache hit
+    // setGrammarSuggestions([]);
     const editor = quillRef.current.getEditor();
+    const text = editor.getText();
+    const cacheKey = 'grammarCache';
 
-    // --- Clear previous grammar underlines --- 
+    // --- Check Cache ---
+    try {
+      const cachedDataString = localStorage.getItem(cacheKey);
+      if (cachedDataString) {
+        const cachedData = JSON.parse(cachedDataString);
+        if (cachedData.content === text && Array.isArray(cachedData.suggestions)) {
+          console.log("Using cached grammar suggestions.");
+          setGrammarSuggestions(cachedData.suggestions);
+          applyUnderlines(cachedData.suggestions); // Apply underlines from cache
+          setIsGrammarModalOpen(true);
+          setActiveSidebarTab('grammar');
+          setGrammarLoading(false);
+          return; // Exit early
+        } else {
+          // Content mismatch, remove old cache
+          localStorage.removeItem(cacheKey);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading grammar cache:", e);
+      localStorage.removeItem(cacheKey); // Clear potentially corrupted cache
+    }
+    // --- End Cache Check ---
+
+    // Clear underlines before API call if cache missed
     const length = editor.getLength();
-    editor.formatText(0, length, 'grammar-suggestion', false, 'silent'); // Clear format
-    // --- End Clear --- 
+    editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+    setGrammarSuggestions([]); // Clear suggestions state if cache missed
 
     try {
-      const text = editor.getText();
       const res = await fetch('https://api.languagetool.org/v2/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1256,66 +1324,97 @@ const ContentHub = () => {
         }),
       });
       console.log('Grammar API response:', res);
+      if (!res.ok) {
+          throw new Error(`API request failed with status ${res.status}`);
+      }
       const data = await res.json();
       console.log('Grammar API JSON:', data);
-      const suggestions = data.matches || [];
-      setGrammarSuggestions(suggestions);
+      const suggestions = (data.matches || []).map((suggestion: any, index: number) => ({
+          ...suggestion,
+          // Ensure each suggestion has a unique ID for reliable filtering later
+          id: `suggestion-${Date.now()}-${index}`
+      }));
 
-      // --- Apply new underlines --- 
+      // --- Store in Cache ---
+      try {
+          localStorage.setItem(cacheKey, JSON.stringify({ content: text, suggestions }));
+      } catch (e: any) { // Use 'any' or define a specific error type
+          console.error("Error saving grammar cache:", e);
+          // Optionally clear cache if quota is exceeded
+          if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
+               localStorage.removeItem(cacheKey);
+               toast.error("Could not cache grammar results (storage full).");
+          }
+      }
+      // --- End Store Cache ---
+
+      setGrammarSuggestions(suggestions);
+      applyUnderlines(suggestions); // Apply underlines from API result
+
       if (suggestions.length > 0) {
-        editor.history.cutoff(); // Prevent underlining from being a single undo step
-        suggestions.forEach((suggestion: any, index: number) => {
-          const suggestionData = {
-            id: `suggestion-${Date.now()}-${index}`, // Unique ID for reference
-            message: suggestion.message,
-            replacements: suggestion.replacements,
-            context: suggestion.context,
-            offset: suggestion.offset,
-            length: suggestion.length
-          };
-          editor.formatText(
-            suggestion.offset,
-            suggestion.length,
-            'grammar-suggestion',
-            suggestionData, // Pass suggestion data as the value
-            'silent' // Use silent to prevent triggering text-change event
-          );
-        });
-        editor.history.cutoff();
-        // Optionally open the sidebar/modal now
-        setIsGrammarModalOpen(true); 
-        setActiveSidebarTab('grammar'); // Switch to grammar tab
+        setIsGrammarModalOpen(true);
+        setActiveSidebarTab('grammar');
       } else {
         toast.success('No grammar issues found!');
       }
-      // --- End Apply --- 
 
-    } catch (e) {
-      toast.error('Grammar check failed.');
+    } catch (e: any) {
+      toast.error(`Grammar check failed: ${e.message || 'Unknown error'}`);
       console.error('Grammar check error:', e);
+      setGrammarSuggestions([]); // Clear suggestions on error
+      applyUnderlines([]); // Ensure underlines are cleared on error
     } finally {
       setGrammarLoading(false);
     }
   };
 
   // Apply a single suggestion
-  const applyGrammarSuggestion = (suggestion: any) => {
+  const applyGrammarSuggestion = (suggestion: any) => { // No longer needs async
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
-    const { offset, length, replacements } = suggestion;
+    const { offset, length, replacements, id } = suggestion;
+
+    if (!id) {
+        console.error("Cannot apply suggestion without a unique ID:", suggestion);
+        toast.error("Failed to apply suggestion (missing ID).");
+        return;
+    }
+
     if (replacements && replacements.length > 0) {
       // --- Dismiss popup ---
       dismissSuggestionPopup();
       // --- End Dismiss ---
 
-      // Remove the underline format first
-      editor.formatText(offset, length, 'grammar-suggestion', false, 'user');
-      // Apply the text change
-      editor.deleteText(offset, length, 'user');
-      editor.insertText(offset, replacements[0].value, 'user');
+      const replacementValue = replacements[0].value;
+      const deltaLength = replacementValue.length - length;
 
-      // Remove the suggestion from the list in the sidebar
-      setGrammarSuggestions(prev => prev.filter(s => s.offset !== offset || s.length !== length));
+      // Apply changes using delta operations for better history and silent updates
+      editor.history.cutoff(); // Group changes
+      // Important: Remove format *before* deleting text
+      editor.formatText(offset, length, 'grammar-suggestion', false, 'silent');
+      editor.deleteText(offset, length, 'silent'); // Delete old text silently
+      editor.insertText(offset, replacementValue, 'user'); // Insert new text with 'user' source
+      editor.history.cutoff(); // End grouping changes
+
+      // --- Adjust remaining suggestions locally ---
+      const currentSuggestions = grammarSuggestions; // Get current state
+      const updatedSuggestions = currentSuggestions
+        .filter(s => s.id !== id) // Remove the applied suggestion
+        .map(s => {
+          if (s.offset > offset) {
+            // Adjust offset if suggestion comes after the change
+            return { ...s, offset: s.offset + deltaLength };
+          }
+          return s; // Keep suggestion as is if it comes before
+        });
+
+      // Re-apply underlines with adjusted offsets
+      applyUnderlines(updatedSuggestions);
+
+      // Update the state with the adjusted list
+      setGrammarSuggestions(updatedSuggestions);
+
+      // --- No API re-check needed here ---
     }
   };
 
@@ -1330,7 +1429,7 @@ const ContentHub = () => {
     const editor = quillRef.current.getEditor();
     // Sort by offset descending to avoid messing up positions
     const sorted = [...grammarSuggestions].sort((a, b) => b.offset - a.offset);
-    
+
     editor.history.cutoff(); // Group changes
     sorted.forEach(suggestion => {
       if (suggestion.replacements && suggestion.replacements.length > 0) {
@@ -1338,14 +1437,23 @@ const ContentHub = () => {
         editor.formatText(suggestion.offset, suggestion.length, 'grammar-suggestion', false, 'silent');
         // Apply the text change
         editor.deleteText(suggestion.offset, suggestion.length, 'silent');
-        editor.insertText(suggestion.offset, suggestion.replacements[0].value, 'silent');
+        editor.insertText(suggestion.offset, suggestion.replacements[0].value, 'silent'); // Use 'silent' source
       }
     });
     editor.history.cutoff();
 
     setGrammarSuggestions([]); // Clear suggestions list
+    applyUnderlines([]); // Clear underlines from editor
     setIsGrammarModalOpen(false);
     toast.success('All suggestions applied!');
+
+    // --- Invalidate Cache after applying all ---
+    try {
+        localStorage.removeItem('grammarCache');
+    } catch (e) {
+        console.error("Error removing grammar cache:", e);
+    }
+    // --- End Invalidate ---
   };
 
   // Function to check readability
