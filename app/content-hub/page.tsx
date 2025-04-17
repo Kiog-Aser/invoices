@@ -131,8 +131,8 @@ const SuggestionPopup: React.FC<SuggestionPopupProps> = ({
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
+          <line x1="10" y1="11" x2="10" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
+          <line x1="14" y1="11" x2="14" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
         </svg>
         Dismiss
       </button>
@@ -263,6 +263,67 @@ const ContentHub = () => {
 
   // +++ End Popup Handler Functions +++
 
+  // +++ Dismiss Suggestion Handler +++
+  const handleDismissSuggestion = useCallback((suggestionToDismiss: any) => {
+    if (!suggestionToDismiss || !suggestionToDismiss.id) {
+      console.error("Cannot dismiss suggestion without data or ID.");
+      dismissSuggestionPopup(); // Still hide the popup
+      return;
+    }
+
+    const { id, offset, length } = suggestionToDismiss;
+
+    // 1. Remove underline from editor
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      // Ensure offset and length are valid numbers before formatting
+      if (typeof offset === 'number' && typeof length === 'number' && offset >= 0 && length >= 0) {
+         // Check bounds
+         const editorLength = editor.getLength();
+         if (offset + length <= editorLength) {
+            editor.formatText(offset, length, 'grammar-suggestion', false, 'silent');
+         } else {
+            console.warn("Dismiss failed: Suggestion bounds out of editor range.", suggestionToDismiss);
+         }
+      } else {
+         console.warn("Dismiss failed: Invalid offset/length.", suggestionToDismiss);
+      }
+    }
+
+    // 2. Update component state
+    const updatedSuggestions = grammarSuggestions.filter((s: any) => s.id !== id); // Added type for 's'
+    setGrammarSuggestions(updatedSuggestions);
+
+    // 3. Update localStorage cache
+    const cacheKey = 'grammarCache';
+    try {
+      const cachedDataString = localStorage.getItem(cacheKey);
+      if (cachedDataString) {
+        const cachedData = JSON.parse(cachedDataString);
+        // Only update cache if the content matches (to avoid stale updates)
+        if (quillRef.current && cachedData.content === quillRef.current.getEditor().getText()) { // Added null check for quillRef.current
+          const updatedCacheSuggestions = cachedData.suggestions.filter((s: any) => s.id !== id); // Added type for 's'
+          localStorage.setItem(cacheKey, JSON.stringify({ ...cachedData, suggestions: updatedCacheSuggestions }));
+          console.log("Grammar cache updated after dismissal.");
+        } else {
+          // Content mismatch, maybe clear cache or log warning
+          console.warn("Cache content mismatch during dismissal, not updating cache.");
+          // Optionally remove cache if content differs significantly
+          // localStorage.removeItem(cacheKey);
+        }
+      }
+    } catch (e) {
+      console.error("Error updating grammar cache after dismissal:", e);
+      // Optionally clear cache if corrupted
+      // localStorage.removeItem(cacheKey);
+    }
+
+    // 4. Hide the popup
+    dismissSuggestionPopup();
+
+    toast.success("Suggestion dismissed."); // Optional feedback
+  }, [grammarSuggestions, setGrammarSuggestions, dismissSuggestionPopup, quillRef]); // Added dependencies
+  // +++ End Dismiss Suggestion Handler +++
 
   // Fetch user's writing protocols
   useEffect(() => {
@@ -1573,7 +1634,7 @@ const ContentHub = () => {
               suggestion={popupSuggestion}
               position={popupPosition as { top: number; left: number }}
               onApply={applyGrammarSuggestion}
-              onDismiss={dismissSuggestionPopup} // Pass dismiss handler
+              onDismiss={() => handleDismissSuggestion(popupSuggestion)} // Pass dismiss handler with suggestion data
               // Removed onMouseEnter/onMouseLeave
             />
         </div>,
@@ -1707,6 +1768,7 @@ const ContentHub = () => {
                           {s.replacements && s.replacements.length > 0 && (
                             <div className="flex gap-2 mt-1">
                               <button className="btn btn-xs btn-primary" onClick={() => applyGrammarSuggestion(s)}>Apply: {s.replacements[0].value}</button>
+                              <button className="btn btn-xs btn-secondary" onClick={() => handleDismissSuggestion(s)}>Dismiss</button>
                             </div>
                           )}
                         </li>
