@@ -10,6 +10,8 @@ import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaT
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
+import AISettingsModal from '@/components/AISettingsModal'; // Import the new modal
+import { type AIProviderConfig } from '@/components/AISettingsModal'; // Adjusted import
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -244,6 +246,8 @@ const ContentHub = () => {
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [selectedProtocol, setSelectedProtocol] = useState<Protocol | null>(null);
   const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
+  const [isAISettingsModalOpen, setIsAISettingsModalOpen] = useState(false); // State for AI settings modal
+  const [aiConfigs, setAiConfigs] = useState<AIProviderConfig[]>([]); // State for AI configs
   const quillRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null); // Ref for the editor container
 
@@ -655,19 +659,22 @@ const ContentHub = () => {
 
     try {
       const personalContext = selectedProtocol ? getPersonalizedPrompt(action) : {};
-
+      const body: any = {
+        text: selectedText,
+        action,
+        title, // Pass the current document title
+        personalContext,
+        stream: true // Explicitly request streaming
+      };
+      if (selectedModelId !== 'default') {
+        body.providerId = selectedModelId;
+      }
       const response = await fetch('/api/ai/content-assist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          text: selectedText,
-          action,
-          title, // Pass the current document title
-          personalContext,
-          stream: true // Explicitly request streaming
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -1826,6 +1833,77 @@ const ContentHub = () => {
     }
   }, [activeSidebarTab, readability, grammarSuggestions]);
 
+  // Effect to fetch AI configurations on mount
+  useEffect(() => {
+    const fetchAiConfigs = async () => {
+      if (status === 'authenticated') {
+        try {
+          const response = await fetch('/api/ai/settings');
+          if (response.ok) {
+            const data = await response.json();
+            // Ensure each config has a unique ID for React keys
+            setAiConfigs(data.map((config: any, index: number) => ({
+              ...config,
+              id: config.id || `${Date.now()}-${index}` // Generate ID if missing
+            })));
+          } else {
+            console.error('Failed to fetch AI settings');
+          }
+        } catch (error) {
+          console.error('Error fetching AI settings:', error);
+        }
+      }
+    };
+    fetchAiConfigs();
+  }, [status]);
+
+  // Function to save AI configurations
+  const handleSaveAISettings = async (configsToSave: AIProviderConfig[]) => {
+    // Basic validation (optional, can be enhanced)
+    const validConfigs = configsToSave.filter(c => c.name && c.endpoint && c.models && c.apiKey);
+    if (validConfigs.length !== configsToSave.length) {
+       toast.error('Please fill all fields for each provider.');
+       throw new Error('Incomplete configuration'); // Prevent modal close on partial save
+    }
+
+    try {
+      const response = await fetch('/api/ai/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validConfigs), // Send only valid configs
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save AI settings');
+      }
+
+      const savedConfigs = await response.json();
+       // Update local state with saved configs (including any IDs generated server-side if applicable)
+       // Ensure unique IDs on the client side again after saving
+      setAiConfigs(savedConfigs.map((config: any, index: number) => ({
+         ...config,
+         id: config.id || `${Date.now()}-saved-${index}`
+       })));
+      toast.success('AI settings saved successfully!');
+      setIsAISettingsModalOpen(false); // Close modal on successful save
+    } catch (error: any) {
+      console.error('Error saving AI settings:', error);
+      toast.error(`Failed to save settings: ${error.message}`);
+      throw error; // Re-throw to keep modal open in AISettingsModal
+    }
+  };
+
+  // Model selection state
+  const [selectedModelId, setSelectedModelId] = useState<string>('default');
+
+  // Helper to get model display name
+  const getModelName = (id: string) => {
+    if (id === 'default') return 'Default';
+    const found = aiConfigs.find(cfg => cfg.id === id);
+    return found ? found.name : id;
+  };
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
       {/* Floating toolbar for text selection rendered as a portal */}
@@ -1851,7 +1929,8 @@ const ContentHub = () => {
       {/* Sidebar with tabbed navigation */}
       <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50">
         {/* Tab bar with icons */}
-        <div className="flex mb-4 gap-1 justify-between">
+        <div className="flex mb-4 gap-1 justify-between items-center"> {/* Added items-center */}
+          {/* AI Tab */}
           <button
             className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'ai' ? 'tab-active text-primary' : 'text-base-content/60'}`}
             onClick={() => setActiveSidebarTab('ai')}
@@ -1859,6 +1938,7 @@ const ContentHub = () => {
           >
             <FaRobot />
           </button>
+          {/* Grammar Tab */}
           <button
             className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'grammar' ? 'tab-active text-primary' : 'text-base-content/60'}`}
             onClick={() => setActiveSidebarTab('grammar')}
@@ -1866,6 +1946,7 @@ const ContentHub = () => {
           >
             <FaCheckCircle />
           </button>
+          {/* Readability Tab */}
           <button
             className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'readability' ? 'tab-active text-primary' : 'text-base-content/60'}`}
             onClick={() => setActiveSidebarTab('readability')}
@@ -1873,6 +1954,7 @@ const ContentHub = () => {
           >
             <FaChartBar />
           </button>
+          {/* Earning Tab */}
           <button
             className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'earning' ? 'tab-active text-primary' : 'text-base-content/60'}`}
             onClick={() => setActiveSidebarTab('earning')}
@@ -1885,6 +1967,25 @@ const ContentHub = () => {
         {activeSidebarTab === 'ai' && (
           <>
             <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
+            {/* Model Selection Dropdown */}
+            <div className="mb-4">
+              <label className="label-text font-medium mb-1 block">AI Model</label>
+              <select
+                className="select select-bordered w-full"
+                value={selectedModelId}
+                onChange={e => setSelectedModelId(e.target.value)}
+              >
+                <option value="default">Default</option>
+                {aiConfigs.length > 0 && aiConfigs.map(cfg => (
+                  <option key={cfg.id} value={cfg.id}>{cfg.name}</option>
+                ))}
+              </select>
+              {aiConfigs.length === 0 && (
+                <div className="text-xs text-base-content/60 mt-2">
+                  You can add custom models in <button className="link link-primary p-0 m-0 align-baseline" type="button" onClick={() => setIsAISettingsModalOpen(true)}>AI Settings</button>.
+                </div>
+              )}
+            </div>
             {/* Protocol Selection */}
             <div className="mb-6">
               <button 
@@ -1991,8 +2092,8 @@ const ContentHub = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <polyline points="3 6 5 6 21 6"></polyline>
                                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                                  <line x1="10" y1="11" x2="10" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
+                                  <line x1="14" y1="11" x2="14" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
                                 </svg>
                               </button>
                             </div>
@@ -2242,6 +2343,22 @@ const ContentHub = () => {
             </div>
           </div>
         )}
+      {/* AI Settings Modal */}
+      <AISettingsModal
+        isOpen={isAISettingsModalOpen}
+        onClose={() => setIsAISettingsModalOpen(false)}
+        onSave={handleSaveAISettings}
+        initialConfigs={aiConfigs}
+      />
+
+      {/* ADDED: Fixed AI Settings Button */}
+      <button
+        className="fixed bottom-6 right-[calc(16rem+1.5rem)] z-50 btn btn-circle btn-primary shadow-lg"
+        onClick={() => setIsAISettingsModalOpen(true)}
+        title="AI Provider Settings"
+      >
+        <FaCog size={20} />
+      </button>
       </div>
   );
 };

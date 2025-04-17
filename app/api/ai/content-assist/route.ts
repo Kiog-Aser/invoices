@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { defaultAIClient, getRotatingAkashClient } from '@/libs/akash-ai';
 import { models } from '@/libs/akash-ai';
 import { OpenAI } from 'openai'; // Import OpenAI type if not already
-
-export const runtime = 'edge';
+import connectMongo from '@/libs/mongoose';
+import User from '@/models/User';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/libs/next-auth';
 
 // Helper function to create a streaming response
 function createStreamingResponse(stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>) {
@@ -26,7 +28,7 @@ function createStreamingResponse(stream: AsyncIterable<OpenAI.Chat.Completions.C
 
 export async function POST(request: Request) {
   try {
-    const { text, action, title = '', personalContext = {}, stream = true } = await request.json(); // Default stream to true
+    const { text, action, title = '', personalContext = {}, stream = true, providerConfig, providerId } = await request.json(); // Accept providerConfig or providerId
 
     // For ideas and article (outline) generation, we don't require text
     if (!text && action !== 'ideas' && action !== 'article') {
@@ -103,6 +105,68 @@ Content:\n${text}`;
           { error: 'Invalid action' },
           { status: 400 }
         );
+    }
+
+    // If a providerConfig is provided, use it
+    if (providerConfig && providerConfig.apiKey && providerConfig.endpoint && providerConfig.models) {
+      try {
+        const openai = new OpenAI({
+          apiKey: providerConfig.apiKey,
+          baseURL: providerConfig.endpoint,
+        });
+        const completionStream = await openai.chat.completions.create({
+          model: providerConfig.models,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: true
+        });
+        return createStreamingResponse(completionStream);
+      } catch (error) {
+        console.error('Error with custom provider:', error);
+        return NextResponse.json(
+          { error: 'Failed to get streaming response from custom AI provider' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // If a providerId is provided, fetch the user's config from DB
+    if (providerId) {
+      // Get user session
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      await connectMongo();
+      const user = await User.findById(session.user.id).select('aiProviderConfigs');
+      const config = user?.aiProviderConfigs?.find((c: any) => c.id === providerId);
+      if (config) {
+        try {
+          const openai = new OpenAI({
+            apiKey: config.apiKey,
+            baseURL: config.endpoint,
+          });
+          const completionStream = await openai.chat.completions.create({
+            model: config.models,
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+            stream: true
+          });
+          return createStreamingResponse(completionStream);
+        } catch (error) {
+          console.error('Error with user-selected provider:', error);
+          return NextResponse.json(
+            { error: 'Failed to get streaming response from selected AI provider' },
+            { status: 500 }
+          );
+        }
+      }
     }
 
     // First try using rotating client (Akash)

@@ -75,6 +75,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    aiProviderConfigs: {
+      type: [
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          endpoint: { type: String, required: true },
+          models: { type: String, required: true },
+          apiKey: { type: String, required: true },
+        }
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
