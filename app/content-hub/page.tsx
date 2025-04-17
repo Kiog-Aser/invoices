@@ -6,10 +6,10 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref } from 'react'; // Added Ref
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign } from 'react-icons/fa';
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
-import { getReadability } from '../../utils/readability';
+import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -24,12 +24,23 @@ import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
+// +++ Define Readability Blot Config (Moved outside client check) +++
+const readabilityBlotConfig: { name: string; className: string; color: string }[] = [
+  { name: 'readability-very-hard', className: 'readability-highlight-very-hard', color: 'rgba(239, 68, 68, 0.3)' }, // Red
+  { name: 'readability-hard', className: 'readability-highlight-hard', color: 'rgba(245, 158, 11, 0.3)' }, // Yellow
+  { name: 'readability-passive', className: 'readability-highlight-passive', color: 'rgba(59, 130, 246, 0.2)' }, // Blue
+  { name: 'readability-weakener', className: 'readability-highlight-weakener', color: 'rgba(59, 130, 246, 0.2)' }, // Blue
+  { name: 'readability-simpler', className: 'readability-highlight-simpler', color: 'rgba(168, 85, 247, 0.2)' } // Purple
+];
+// +++ End Config +++
+
 // --- Register Custom Quill Format for Grammar Suggestions ---
 let Inline: any;
+let Quill: any; // Define Quill type
 if (typeof window !== 'undefined') {
   // Only import Quill and register the blot on the client
   // @ts-ignore
-  const Quill = require('quill');
+  Quill = require('quill');
   Inline = Quill.import('blots/inline');
 
   class GrammarSuggestionBlot extends Inline {
@@ -73,6 +84,48 @@ if (typeof window !== 'undefined') {
     }
   }
   Quill.register(GrammarSuggestionBlot);
+
+  // +++ Register Readability Highlight Blots +++
+  readabilityBlotConfig.forEach(config => {
+    class ReadabilityBlot extends Inline {
+      static blotName = config.name;
+      static tagName = 'span';
+      static className = config.className;
+
+      static create(value: any) {
+        let node = super.create() as HTMLElement;
+        // Store issue details for potential popups later
+        if (typeof value === 'object' && value !== null) {
+          node.dataset.issue = JSON.stringify(value);
+        }
+        // Add click listener (optional for now, can add popup later)
+        // node.addEventListener('click', (event) => { ... });
+        return node;
+      }
+
+      static formats(domNode: HTMLElement) {
+         if (domNode.dataset.issue) {
+           try {
+             return JSON.parse(domNode.dataset.issue);
+           } catch (e) {
+             console.error('Error parsing readability issue data from DOM', e);
+           }
+         }
+         return super.formats(domNode);
+      }
+
+      format(name: string, value: any) {
+        if (name === ReadabilityBlot.blotName && value) {
+          (this.domNode as HTMLElement).dataset.issue = JSON.stringify(value);
+        } else {
+          super.format(name, value);
+        }
+      }
+    }
+    Quill.register(ReadabilityBlot);
+  });
+  // +++ End Readability Blots +++
+
 }
 // --- End Custom Quill Format ---
 
@@ -196,7 +249,8 @@ const ContentHub = () => {
   // +++ End State +++
 
   // Readability state
-  const [readability, setReadability] = useState<null | ReturnType<typeof getReadability>>(null);
+  const [readability, setReadability] = useState<DetailedReadabilityResult | null>(null);
+  const [showReadabilityStats, setShowReadabilityStats] = useState(false); // State for stats toggle
 
   // Earning optimiser AI insights state
   const [aiEarningInsights, setAIEarningInsights] = useState<string | null>(null);
@@ -886,6 +940,24 @@ const ContentHub = () => {
         background-color: rgba(255, 0, 0, 0.05); /* Optional subtle background */
         cursor: pointer; /* Indicate it's interactive */
       }
+
+      /* +++ Readability Highlight Styles +++ */
+      .medium-style-editor .ql-editor .readability-highlight-very-hard {
+        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-very-hard')?.color || 'transparent'};
+      }
+      .medium-style-editor .ql-editor .readability-highlight-hard {
+        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-hard')?.color || 'transparent'};
+      }
+      .medium-style-editor .ql-editor .readability-highlight-passive {
+        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-passive')?.color || 'transparent'};
+      }
+      .medium-style-editor .ql-editor .readability-highlight-weakener {
+        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-weakener')?.color || 'transparent'};
+      }
+      .medium-style-editor .ql-editor .readability-highlight-simpler {
+        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-simpler')?.color || 'transparent'};
+      }
+      /* +++ End Readability Styles +++ */
       
       /* Floating toolbar styles */
       .floating-toolbar {
@@ -1517,16 +1589,64 @@ const ContentHub = () => {
     // --- End Invalidate ---
   };
 
-  // Function to check readability
-  const checkReadability = () => {
-    let text = '';
-    if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      text = editor.getText();
-    } else {
-      text = content;
+  // +++ Helper to get Readability Blot Name +++
+  const getReadabilityBlotName = (type: ReadabilityIssue['type']): string => {
+    switch (type) {
+      case 'very-hard': return 'readability-very-hard';
+      case 'hard': return 'readability-hard';
+      case 'passive': return 'readability-passive';
+      case 'weakener': return 'readability-weakener';
+      case 'simpler-alternative': return 'readability-simpler';
+      default: return '';
     }
-    setReadability(getReadability(text));
+  };
+  // +++ End Helper +++
+
+  // +++ Helper to apply readability highlights +++
+  const applyReadabilityHighlights = (issues: ReadabilityIssue[]) => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const length = editor.getLength();
+
+    // Clear previous highlights
+    readabilityBlotConfig.forEach((config: { name: string; className: string; color: string }) => {
+      editor.formatText(0, length, config.name, false, 'silent');
+    });
+
+    // Apply new highlights
+    if (issues.length > 0) {
+      editor.history.cutoff();
+      issues.forEach((issue) => {
+        const blotName = getReadabilityBlotName(issue.type);
+        if (blotName && typeof issue.index === 'number' && typeof issue.offset === 'number' && issue.index >= 0 && issue.offset > 0) {
+          if (issue.index + issue.offset <= length) {
+            // Pass the whole issue object as the value to store details
+            editor.formatText(issue.index, issue.offset, blotName, issue, 'silent');
+          } else {
+            console.warn("Skipping readability highlight due to out-of-bounds:", issue);
+          }
+        } else {
+           console.warn("Skipping readability highlight due to invalid data:", issue, blotName);
+        }
+      });
+      editor.history.cutoff();
+    }
+  };
+  // +++ End Helper +++
+
+  // Function to check readability (Updated)
+  const checkReadability = () => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const text = editor.getText();
+
+    // Clear previous highlights immediately for responsiveness
+    applyReadabilityHighlights([]);
+
+    const result = analyzeReadability(text);
+    setReadability(result);
+    applyReadabilityHighlights(result.issues); // Apply new highlights
+    setActiveSidebarTab('readability'); // Switch to readability tab
   };
 
   // Use dynamic import for ReactDOM.createPortal
@@ -1618,6 +1738,15 @@ const ContentHub = () => {
       )}
     </div>
   );
+
+  // Ensure readability highlights are always in sync with sidebar
+  useEffect(() => {
+    if (activeSidebarTab === 'readability' && readability && quillRef.current) {
+      applyReadabilityHighlights(readability.issues);
+    } else if (quillRef.current) {
+      applyReadabilityHighlights([]); // Clear highlights when not in readability tab
+    }
+  }, [activeSidebarTab, readability]);
 
   return (
     <div className="min-h-screen bg-base-100 flex relative">
@@ -1800,54 +1929,117 @@ const ContentHub = () => {
           </div>
         )}
         {activeSidebarTab === 'readability' && (
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2">Readability Grade</h2>
-            <p className="text-base-content/70 text-sm mb-4">See how easy your content is to read.</p>
-            <button className="btn btn-primary btn-sm w-full mb-4" onClick={checkReadability}>Check Readability</button>
-            {readability && (
-              <div className="flex flex-col items-center gap-6 mt-4">
-                <div className="flex gap-8 justify-center">
-                  {/* Flesch Reading Ease Circle */}
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-20 h-20 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-4
-                        ${readability.fleschReadingEase >= 80 ? 'border-green-400 bg-green-50 text-green-700' :
-                          readability.fleschReadingEase >= 60 ? 'border-yellow-400 bg-yellow-50 text-yellow-700' :
-                          readability.fleschReadingEase >= 30 ? 'border-orange-400 bg-orange-50 text-orange-700' :
-                          'border-red-400 bg-red-50 text-red-700'}`}
-                    >
-                      {readability.fleschReadingEase}
+          <div className="p-4 flex flex-col flex-grow">
+            {/* Header */}
+            <div className="flex items-center mb-4">
+              <h2 className="text-lg font-semibold">Readability</h2>
+              {/* Removed settings button */}
+            </div>
+
+            {/* Analyze Button */}
+            <button className="btn btn-primary btn-sm w-full mb-4" onClick={checkReadability}>Analyze Readability</button>
+
+            {readability ? (
+              <div className="space-y-3 flex-grow">
+                {/* Overall Grade & Basic Stats */}
+                <div className="p-3 rounded-lg bg-base-200 border border-base-300">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-base-content/80">Grade {readability.fleschKincaidGrade}</span>
+                    <span className={`badge badge-sm ${readability.fleschKincaidGrade <= 8 ? 'badge-success' : readability.fleschKincaidGrade <= 12 ? 'badge-warning' : 'badge-error'}`}>
+                      {readability.fleschKincaidGrade <= 8 ? 'Good' : readability.fleschKincaidGrade <= 12 ? 'Fair' : 'Hard'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-base-content/60 mb-2">
+                    Based on Flesch-Kincaid
+                  </div>
+                  <hr className="border-base-300 my-2" />
+                  <div className="text-xs text-base-content/60 mb-2">
+                    {readability.wordCount} Words
+                  </div>
+
+                  {/* Collapsible Stats */}
+                  <button
+                    onClick={() => setShowReadabilityStats(!showReadabilityStats)}
+                    className="text-xs text-primary hover:underline flex items-center w-full justify-between"
+                  >
+                    <span>{showReadabilityStats ? 'Show fewer stats' : 'Show more stats'}</span>
+                    {showReadabilityStats ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+                  </button>
+                  {showReadabilityStats && (
+                    <div className="mt-2 space-y-1 text-xs text-base-content/60">
+                      {/* Add more stats here if available in DetailedReadabilityResult */}
+                      <div>Characters: {/* Add character count if available */} N/A</div>
+                      <div>Sentences: {readability.sentenceCount}</div>
+                      <div>Paragraphs: {/* Add paragraph count if available */} N/A</div>
+                      <div>Reading time: {/* Add reading time if available */} N/A</div>
                     </div>
-                    <span className="mt-2 text-xs font-medium text-base-content/70">Reading Ease</span>
-                  </div>
-                  {/* Flesch-Kincaid Grade Circle */}
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-20 h-20 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-4
-                        ${readability.fleschKincaidGrade < 6 ? 'border-green-400 bg-green-50 text-green-700' :
-                          readability.fleschKincaidGrade < 9 ? 'border-yellow-400 bg-yellow-50 text-yellow-700' :
-                          readability.fleschKincaidGrade < 13 ? 'border-orange-400 bg-orange-50 text-orange-700' :
-                          'border-red-400 bg-red-50 text-red-700'}`}
-                    >
-                      {readability.fleschKincaidGrade}
-                    </div>
-                    <span className="mt-2 text-xs font-medium text-base-content/70">Grade Level</span>
-                  </div>
+                  )}
                 </div>
-                {/* Description and stats */}
-                <div className="w-full mt-2">
-                  <div className="flex justify-center gap-4 text-xs text-base-content/60 mb-2">
-                    <span>Words: {readability.wordCount}</span>
-                    <span>Sentences: {readability.sentenceCount}</span>
-                    <span>Syllables: {readability.syllableCount}</span>
+
+                {/* Detailed Issues */}
+                {readability.veryHardSentenceCount > 0 && (
+                  <div className="p-3 rounded-lg bg-error/10 border border-error/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-error">
+                      {readability.veryHardSentenceCount} of {readability.sentenceCount} sentences is very hard to read.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-error" title="View details">
+                      <FaEye />
+                    </button>
                   </div>
-                  <div className="text-center text-sm mt-2">
-                    {readability.fleschKincaidGrade < 6 && <span className="text-green-600 font-medium">Very easy to read (Elementary level)</span>}
-                    {readability.fleschKincaidGrade >= 6 && readability.fleschKincaidGrade < 9 && <span className="text-yellow-600 font-medium">Fairly easy (Middle school)</span>}
-                    {readability.fleschKincaidGrade >= 9 && readability.fleschKincaidGrade < 13 && <span className="text-orange-600 font-medium">Somewhat difficult (High school)</span>}
-                    {readability.fleschKincaidGrade >= 13 && <span className="text-red-600 font-medium">Difficult (College+)</span>}
+                )}
+                {readability.hardSentenceCount > 0 && (
+                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-warning">
+                      {readability.hardSentenceCount} of {readability.sentenceCount} sentences is hard to read.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-warning" title="View details">
+                      <FaEye />
+                    </button>
                   </div>
-                </div>
+                )}
+                {readability.weakenerCount > 0 && (
+                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-info">
+                      {readability.weakenerCount} weakeners.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-info" title="View details">
+                      <FaEye />
+                    </button>
+                  </div>
+                )}
+                 {readability.passiveVoiceCount > 0 && (
+                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-info">
+                      {readability.passiveVoiceCount} uses of passive voice.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-info" title="View details">
+                      <FaEye />
+                    </button>
+                  </div>
+                )}
+                {readability.simpleAlternativeCount > 0 && (
+                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-purple-500">
+                      {readability.simpleAlternativeCount} word with a simpler alternative.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-purple-500" title="View details">
+                      <FaEye />
+                    </button>
+                  </div>
+                )}
+
+                {/* No Issues Message */}
+                {readability.issues.length === 0 && (
+                   <div className="text-center py-6 text-success">
+                     <FaCheckCircle className="inline-block mr-2" /> No readability issues found!
+                   </div>
+                 )}
+
+              </div>
+            ) : (
+              <div className="text-center text-base-content/60 mt-8 flex-grow flex flex-col items-center justify-center">
+                <FaChartBar size={32} className="mb-2" />
+                <p>Click "Analyze Readability" to get feedback.</p>
               </div>
             )}
           </div>

@@ -27,6 +27,7 @@
     "@tiptap/react": "^2.11.7",
     "@tiptap/starter-kit": "^2.11.7",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/marked": "^5.0.2",
     "add-to-calendar-button-react": "^2.8.5",
     "ai": "^4.3.7",
@@ -41,6 +42,7 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "jspdf": "^3.0.1",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.487.0",
     "mailgun.js": "^9.4.1",
     "marked": "^15.0.8",
@@ -69,6 +71,7 @@
     "stripe": "^17.7.0",
     "tiptap": "^1.32.2",
     "uuid": "^11.1.0",
+    "write-good": "^1.0.8",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -80,6 +83,7 @@
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.2.23",
     "@types/react-syntax-highlighter": "^15.5.11",
+    "@types/write-good": "^1.0.3",
     "autoprefixer": "^10.4.19",
     "daisyui": "^4.10.1",
     "postcss": "^8.4.38",
