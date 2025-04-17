@@ -2286,20 +2286,15 @@ function EarningInsightsSidebar({ markdown }: { markdown: string }) {
     if (!section || section.trim() === '' || section.trim().toLowerCase() === 'none') {
       return null;
     }
-    // Split into lines, filter empty and lines that are just '-', and render markdown bold
-    const items = section
-      .split(/\n|\r/)
-      .map(line => line.replace(/^[-*]\s*/, '').trim())
-      .filter(line => line.length > 0 && line !== '-');
-    if (items.length === 0) return null;
+    
+    // Simply use the raw content directly without fancy processing
+    // Only replace markdown bold with HTML strong
+    const formattedContent = section.trim().replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
     return (
-      <ul className="list-disc ml-5 text-xs">
-        {items.map((line, i) => {
-          // Replace **bold** with <strong> for React rendering
-          const html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          return <li key={i} dangerouslySetInnerHTML={{ __html: html }} />;
-        })}
-      </ul>
+      <div className="text-xs space-y-2">
+        <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      </div>
     );
   }
 

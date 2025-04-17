@@ -89,11 +89,11 @@ ${text}`;
 Format your response as:
 Monetisation Score: <number>
 Suggestions:
-- **<action 1>**: <short explanation>
-- **<action 2>**: <short explanation>
-- **<action 3>**: <short explanation>
-- **<action 4>**: <short explanation>
-- **<action 5>**: <short explanation>
+1. **<action 1>**: <short explanation>
+2. **<action 2>**: <short explanation>
+3. **<action 3>**: <short explanation>
+4. **<action 4>**: <short explanation>
+5. **<action 5>**: <short explanation>
 
 Don't add any extra text or explanations. Only respond with the score and suggestions, no empty bullet points as well.
 Content:\n${text}`;
