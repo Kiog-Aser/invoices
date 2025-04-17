@@ -80,8 +80,8 @@ export function analyzeReadability(text: string): ReadabilityResult {
   const issues: ReadabilityIssue[] = [];
   let hardSentenceCount = 0;
   let veryHardSentenceCount = 0;
-  let passiveVoiceCount = 0;
-  let weakenerCount = 0;
+  let passiveVoiceCount = 0; // Will remain 0
+  let weakenerCount = 0; // Will remain 0
   let simpleAlternativeCount = 0;
 
   // --- Improved Sentence Detection ---
@@ -137,13 +137,19 @@ export function analyzeReadability(text: string): ReadabilityResult {
     }
   });
 
-  // 2. Weakeners, Passive Voice (using write-good) - CLIENT ONLY
+  // 2. Weakeners, Passive Voice (using write-good) - REMOVED
+  /* 
   let writeGoodSuggestions: any[] = [];
   if (typeof window !== 'undefined') {
     // Only require write-good on the client
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const writeGood = require('write-good');
-    writeGoodSuggestions = writeGood(text);
+    try { // Add try-catch for safety, though we are removing it
+      const writeGood = require('write-good');
+      writeGoodSuggestions = writeGood(text);
+    } catch (e) {
+      console.error("Error loading or running write-good:", e);
+      // Handle error - maybe notify user or skip this check
+    }
   }
   writeGoodSuggestions.forEach(suggestion => {
     const isPassive = suggestion.reason.includes('passive voice');
@@ -161,6 +167,7 @@ export function analyzeReadability(text: string): ReadabilityResult {
       weakenerCount++;
     }
   });
+  */
 
   // 3. Simpler Alternatives (using regex and word list)
   const wordRegex = /\b(\w+)\b/g;
@@ -194,8 +201,8 @@ export function analyzeReadability(text: string): ReadabilityResult {
     issues,
     hardSentenceCount,
     veryHardSentenceCount,
-    passiveVoiceCount,
-    weakenerCount,
+    passiveVoiceCount, // Will be 0
+    weakenerCount, // Will be 0
     simpleAlternativeCount,
   };
 }

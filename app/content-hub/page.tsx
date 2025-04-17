@@ -1740,35 +1740,25 @@ const ContentHub = () => {
     </div>
   );
 
-  // Ensure readability highlights are always in sync with sidebar
-  useEffect(() => {
-    if (activeSidebarTab === 'readability' && readability && quillRef.current) {
-      applyReadabilityHighlights(readability.issues);
-    } else if (quillRef.current) {
-      applyReadabilityHighlights([]); // Clear highlights when not in readability tab
-    }
-  }, [activeSidebarTab, readability]);
-
   // Ensure only one type of highlight is visible at a time
   useEffect(() => {
-    if (!quillRef.current) return;
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
+    const quill = quillRef.current?.getEditor();
+    const length = quill?.getLength();
     if (activeSidebarTab === 'readability' && readability) {
       // Clear grammar highlights
-      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+      quill?.formatText(0, length, 'grammar-suggestion', false, 'silent');
       applyReadabilityHighlights(readability.issues);
     } else if (activeSidebarTab === 'grammar' && grammarSuggestions.length > 0) {
       // Clear readability highlights
       readabilityBlotConfig.forEach((config) => {
-        editor.formatText(0, length, config.name, false, 'silent');
+        quill?.formatText(0, length, config.name, false, 'silent');
       });
       applyUnderlines(grammarSuggestions);
     } else {
       // Clear all highlights if not in either tab
-      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+      quill?.formatText(0, length, 'grammar-suggestion', false, 'silent');
       readabilityBlotConfig.forEach((config) => {
-        editor.formatText(0, length, config.name, false, 'silent');
+        quill?.formatText(0, length, config.name, false, 'silent');
       });
     }
   }, [activeSidebarTab, readability, grammarSuggestions]);
