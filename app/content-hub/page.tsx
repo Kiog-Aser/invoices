@@ -6,7 +6,7 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX } from 'react'; // Added Ref and JSX
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaEyeSlash } from 'react-icons/fa'; // Add FaEyeSlash
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
@@ -92,35 +92,51 @@ if (typeof window !== 'undefined') {
       static tagName = 'span';
       static className = config.className;
 
+      // Properly create node and store issue data
       static create(value: any) {
-        let node = super.create() as HTMLElement;
-        // Store issue details for potential popups later
+        const node = super.create() as HTMLElement;
+        // Store issue data only if it's an object (our issue data)
         if (typeof value === 'object' && value !== null) {
-          node.dataset.issue = JSON.stringify(value);
+            node.dataset.issue = JSON.stringify(value);
         }
-        // Add click listener (optional for now, can add popup later)
-        // node.addEventListener('click', (event) => { ... });
         return node;
       }
 
-      static formats(domNode: HTMLElement) {
-         if (domNode.dataset.issue) {
-           try {
-             return JSON.parse(domNode.dataset.issue);
-           } catch (e) {
-             console.error('Error parsing readability issue data from DOM', e);
-           }
+      // Retrieve issue data from domNode
+      static formats(domNode: HTMLElement) { // Use the domNode parameter
+         const data = domNode.dataset.issue;
+         // Try parsing only if data exists
+         if (data) {
+             try {
+                 return JSON.parse(data);
+             } catch (e) {
+                 console.error("Error parsing readability issue data from DOM", e);
+             }
          }
+         // --- Fix: Call super.formats with the correct parameter ---
          return super.formats(domNode);
+         // --- End Fix ---
       }
 
+      // --- Fix: Remove duplicate format method ---
+      // format(name: string, value: any) { ... } // Removed this duplicate
+
+      // Keep this format method
       format(name: string, value: any) {
-        if (name === ReadabilityBlot.blotName && value) {
-          (this.domNode as HTMLElement).dataset.issue = JSON.stringify(value);
+        // Use constructor.blotName to access static property correctly
+        if (name === (this.constructor as any).blotName && value) {
+          // Store issue data only if it's an object
+          if (typeof value === 'object' && value !== null) {
+              (this.domNode as HTMLElement).dataset.issue = JSON.stringify(value);
+          } else {
+              // If value is not our issue object (e.g., false), remove the attribute
+              delete (this.domNode as HTMLElement).dataset.issue;
+          }
         } else {
           super.format(name, value);
         }
       }
+      // --- End Fix ---
     }
     Quill.register(ReadabilityBlot);
   });
@@ -251,14 +267,6 @@ const ContentHub = () => {
   // Readability state
   const [readability, setReadability] = useState<DetailedReadabilityResult | null>(null);
   const [showReadabilityStats, setShowReadabilityStats] = useState(false); // State for stats toggle
-
-  // +++ Add State for Readability Highlight Toggles +++
-  const [highlightVeryHard, setHighlightVeryHard] = useState(true);
-  const [highlightHard, setHighlightHard] = useState(true);
-  const [highlightPassive, setHighlightPassive] = useState(true);
-  const [highlightWeakener, setHighlightWeakener] = useState(true);
-  const [highlightSimpler, setHighlightSimpler] = useState(true);
-  // +++ End State +++
 
   // Earning optimiser AI insights state
   const [aiEarningInsights, setAIEarningInsights] = useState<string | null>(null);
@@ -1356,8 +1364,13 @@ const ContentHub = () => {
   // Quill formats - Keep formats you want to support with the floating toolbar
   const quillFormats = [
     'header', 'bold', 'italic', 'link', 'blockquote',
-    'grammar-suggestion' // Add our custom format
-    // Add other formats as needed (e.g., list, strike)
+    'grammar-suggestion',
+    'readability-very-hard',
+    'readability-hard',
+    'readability-passive',
+    'readability-weakener',
+    'readability-simpler',
+    // Add other formats as needed
   ];
 
   // Function to apply format from floating toolbar
@@ -1610,64 +1623,83 @@ const ContentHub = () => {
   };
   // +++ End Helper +++
 
-  // +++ Helper to apply readability highlights (Updated) +++
-  const applyReadabilityHighlights = useCallback((issues: ReadabilityIssue[]) => {
-    if (!quillRef.current) return;
+  // +++ Helper to apply readability highlights (Delta Clearing, Object Apply) +++
+  const applyReadabilityHighlights = (issues: ReadabilityIssue[]) => {
+    console.log('[Readability Apply V4] Applying highlights for issues:', issues); // Log V4
+    if (!quillRef.current) {
+        console.log('[Readability Apply V4] Quill ref not available.');
+        return;
+    }
     const editor = quillRef.current.getEditor();
     const length = editor.getLength();
+    console.log(`[Readability Apply V4] Editor length: ${length}`);
 
-    // Clear previous highlights first
-    editor.history.cutoff(); // Group clearing and applying
-    readabilityBlotConfig.forEach((config) => {
-      editor.formatText(0, length, config.name, false, 'silent');
+    // --- Reset Highlights First (Using Delta) ---
+    console.log('[Readability Apply V4] Clearing previous highlights via Delta...');
+    const resetAttributes: { [key: string]: null } = {};
+    readabilityBlotConfig.forEach(config => {
+      resetAttributes[config.name] = null;
     });
+    const resetDelta = { ops: [{ retain: length, attributes: resetAttributes }] };
+    try {
+        editor.updateContents(resetDelta, 'silent');
+        console.log('[Readability Apply V4] Previous highlights cleared via Delta.');
+    } catch (e) {
+        console.error('[Readability Apply V4] Error clearing highlights via Delta:', e);
+        // Optional: Add fallback clearing if Delta fails
+    }
+    // --- End Reset ---
 
-    // Apply new highlights based on toggle state
+
+    // Apply new highlights using formatText with the `issue` object as value
     if (issues.length > 0) {
+      console.log('[Readability Apply V4] Applying new highlights via formatText with issue object...');
+      editor.history.cutoff(); // Group applications
       issues.forEach((issue) => {
         const blotName = getReadabilityBlotName(issue.type);
-        let shouldHighlight = false;
+        // --- Revert: Pass the full `issue` object as the value ---
+        const formatValue = issue;
+        // --- End Revert ---
 
-        // Check toggle state for the specific issue type
-        switch (issue.type) {
-          case 'very-hard': shouldHighlight = highlightVeryHard; break;
-          case 'hard': shouldHighlight = highlightHard; break;
-          case 'passive': shouldHighlight = highlightPassive; break;
-          case 'weakener': shouldHighlight = highlightWeakener; break;
-          case 'simpler-alternative': shouldHighlight = highlightSimpler; break;
-        }
-
-        // Apply format only if the toggle is enabled and data is valid
-        if (blotName && shouldHighlight && typeof issue.index === 'number' && typeof issue.offset === 'number' && issue.index >= 0 && issue.offset > 0) {
+        if (blotName && typeof issue.index === 'number' && typeof issue.offset === 'number' && issue.index >= 0 && issue.offset > 0) {
           if (issue.index + issue.offset <= length) {
-            editor.formatText(issue.index, issue.offset, blotName, issue, 'silent');
+            const highlightedText = editor.getText(issue.index, issue.offset);
+            console.log(`[Readability Apply V4] Formatting [${issue.index}, ${issue.offset}] with ${blotName}. Text: "${highlightedText.substring(0, 50)}..."`);
+            try {
+                // Apply format with the issue object
+                editor.formatText(issue.index, issue.offset, blotName, formatValue, 'silent');
+                console.log(`[Readability Apply V4] Successfully formatted [${issue.index}, ${issue.offset}] with ${blotName}`);
+            } catch (e) {
+                 // Log error if applying format fails
+                 console.error(`[Readability Apply V4] Error applying format ${blotName} at [${issue.index}, ${issue.offset}]:`, e, issue);
+            }
           } else {
-            console.warn("Skipping readability highlight due to out-of-bounds:", issue);
+            console.warn("[Readability Apply V4] Skipping highlight due to out-of-bounds:", issue, `Length: ${length}`);
           }
-        } else if (blotName && !shouldHighlight) {
-           // If toggle is off, ensure format is removed (redundant due to initial clear, but safe)
-           // editor.formatText(issue.index, issue.offset, blotName, false, 'silent');
-        } else if (blotName) {
-           console.warn("Skipping readability highlight due to invalid data:", issue, blotName);
+        } else {
+           console.warn("[Readability Apply V4] Skipping highlight due to invalid data or blotName:", issue, blotName);
         }
       });
+      editor.history.cutoff(); // End grouping
+      console.log('[Readability Apply V4] Finished applying new highlights.');
+    } else {
+        console.log('[Readability Apply V4] No issues to highlight.');
     }
-    editor.history.cutoff();
-  }, [quillRef, highlightVeryHard, highlightHard, highlightPassive, highlightWeakener, highlightSimpler]); // Add toggle states to dependencies
+  };
   // +++ End Helper +++
 
-  // Function to check readability (Updated - calls new apply function)
+  // Function to check readability (Updated)
   const checkReadability = () => {
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
     const text = editor.getText();
 
-    // Clear previous highlights immediately for responsiveness (done within applyReadabilityHighlights now)
-    // applyReadabilityHighlights([]); // Removed from here
+    // Clear previous highlights immediately for responsiveness
+    applyReadabilityHighlights([]);
 
     const result = analyzeReadability(text);
     setReadability(result);
-    applyReadabilityHighlights(result.issues); // Apply new highlights respecting toggles
+    applyReadabilityHighlights(result.issues); // Apply new highlights
     setActiveSidebarTab('readability'); // Switch to readability tab
   };
 
@@ -1761,33 +1793,38 @@ const ContentHub = () => {
     </div>
   );
 
-  // Ensure only one type of highlight is visible at a time (and respect toggles)
+  // Ensure readability highlights are always in sync with sidebar
   useEffect(() => {
-    const quill = quillRef.current?.getEditor();
-    const length = quill?.getLength();
-    if (!quill || typeof length !== 'number') return; // Guard against null/undefined
+    if (activeSidebarTab === 'readability' && readability && quillRef.current) {
+      applyReadabilityHighlights(readability.issues);
+    } else if (quillRef.current) {
+      applyReadabilityHighlights([]); // Clear highlights when not in readability tab
+    }
+  }, [activeSidebarTab, readability]);
 
+  // Ensure only one type of highlight is visible at a time
+  useEffect(() => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const length = editor.getLength();
     if (activeSidebarTab === 'readability' && readability) {
       // Clear grammar highlights
-      quill.formatText(0, length, 'grammar-suggestion', false, 'silent');
-      // Apply readability highlights (respecting toggles)
+      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
       applyReadabilityHighlights(readability.issues);
     } else if (activeSidebarTab === 'grammar' && grammarSuggestions.length > 0) {
       // Clear readability highlights
       readabilityBlotConfig.forEach((config) => {
-        quill.formatText(0, length, config.name, false, 'silent');
+        editor.formatText(0, length, config.name, false, 'silent');
       });
-      // Apply grammar underlines
       applyUnderlines(grammarSuggestions);
     } else {
-      // Clear all highlights if not in either relevant tab
-      quill.formatText(0, length, 'grammar-suggestion', false, 'silent');
+      // Clear all highlights if not in either tab
+      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
       readabilityBlotConfig.forEach((config) => {
-        quill.formatText(0, length, config.name, false, 'silent');
+        editor.formatText(0, length, config.name, false, 'silent');
       });
     }
-  // Update dependencies to include applyReadabilityHighlights and its own dependencies
-  }, [activeSidebarTab, readability, grammarSuggestions, applyReadabilityHighlights, applyUnderlines]);
+  }, [activeSidebarTab, readability, grammarSuggestions]);
 
   return (
     <div className="min-h-screen bg-base-100 flex relative">
@@ -1812,7 +1849,7 @@ const ContentHub = () => {
       )}
       {/* +++ End Suggestion Popup Portal +++ */}
       {/* Sidebar with tabbed navigation */}
-      <div className="w-72 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50"> {/* Increased width */}
+      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50">
         {/* Tab bar with icons */}
         <div className="flex mb-4 gap-1 justify-between">
           <button
@@ -2016,76 +2053,54 @@ const ContentHub = () => {
                   )}
                 </div>
 
-                {/* Detailed Issues with Toggles */}
+                {/* Detailed Issues */}
                 {readability.veryHardSentenceCount > 0 && (
                   <div className="p-3 rounded-lg bg-error/10 border border-error/30 flex justify-between items-center">
                     <span className="text-sm font-semibold text-error">
-                      {readability.veryHardSentenceCount} of {readability.sentenceCount} sentences very hard to read.
+                      {readability.veryHardSentenceCount} of {readability.sentenceCount} sentences is very hard to read.
                     </span>
-                    <button
-                      onClick={() => setHighlightVeryHard(!highlightVeryHard)}
-                      className="btn btn-ghost btn-xs text-error"
-                      title={highlightVeryHard ? "Hide highlights" : "Show highlights"}
-                    >
-                      {highlightVeryHard ? <FaEyeSlash /> : <FaEye />}
+                    <button className="btn btn-ghost btn-xs text-error" title="View details">
+                      <FaEye />
                     </button>
                   </div>
                 )}
                 {readability.hardSentenceCount > 0 && (
                   <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 flex justify-between items-center">
                     <span className="text-sm font-semibold text-warning">
-                      {readability.hardSentenceCount} of {readability.sentenceCount} sentences hard to read.
+                      {readability.hardSentenceCount} of {readability.sentenceCount} sentences is hard to read.
                     </span>
-                     <button
-                      onClick={() => setHighlightHard(!highlightHard)}
-                      className="btn btn-ghost btn-xs text-warning"
-                      title={highlightHard ? "Hide highlights" : "Show highlights"}
-                    >
-                      {highlightHard ? <FaEyeSlash /> : <FaEye />}
+                    <button className="btn btn-ghost btn-xs text-warning" title="View details">
+                      <FaEye />
                     </button>
                   </div>
                 )}
-                 {/* Use passiveVoiceCount from result */}
-                 {readability.passiveVoiceCount > 0 && (
-                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-info">
-                      {readability.passiveVoiceCount} uses of passive voice.
-                    </span>
-                    <button
-                      onClick={() => setHighlightPassive(!highlightPassive)}
-                      className="btn btn-ghost btn-xs text-info"
-                      title={highlightPassive ? "Hide highlights" : "Show highlights"}
-                    >
-                      {highlightPassive ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                )}
-                {/* Use weakenerCount from result */}
                 {readability.weakenerCount > 0 && (
                   <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
                     <span className="text-sm font-semibold text-info">
                       {readability.weakenerCount} weakeners.
                     </span>
-                    <button
-                      onClick={() => setHighlightWeakener(!highlightWeakener)}
-                      className="btn btn-ghost btn-xs text-info"
-                      title={highlightWeakener ? "Hide highlights" : "Show highlights"}
-                    >
-                      {highlightWeakener ? <FaEyeSlash /> : <FaEye />}
+                    <button className="btn btn-ghost btn-xs text-info" title="View details">
+                      <FaEye />
+                    </button>
+                  </div>
+                )}
+                 {readability.passiveVoiceCount > 0 && (
+                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-info">
+                      {readability.passiveVoiceCount} uses of passive voice.
+                    </span>
+                    <button className="btn btn-ghost btn-xs text-info" title="View details">
+                      <FaEye />
                     </button>
                   </div>
                 )}
                 {readability.simpleAlternativeCount > 0 && (
                   <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
                     <span className="text-sm font-semibold text-purple-500">
-                      {readability.simpleAlternativeCount} word{readability.simpleAlternativeCount > 1 ? 's' : ''} with a simpler alternative.
+                      {readability.simpleAlternativeCount} word with a simpler alternative.
                     </span>
-                    <button
-                       onClick={() => setHighlightSimpler(!highlightSimpler)}
-                      className="btn btn-ghost btn-xs text-purple-500"
-                      title={highlightSimpler ? "Hide highlights" : "Show highlights"}
-                    >
-                      {highlightSimpler ? <FaEyeSlash /> : <FaEye />}
+                    <button className="btn btn-ghost btn-xs text-purple-500" title="View details">
+                      <FaEye />
                     </button>
                   </div>
                 )}

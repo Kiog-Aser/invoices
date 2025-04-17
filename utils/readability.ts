@@ -134,25 +134,28 @@ export function analyzeReadability(text: string): ReadabilityResult {
   sentences.forEach(sentence => {
     const sentenceWords = sentence.text.match(/\b\w+\b/g) || [];
     const sentenceWordCount = sentenceWords.length;
+
+    // --- Fix: Use else if to prioritize very-hard ---
     if (sentenceWordCount > VERY_HARD_THRESHOLD) {
       issues.push({
         index: sentence.start,
         offset: sentence.end - sentence.start,
-        reason: `Sentence has ${sentenceWordCount} words (>25).`,
+        reason: `Sentence has ${sentenceWordCount} words (>${VERY_HARD_THRESHOLD}). Consider shortening or splitting.`,
         text: sentence.text,
         type: 'very-hard',
       });
-      veryHardSentenceCount++;
-    } else if (sentenceWordCount > HARD_THRESHOLD) {
+      veryHardSentenceCount++; // Increment count
+    } else if (sentenceWordCount > HARD_THRESHOLD) { // Only check if not already 'very-hard'
       issues.push({
         index: sentence.start,
         offset: sentence.end - sentence.start,
-        reason: `Sentence has ${sentenceWordCount} words (>20).`,
+        reason: `Sentence has ${sentenceWordCount} words (>${HARD_THRESHOLD}).`,
         text: sentence.text,
         type: 'hard',
       });
-      hardSentenceCount++;
+      hardSentenceCount++; // Increment count
     }
+    // --- End Fix ---
   });
 
   // 2. Passive Voice (Basic Custom Detection)
@@ -244,10 +247,10 @@ export function analyzeReadability(text: string): ReadabilityResult {
     paragraphCount, // Added
     readingTimeMinutes, // Added
     issues,
-    hardSentenceCount,
-    veryHardSentenceCount,
-    passiveVoiceCount, // Now updated by custom logic
-    weakenerCount, // Now updated by custom logic
+    hardSentenceCount, // Correctly counted
+    veryHardSentenceCount, // Correctly counted
+    passiveVoiceCount,
+    weakenerCount,
     simpleAlternativeCount,
   };
 }
