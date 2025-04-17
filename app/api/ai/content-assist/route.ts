@@ -28,7 +28,7 @@ function createStreamingResponse(stream: AsyncIterable<OpenAI.Chat.Completions.C
 
 export async function POST(request: Request) {
   try {
-    const { text, action, title = '', personalContext = {}, stream = true, providerConfig, providerId } = await request.json(); // Accept providerConfig or providerId
+    const { text, action, title = '', personalContext = {}, stream = true, providerConfig, providerId, modelId } = await request.json(); // Accept providerConfig or providerId
 
     // For ideas and article (outline) generation, we don't require text
     if (!text && action !== 'ideas' && action !== 'article') {
@@ -134,7 +134,7 @@ Content:\n${text}`;
     }
 
     // If a providerId is provided, fetch the user's config from DB
-    if (providerId) {
+    if (providerId && modelId) {
       // Get user session
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
@@ -150,7 +150,7 @@ Content:\n${text}`;
             baseURL: config.endpoint,
           });
           const completionStream = await openai.chat.completions.create({
-            model: config.models,
+            model: modelId, // Use the specific model
             messages: [
               { role: 'user', content: prompt }
             ],

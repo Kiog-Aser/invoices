@@ -16,7 +16,7 @@ export interface AIProviderConfig {
 interface AISettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (configs: AIProviderConfig[]) => Promise<void>; 
+  onSave: (configs: { configs: AIProviderConfig[], defaultModelId: string }) => Promise<void>; 
   initialConfigs?: AIProviderConfig[]; 
 }
 
@@ -28,6 +28,8 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
   const [isLoading, setIsLoading] = useState(false);
   const [testStatuses, setTestStatuses] = useState<Record<string, TestStatus>>({}); // Store test status per config ID
   const [testMessages, setTestMessages] = useState<Record<string, string>>({}); // Store test messages per config ID
+
+  const [defaultModelId, setDefaultModelId] = useState<string>('default');
 
   useEffect(() => {
     // Ensure unique IDs when loading initial configs
@@ -41,6 +43,13 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
     initialisedConfigs.forEach(c => initialStatuses[c.id] = 'idle');
     setTestStatuses(initialStatuses);
     setTestMessages({}); // Clear old messages
+
+    // Try to load defaultModelId from initialConfigs (if you store it separately, adjust as needed)
+    if (initialConfigs && initialConfigs.length > 0 && (initialConfigs as any).defaultModelId) {
+      setDefaultModelId((initialConfigs as any).defaultModelId);
+    } else {
+      setDefaultModelId('default');
+    }
   }, [initialConfigs, isOpen]); // Also reset when modal opens
 
 
@@ -75,8 +84,7 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      await onSave(configs);
-      // onClose(); // Keep modal open on success or let parent decide
+      await onSave({ configs, defaultModelId });
     } catch (error) {
       console.error("Failed to save AI settings:", error);
       // Optionally show an error message to the user
@@ -166,6 +174,30 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
           {configs.map((config) => {
             const status = testStatuses[config.id] || 'idle';
             const message = testMessages[config.id] || '';
+            // Local state for models for this config
+            const [modelInput, setModelInput] = useState('');
+            const [models, setModels] = useState<string[]>(config.models ? config.models.split(',').map(m => m.trim()).filter(Boolean) : []);
+
+            // Sync models to config.models
+            useEffect(() => {
+              handleConfigChange(config.id, 'models', models.join(', '));
+              // eslint-disable-next-line
+            }, [models]);
+
+            const handleModelInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+              const value = e.target.value;
+              if (value.endsWith(',') || value.endsWith('\n')) {
+                const newModel = value.replace(/,|\n/g, '').trim();
+                if (newModel && !models.includes(newModel)) {
+                  setModels([...models, newModel]);
+                }
+                setModelInput('');
+              } else {
+                setModelInput(value);
+              }
+            };
+            const removeModel = (model: string) => setModels(models.filter(m => m !== model));
+
             return (
               <div key={config.id} className="p-4 border border-base-300 rounded-lg relative">
                 <button
@@ -192,15 +224,31 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
                   </div>
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text">Models (comma-separated)</span>
+                      <span className="label-text">Models (comma-separated, press Enter or comma to add)</span>
                     </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {models.map(model => (
+                        <span key={model} className="bg-base-200 px-2 py-1 rounded-full flex items-center">
+                          {model}
+                          <button onClick={() => removeModel(model)} className="ml-1 text-error">×</button>
+                        </span>
+                      ))}
+                    </div>
                     <input
-                      type="text"
-                      placeholder="e.g., gpt-4, gpt-3.5-turbo"
+                      value={modelInput}
+                      onChange={handleModelInput}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const newModel = modelInput.replace(/,|\n/g, '').trim();
+                          if (newModel && !models.includes(newModel)) {
+                            setModels([...models, newModel]);
+                          }
+                          setModelInput('');
+                        }
+                      }}
+                      placeholder="Type model and press Enter or comma"
                       className="input input-bordered w-full"
-                      value={config.models}
-                      onChange={(e) => handleConfigChange(config.id, 'models', e.target.value)}
-                      disabled={isLoading || status === 'testing'}
                     />
                   </div>
                   <div className="form-control md:col-span-2">
@@ -255,6 +303,22 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
         <button className="btn btn-ghost btn-sm mt-4" onClick={handleAddConfig} disabled={isLoading}>
           <FaPlus className="mr-2" /> Add Provider
         </button>
+
+        <div className="mt-6">
+          <label className="label-text font-medium mb-1 block">Default model for new content</label>
+          <select
+            className="select select-bordered w-full"
+            value={defaultModelId}
+            onChange={e => setDefaultModelId(e.target.value)}
+          >
+            <option value="default">Default (system)</option>
+            {configs.flatMap(cfg =>
+              cfg.models.split(',').map(modelId => (
+                <option key={`${cfg.id}::${modelId.trim()}`} value={`${cfg.id}::${modelId.trim()}`}>{cfg.name} – {modelId.trim()}</option>
+              ))
+            )}
+          </select>
+        </div>
 
         <div className="modal-action mt-6">
           <button className="btn btn-ghost" onClick={onClose} disabled={isLoading}>Cancel</button>

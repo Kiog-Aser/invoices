@@ -87,6 +87,10 @@ const userSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    defaultAIModelId: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

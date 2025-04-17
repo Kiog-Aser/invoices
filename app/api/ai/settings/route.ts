@@ -22,16 +22,17 @@ export async function GET(req: Request) {
 
   try {
     await connectMongo();
-    const user = await User.findById(session.user.id).select('aiProviderConfigs');
+    const user = await User.findById(session.user.id).select('aiProviderConfigs defaultAIModelId');
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Return empty array if no configs exist yet
-    const configs = user.aiProviderConfigs || [];
-
-    return NextResponse.json(configs);
+    // Return both configs and defaultModelId
+    return NextResponse.json({
+      configs: user.aiProviderConfigs || [],
+      defaultModelId: user.defaultAIModelId || 'default',
+    });
 
   } catch (error) {
     console.error('[AI_SETTINGS_GET]', error);
@@ -47,9 +48,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const configs: AIProviderConfig[] = body;
+    const { configs, defaultModelId } = body;
 
-    // Basic validation: Check if it's an array
+    // Basic validation: Check if configs is an array
     if (!Array.isArray(configs)) {
       return NextResponse.json({ error: 'Invalid input: Expected an array of configurations.' }, { status: 400 });
     }
@@ -59,29 +60,27 @@ export async function POST(req: Request) {
       if (!config.name || !config.endpoint || !config.models || !config.apiKey) {
         return NextResponse.json({ error: `Invalid configuration object: Missing fields in provider named '${config.name || 'Unnamed'}'.` }, { status: 400 });
       }
-      // Add more specific validation if needed (e.g., URL format for endpoint)
     }
 
     await connectMongo();
 
-    // IMPORTANT: In a real application, API keys should be encrypted before saving.
-    // This example stores them directly for simplicity, which is NOT secure.
-
     const updatedUser = await User.findByIdAndUpdate(
       session.user.id,
-      { $set: { aiProviderConfigs: configs } },
-      { new: true, upsert: false } // `new: true` returns the updated document
-    ).select('aiProviderConfigs');
+      { $set: { aiProviderConfigs: configs, defaultAIModelId: defaultModelId } },
+      { new: true, upsert: false }
+    ).select('aiProviderConfigs defaultAIModelId');
 
     if (!updatedUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updatedUser.aiProviderConfigs);
+    return NextResponse.json({
+      configs: updatedUser.aiProviderConfigs,
+      defaultModelId: updatedUser.defaultAIModelId || 'default',
+    });
 
   } catch (error) {
     console.error('[AI_SETTINGS_POST]', error);
-    // Handle potential JSON parsing errors
     if (error instanceof SyntaxError) {
         return NextResponse.json({ error: 'Invalid JSON format in request body.' }, { status: 400 });
     }

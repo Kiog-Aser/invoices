@@ -667,7 +667,10 @@ const ContentHub = () => {
         stream: true // Explicitly request streaming
       };
       if (selectedModelId !== 'default') {
-        body.providerId = selectedModelId;
+        // Parse providerId and modelId from dropdown value
+        const [providerId, modelId] = selectedModelId.split('::');
+        body.providerId = providerId;
+        body.modelId = modelId;
       }
       const response = await fetch('/api/ai/content-assist', {
         method: 'POST',
@@ -1841,11 +1844,11 @@ const ContentHub = () => {
           const response = await fetch('/api/ai/settings');
           if (response.ok) {
             const data = await response.json();
-            // Ensure each config has a unique ID for React keys
-            setAiConfigs(data.map((config: any, index: number) => ({
+            setAiConfigs((data.configs || []).map((config: any, index: number) => ({
               ...config,
-              id: config.id || `${Date.now()}-${index}` // Generate ID if missing
+              id: config.id || `${Date.now()}-${index}`
             })));
+            setSelectedModelId(data.defaultModelId || 'default');
           } else {
             console.error('Failed to fetch AI settings');
           }
@@ -1858,19 +1861,19 @@ const ContentHub = () => {
   }, [status]);
 
   // Function to save AI configurations
-  const handleSaveAISettings = async (configsToSave: AIProviderConfig[]) => {
+  const handleSaveAISettings = async ({ configs, defaultModelId }: { configs: AIProviderConfig[], defaultModelId: string }) => {
     // Basic validation (optional, can be enhanced)
-    const validConfigs = configsToSave.filter(c => c.name && c.endpoint && c.models && c.apiKey);
-    if (validConfigs.length !== configsToSave.length) {
+    const validConfigs = configs.filter(c => c.name && c.endpoint && c.models && c.apiKey);
+    if (validConfigs.length !== configs.length) {
        toast.error('Please fill all fields for each provider.');
-       throw new Error('Incomplete configuration'); // Prevent modal close on partial save
+       throw new Error('Incomplete configuration');
     }
 
     try {
       const response = await fetch('/api/ai/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validConfigs), // Send only valid configs
+        body: JSON.stringify({ configs: validConfigs, defaultModelId }),
       });
 
       if (!response.ok) {
@@ -1878,30 +1881,39 @@ const ContentHub = () => {
         throw new Error(errorData.error || 'Failed to save AI settings');
       }
 
-      const savedConfigs = await response.json();
-       // Update local state with saved configs (including any IDs generated server-side if applicable)
-       // Ensure unique IDs on the client side again after saving
-      setAiConfigs(savedConfigs.map((config: any, index: number) => ({
+      const saved = await response.json();
+      setAiConfigs((saved.configs || []).map((config: any, index: number) => ({
          ...config,
          id: config.id || `${Date.now()}-saved-${index}`
        })));
+      setSelectedModelId(saved.defaultModelId || 'default');
       toast.success('AI settings saved successfully!');
-      setIsAISettingsModalOpen(false); // Close modal on successful save
+      setIsAISettingsModalOpen(false);
     } catch (error: any) {
       console.error('Error saving AI settings:', error);
       toast.error(`Failed to save settings: ${error.message}`);
-      throw error; // Re-throw to keep modal open in AISettingsModal
+      throw error;
     }
   };
 
   // Model selection state
   const [selectedModelId, setSelectedModelId] = useState<string>('default');
 
+  // Flattened model options for dropdown
+  const modelOptions = [
+    { id: 'default', label: 'Default' },
+    ...aiConfigs.flatMap(cfg =>
+      cfg.models.split(',').map(modelId => ({
+        id: `${cfg.id}::${modelId.trim()}`,
+        label: `${cfg.name} – ${modelId.trim()}`
+      }))
+    )
+  ];
+
   // Helper to get model display name
   const getModelName = (id: string) => {
-    if (id === 'default') return 'Default';
-    const found = aiConfigs.find(cfg => cfg.id === id);
-    return found ? found.name : id;
+    const found = modelOptions.find(opt => opt.id === id);
+    return found ? found.label : id;
   };
 
   return (
@@ -1975,9 +1987,8 @@ const ContentHub = () => {
                 value={selectedModelId}
                 onChange={e => setSelectedModelId(e.target.value)}
               >
-                <option value="default">Default</option>
-                {aiConfigs.length > 0 && aiConfigs.map(cfg => (
-                  <option key={cfg.id} value={cfg.id}>{cfg.name}</option>
+                {modelOptions.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
               </select>
               {aiConfigs.length === 0 && (
@@ -2349,6 +2360,7 @@ const ContentHub = () => {
         onClose={() => setIsAISettingsModalOpen(false)}
         onSave={handleSaveAISettings}
         initialConfigs={aiConfigs}
+        defaultModelId={selectedModelId} // Pass default model ID to modal
       />
 
       {/* ADDED: Fixed AI Settings Button */}
