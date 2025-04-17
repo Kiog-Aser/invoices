@@ -1,7 +1,9 @@
 "use client";
 
-// This ensures the page is rendered dynamically at request time, not statically at build time
-export const dynamic = 'force-dynamic';
+// Ensure the page is always rendered dynamically and never statically or cached
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref } from 'react'; // Added Ref
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign } from 'react-icons/fa';
@@ -261,13 +263,10 @@ const ContentHub = () => {
       }
     };
 
-    // Add check for browser environment
-    if (typeof document !== 'undefined') {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [popupSuggestion, dismissSuggestionPopup]); // Re-run if popup state changes
 
   // +++ End Popup Handler Functions +++
@@ -408,7 +407,7 @@ const ContentHub = () => {
   const insertText = (text: string, isAIResponse: boolean = false) => {
     if (quillRef.current) {
       const editor = quillRef.current.getEditor();
-      const range = editor.getSelection();
+      const range = editor.getSelection(true);
       
       // If this is an AI response, ensure we're not in title format
       if (isAIResponse) {
@@ -767,193 +766,187 @@ const ContentHub = () => {
   
   // Add custom CSS for the placeholder styling and floating toolbar
   useEffect(() => {
-    // Add check for browser environment
-    if (typeof document !== 'undefined') {
-      // Add custom CSS to style the placeholder like the title
-      const style = document.createElement('style');
-      style.textContent = `
-        .medium-style-editor .ql-editor.ql-blank::before {
-          font-size: 2.25rem;
-          font-weight: 700;
-          color: rgba(75, 85, 99, 0.4);
-          font-style: normal;
-          left: 0;
-          right: 0;
-        }
-        
-        /* Style h1 elements to match desired title style */
-        .medium-style-editor .ql-editor h1 {
-          font-size: 2.25rem;
-          font-weight: 700;
-          margin-bottom: 0.75em;
-        }
-        
-        /* Style h2 elements for normal and subtitle cases */
-        .medium-style-editor .ql-editor h2 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          margin-bottom: 0.5em;
-        }
-
-        /* Add margin to paragraphs for spacing */
-        .medium-style-editor .ql-editor p {
-          margin-bottom: 1em; /* Adjust as needed */
-        }
-        
-        /* Special styling for subtitle (second line with h2) */
-        .medium-style-editor .ql-editor h2,
-        .medium-style-editor .ql-editor h2.subtitle {
-          color: #9ca3af; /* More grey for subtitle */
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-top: -0.5em; /* Less space above subtitle */
-          margin-bottom: 0.5em; /* Less space below subtitle */
-        }
-        
-        /* Style links with understated black underline */
-        .medium-style-editor .ql-editor a {
-          color: inherit;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-          transition: all 0.2s;
-        }
-        
-        /* Style blockquotes - making more prominent */
-        .medium-style-editor .ql-editor blockquote {
-          border-left: 3px solid #d1d5db;
-          padding: 0.5rem 1rem;
-          margin: 1rem 0;
-          color: #4b5563;
-          font-style: italic;
-          background-color: rgba(0, 0, 0, 0.03);
-          border-radius: 0 4px 4px 0;
-        }
-
-        /* Style for grammar suggestion underlines */
-        .medium-style-editor .ql-editor .grammar-suggestion-underline {
-          text-decoration: underline wavy red;
-          text-decoration-skip-ink: none; /* Make sure underline is continuous */
-          background-color: rgba(255, 0, 0, 0.05); /* Optional subtle background */
-          cursor: pointer; /* Indicate it's interactive */
-        }
-        
-        /* Floating toolbar styles */
-        .floating-toolbar {
-          position: fixed; /* Use fixed instead of absolute for better positioning */
-          z-index: 9999; /* Much higher z-index to ensure visibility */
-          display: flex;
-          align-items: center;
-          background: #333;
-          border-radius: 12px; /* Even more rounded edges */
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-          padding: 8px;
-          transition: opacity 0.2s;
-          opacity: 1;
-        }
-
-        .floating-toolbar:after {
-          content: '';
-          position: absolute;
-          bottom: -5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-top: 6px solid #333;
-        }
-        
-        .floating-toolbar button {
-          background: transparent;
-          border: none;
-          color: #fff;
-          cursor: pointer;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 4px;
-          font-size: 16px;
-        }
-        
-        .floating-toolbar button:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .floating-toolbar button.active {
-          background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .floating-toolbar .divider {
-          width: 1px;
-          height: 18px;
-          background: rgba(255, 255, 255, 0.3);
-          margin: 0 6px;
-        }
-        
-        /* Editor side labels (Title/Subtitle indicators) */
-        .editor-labels-container {
-          pointer-events: none;
-        }
-        .editor-side-label {
-          position: absolute;
-          left: -85px; /* Position just to the left of editor content */
-          display: flex;
-          flex-direction: row-reverse; /* Text first, then line */
-          align-items: center;
-          color: #6b7280;
-          padding-right: 2px;
-          pointer-events: none;
-          z-index: 5;
-          /* Remove fixed height to allow container to size based on content */
-        }
-        
-        .editor-side-label .label-line {
-          width: 1px; /* Slightly thicker line */
-          background-color: #d1d5db;
-          position: fixed;
-          right: 240;
-          /* Height will be determined by parent container */
-        }
-        
-        .editor-side-label span {
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 1rem; /* Bigger text */
-          white-space: nowrap; /* Prevent text wrapping */
-          margin-top: 0.5em; /* Space between line and text */
-          margin-bottom: 0.5em; /* Space between line and text */
-        }
-        
-        .title-label {
-          font-weight: 600; /* Slightly bolder */
-        }
-        
-        .subtitle-label {
-          font-weight: 500; /* Slightly bolder */
-          color: #9ca3af;
-        }
-        .editor-side-label span {
-          color: #6b7280;
-          font-size: 1rem;
-          font-weight: 500;
-          margin: 0;
-        }
-        .editor-side-label.subtitle-label span {
-          color: #9ca3af;
-          font-weight: 400;
-        }
-      `;
-      document.head.appendChild(style);
+    // Add custom CSS to style the placeholder like the title
+    const style = document.createElement('style');
+    style.textContent = `
+      .medium-style-editor .ql-editor.ql-blank::before {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: rgba(75, 85, 99, 0.4);
+        font-style: normal;
+        left: 0;
+        right: 0;
+      }
       
-      return () => {
-        // Check again in cleanup
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      };
-    }
+      /* Style h1 elements to match desired title style */
+      .medium-style-editor .ql-editor h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-bottom: 0.75em;
+      }
+      
+      /* Style h2 elements for normal and subtitle cases */
+      .medium-style-editor .ql-editor h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5em;
+      }
+
+      /* Add margin to paragraphs for spacing */
+      .medium-style-editor .ql-editor p {
+        margin-bottom: 1em; /* Adjust as needed */
+      }
+      
+      /* Special styling for subtitle (second line with h2) */
+      .medium-style-editor .ql-editor h2,
+      .medium-style-editor .ql-editor h2.subtitle {
+        color: #9ca3af; /* More grey for subtitle */
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-top: -0.5em; /* Less space above subtitle */
+        margin-bottom: 0.5em; /* Less space below subtitle */
+      }
+      
+      /* Style links with understated black underline */
+      .medium-style-editor .ql-editor a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        transition: all 0.2s;
+      }
+      
+      /* Style blockquotes - making more prominent */
+      .medium-style-editor .ql-editor blockquote {
+        border-left: 3px solid #d1d5db;
+        padding: 0.5rem 1rem;
+        margin: 1rem 0;
+        color: #4b5563;
+        font-style: italic;
+        background-color: rgba(0, 0, 0, 0.03);
+        border-radius: 0 4px 4px 0;
+      }
+
+      /* Style for grammar suggestion underlines */
+      .medium-style-editor .ql-editor .grammar-suggestion-underline {
+        text-decoration: underline wavy red;
+        text-decoration-skip-ink: none; /* Make sure underline is continuous */
+        background-color: rgba(255, 0, 0, 0.05); /* Optional subtle background */
+        cursor: pointer; /* Indicate it's interactive */
+      }
+      
+      /* Floating toolbar styles */
+      .floating-toolbar {
+        position: fixed; /* Use fixed instead of absolute for better positioning */
+        z-index: 9999; /* Much higher z-index to ensure visibility */
+        display: flex;
+        align-items: center;
+        background: #333;
+        border-radius: 12px; /* Even more rounded edges */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        padding: 8px;
+        transition: opacity 0.2s;
+        opacity: 1;
+      }
+
+      .floating-toolbar:after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid #333;
+      }
+      
+      .floating-toolbar button {
+        background: transparent;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      
+      .floating-toolbar button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .floating-toolbar button.active {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      .floating-toolbar .divider {
+        width: 1px;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 6px;
+      }
+      
+      /* Editor side labels (Title/Subtitle indicators) */
+      .editor-labels-container {
+        pointer-events: none;
+      }
+      .editor-side-label {
+        position: absolute;
+        left: -85px; /* Position just to the left of editor content */
+        display: flex;
+        flex-direction: row-reverse; /* Text first, then line */
+        align-items: center;
+        color: #6b7280;
+        padding-right: 2px;
+        pointer-events: none;
+        z-index: 5;
+        /* Remove fixed height to allow container to size based on content */
+      }
+      
+      .editor-side-label .label-line {
+        width: 1px; /* Slightly thicker line */
+        background-color: #d1d5db;
+        position: fixed;
+        right: 240;
+        /* Height will be determined by parent container */
+      }
+      
+      .editor-side-label span {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 1rem; /* Bigger text */
+        white-space: nowrap; /* Prevent text wrapping */
+        margin-top: 0.5em; /* Space between line and text */
+        margin-bottom: 0.5em; /* Space between line and text */
+      }
+      
+      .title-label {
+        font-weight: 600; /* Slightly bolder */
+      }
+      
+      .subtitle-label {
+        font-weight: 500; /* Slightly bolder */
+        color: #9ca3af;
+      }
+      .editor-side-label span {
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+      .editor-side-label.subtitle-label span {
+        color: #9ca3af;
+        font-weight: 400;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
   
   // Track if we're in link input mode
@@ -1155,10 +1148,7 @@ const ContentHub = () => {
     const quill = quillRef.current?.getEditor();
     const editorContainer = editorContainerRef.current;
     if (!quill || !editorContainer) return;
-    // Wrap addEditorLabels call in a check for browser environment
-    if (typeof window !== 'undefined') {
-        addEditorLabels();
-    }
+    addEditorLabels();
     if (range && range.length > 0 && source === 'user') {
       const bounds = quill.getBounds(range.index, range.length);
       const toolbarElement = toolbarRef.current;
@@ -1745,10 +1735,8 @@ const ContentHub = () => {
                 const editor = quillRef.current.getEditor();
                 editor.format('header', 1);
               }
-              // Always update indicator on focus, only in browser
-              if (typeof window !== 'undefined') {
-                addEditorLabels();
-              }
+              // Always update indicator on focus
+              addEditorLabels();
             }}
             modules={quillModules}
             formats={quillFormats}

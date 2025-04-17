@@ -4,9 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/libs/next-auth";
 import config from "@/config";
 
-// Ensure this layout is dynamically rendered as it uses server-side session checks
-export const dynamic = 'force-dynamic';
-
 // This is a server-side component to ensure the user is logged in.
 // If not, it will redirect to the login page.
 // It's applied to all subpages of /dashboard in /app/dashboard/*** pages
