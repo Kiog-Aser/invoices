@@ -6,12 +6,13 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX } from 'react'; // Added Ref and JSX
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots } from 'react-icons/fa'; // Added FaCommentDots
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
 import AISettingsModal from '@/components/AISettingsModal'; // Import the new modal
 import { type AIProviderConfig } from '@/components/AISettingsModal'; // Adjusted import
+import InlineChat from '@/components/InlineChat'; // Import the new chat component
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -22,7 +23,7 @@ const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
   loading: () => <p>Loading editor...</p>
 });
 import 'react-quill/dist/quill.snow.css';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -250,6 +251,8 @@ const ContentHub = () => {
   const [aiConfigs, setAiConfigs] = useState<AIProviderConfig[]>([]); // State for AI configs
   const quillRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null); // Ref for the editor container
+  const [selectedModelId, setSelectedModelId] = useState<string>('default'); // Keep this state
+  const [isChatVisible, setIsChatVisible] = useState(false); // State for chat visibility
 
   // State for the floating toolbar
   const [floatingToolbar, setFloatingToolbar] = useState<{ visible: boolean; top: number; left: number }>({ visible: false, top: 0, left: 0 });
@@ -1844,17 +1847,34 @@ const ContentHub = () => {
           const response = await fetch('/api/ai/settings');
           if (response.ok) {
             const data = await response.json();
-            setAiConfigs((data.configs || []).map((config: any, index: number) => ({
+            // Ensure IDs are generated if missing
+            const configsWithIds = (data.configs || []).map((config: any, index: number) => ({
               ...config,
-              id: config.id || `${Date.now()}-${index}`
-            })));
-            setSelectedModelId(data.defaultModelId || 'default');
+              id: config.id || `config-${Date.now()}-${index}` // Ensure unique ID
+            }));
+            setAiConfigs(configsWithIds);
+            // Ensure defaultModelId exists in the fetched configs or default to 'default'
+            const defaultExists = configsWithIds.some((cfg: AIProviderConfig) =>
+              (cfg.models || '').split(',').some(m => `${cfg.id}::${m.trim()}` === data.defaultModelId)
+            );
+            setSelectedModelId(defaultExists ? data.defaultModelId : 'default');
+
           } else {
             console.error('Failed to fetch AI settings');
+            // Set default empty state on failure
+             setAiConfigs([]);
+             setSelectedModelId('default');
           }
         } catch (error) {
           console.error('Error fetching AI settings:', error);
+           // Set default empty state on error
+           setAiConfigs([]);
+           setSelectedModelId('default');
         }
+      } else {
+         // Set default empty state if not authenticated
+         setAiConfigs([]);
+         setSelectedModelId('default');
       }
     };
     fetchAiConfigs();
@@ -1897,18 +1917,22 @@ const ContentHub = () => {
   };
 
   // Model selection state
-  const [selectedModelId, setSelectedModelId] = useState<string>('default');
-
-  // Flattened model options for dropdown
+  // Flattened model options for dropdown (used in sidebar)
   const modelOptions = [
     { id: 'default', label: 'Default' },
     ...aiConfigs.flatMap(cfg =>
-      cfg.models.split(',').map(modelId => ({
+      (cfg.models || '').split(',').map(modelId => ({ // Add null check for cfg.models
         id: `${cfg.id}::${modelId.trim()}`,
         label: `${cfg.name} – ${modelId.trim()}`
-      }))
+      })).filter(opt => opt.label.includes('–') && opt.id.includes('::')) // Ensure valid options
     )
   ];
+
+  // Function to handle model changes from chat or sidebar
+  const handleModelChange = (newModelId: string) => {
+    setSelectedModelId(newModelId);
+    // Optionally save this as the new default? For now, just update state.
+  };
 
   // Helper to get model display name
   const getModelName = (id: string) => {
@@ -1939,9 +1963,9 @@ const ContentHub = () => {
       )}
       {/* +++ End Suggestion Popup Portal +++ */}
       {/* Sidebar with tabbed navigation */}
-      <div className="w-64 border-l border-base-200 h-screen flex flex-col p-4 fixed right-0 overflow-y-auto bg-base-100 z-50">
+      <div className="w-64 border-l border-base-200 h-screen flex flex-col fixed right-0 overflow-y-auto bg-base-100 z-50"> {/* Removed p-4, added fixed */}
         {/* Tab bar with icons */}
-        <div className="flex mb-4 gap-1 justify-between items-center"> {/* Added items-center */}
+        <div className="flex mb-4 gap-1 justify-between items-center border-b border-base-300 px-2 pt-2"> {/* Added px-2 pt-2 border-b */}
           {/* AI Tab */}
           <button
             className={`flex-1 tab tab-bordered px-0 py-2 flex items-center justify-center text-xl ${activeSidebarTab === 'ai' ? 'tab-active text-primary' : 'text-base-content/60'}`}
@@ -1976,299 +2000,302 @@ const ContentHub = () => {
           </button>
         </div>
         {/* Tab content */}
-        {activeSidebarTab === 'ai' && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
-            {/* Model Selection Dropdown */}
-            <div className="mb-4">
-              <label className="label-text font-medium mb-1 block">AI Model</label>
-              <select
-                className="select select-bordered w-full"
-                value={selectedModelId}
-                onChange={e => setSelectedModelId(e.target.value)}
-              >
-                {modelOptions.map(opt => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-              {aiConfigs.length === 0 && (
-                <div className="text-xs text-base-content/60 mt-2">
-                  You can add custom models in <button className="link link-primary p-0 m-0 align-baseline" type="button" onClick={() => setIsAISettingsModalOpen(true)}>AI Settings</button>.
+        <div className="flex-1 overflow-y-auto px-4 pb-4"> {/* Added container for scrollable content */}
+          {activeSidebarTab === 'ai' && (
+            <>
+              <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
+              {/* Model Selection Dropdown */}
+              <div className="mb-4">
+                <label className="label-text font-medium mb-1 block">AI Model</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selectedModelId}
+                  // Update state via handleModelChange
+                  onChange={e => handleModelChange(e.target.value)}
+                >
+                  {modelOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+                {aiConfigs.length === 0 && (
+                  <div className="text-xs text-base-content/60 mt-2">
+                    You can add custom models in <button className="link link-primary p-0 m-0 align-baseline" type="button" onClick={() => setIsAISettingsModalOpen(true)}>AI Settings</button>.
+                  </div>
+                )}
+              </div>
+              {/* Protocol Selection */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => setIsProtocolModalOpen(true)}
+                  className={`btn ${selectedProtocol ? 'btn-primary' : 'btn-outline'} btn-sm w-full`}
+                >
+                  {selectedProtocol ? (
+                    <>
+                      <FaLink className="mr-2" /> {selectedProtocol.title}
+                    </>
+                  ) : (
+                    <>
+                      <FaLink className="mr-2" /> Connect Protocol
+                    </>
+                  )}
+                </button>
+              </div>
+              {/* Enhance Content Section */}
+              <div className="space-y-2 mb-6">
+                <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance Content</h3>
+                <button 
+                  onClick={() => generateWithAI('improve')}
+                  disabled={!!loading}
+                  className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'btn-primary loading' : 'btn-outline'}`}
+                >
+                  <FaMagic className="mr-2" /> Improve Writing
+                </button>
+                <button 
+                  onClick={() => generateWithAI('rewrite')} 
+                  disabled={!!loading}
+                  className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'btn-primary loading' : 'btn-outline'}`}
+                >
+                  <FaPen className="mr-2" /> Rewrite Content
+                </button>
+                <button 
+                  onClick={() => generateWithAI('shorten')} 
+                  disabled={!!loading}
+                  className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'btn-primary loading' : 'btn-outline'}`}
+                >
+                  <FaCut className="mr-2" /> Summarize & Shorten
+                </button>
+              </div>
+              {/* Content Generation Section */}
+              <div className="space-y-2 mb-6">
+                <h3 className="text-sm font-medium text-base-content/70 mb-1">
+                  <div className="flex items-center">
+                    <FaLightbulb className="mr-2 text-yellow-400" /> Content Generation
+                  </div>
+                </h3>
+                <button 
+                  onClick={() => generateWithAI('ideas')}
+                  disabled={!!loading}
+                  className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'btn-primary loading' : 'btn-outline'}`}
+                >
+                  Generate Content Ideas
+                </button>
+                <button 
+                  onClick={() => generateWithAI('article')}
+                  disabled={!!loading || !title}
+                  className={`btn btn-sm w-full justify-start ${loading === 'article' ? 'btn-primary loading' : 'btn-outline'}`}
+                  title={title ? '' : 'Enter a title in the editor to generate an outline'}
+                >
+                  Generate Outline
+                </button>
+              </div>
+            </>
+          )}
+          {activeSidebarTab === 'grammar' && (
+            <div className="p-4">
+              <h2 className="text-lg font-semibold mb-2">Grammar Checker</h2>
+              <p className="text-base-content/70 text-sm mb-2">Check your content for grammar issues.</p>
+              <button className="btn btn-primary btn-sm w-full mb-2" onClick={checkGrammar} disabled={grammarLoading}>{grammarLoading ? 'Checking...' : 'Check Grammar'}</button>
+              {/* Suggestions now in sidebar, not modal */}
+              {grammarLoading ? (
+                <div className="text-center py-4">Checking grammar...</div>
+              ) : grammarSuggestions.length === 0 && !grammarLoading ? null : (
+                <div className="mt-2">
+                  {grammarSuggestions.length === 0 ? (
+                    <div className="text-center py-8">No issues found!</div>
+                  ) : (
+                    <>
+                      <button className="btn btn-success btn-sm mb-4 w-full" onClick={applyAllGrammarSuggestions}>Apply All</button>
+                      <ul className="divide-y">
+                        {grammarSuggestions.map((s, i) => (
+                          <li key={i} className="py-2">
+                            <div className="mb-1 text-base-content/80">{s.message}</div>
+                            <div className="mb-1 text-xs text-base-content/60">Context: <span className="font-mono bg-base-200 px-1 rounded">{s.context.text}</span></div>
+                            {s.replacements && s.replacements.length > 0 && (
+                              <div className="flex gap-2 mt-1 items-center">
+                                <button
+                                  className="btn btn-xs btn-primary max-w-[120px] truncate"
+                                  style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
+                                  onClick={() => applyGrammarSuggestion(s)}
+                                  title={s.replacements[0].value}
+                                >
+                                  Apply: {s.replacements[0].value}
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-ghost text-error px-2"
+                                  style={{ minWidth: 0 }}
+                                  onClick={() => handleDismissSuggestion(s)}
+                                  title="Dismiss"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
+                                    <line x1="14" y1="11" x2="14" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-            {/* Protocol Selection */}
-            <div className="mb-6">
-              <button 
-                onClick={() => setIsProtocolModalOpen(true)}
-                className={`btn ${selectedProtocol ? 'btn-primary' : 'btn-outline'} btn-sm w-full`}
-              >
-                {selectedProtocol ? (
-                  <>
-                    <FaLink className="mr-2" /> {selectedProtocol.title}
-                  </>
-                ) : (
-                  <>
-                    <FaLink className="mr-2" /> Connect Protocol
-                  </>
-                )}
-              </button>
-            </div>
-            {/* Enhance Content Section */}
-            <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-medium text-base-content/70 mb-1">Enhance Content</h3>
-              <button 
-                onClick={() => generateWithAI('improve')}
-                disabled={!!loading}
-                className={`btn btn-sm w-full justify-start ${loading === 'improve' ? 'btn-primary loading' : 'btn-outline'}`}
-              >
-                <FaMagic className="mr-2" /> Improve Writing
-              </button>
-              <button 
-                onClick={() => generateWithAI('rewrite')} 
-                disabled={!!loading}
-                className={`btn btn-sm w-full justify-start ${loading === 'rewrite' ? 'btn-primary loading' : 'btn-outline'}`}
-              >
-                <FaPen className="mr-2" /> Rewrite Content
-              </button>
-              <button 
-                onClick={() => generateWithAI('shorten')} 
-                disabled={!!loading}
-                className={`btn btn-sm w-full justify-start ${loading === 'shorten' ? 'btn-primary loading' : 'btn-outline'}`}
-              >
-                <FaCut className="mr-2" /> Summarize & Shorten
-              </button>
-            </div>
-            {/* Content Generation Section */}
-            <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-medium text-base-content/70 mb-1">
-                <div className="flex items-center">
-                  <FaLightbulb className="mr-2 text-yellow-400" /> Content Generation
-                </div>
-              </h3>
-              <button 
-                onClick={() => generateWithAI('ideas')}
-                disabled={!!loading}
-                className={`btn btn-sm w-full justify-start ${loading === 'ideas' ? 'btn-primary loading' : 'btn-outline'}`}
-              >
-                Generate Content Ideas
-              </button>
-              <button 
-                onClick={() => generateWithAI('article')}
-                disabled={!!loading || !title}
-                className={`btn btn-sm w-full justify-start ${loading === 'article' ? 'btn-primary loading' : 'btn-outline'}`}
-                title={title ? '' : 'Enter a title in the editor to generate an outline'}
-              >
-                Generate Outline
-              </button>
-            </div>
-          </>
-        )}
-        {activeSidebarTab === 'grammar' && (
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2">Grammar Checker</h2>
-            <p className="text-base-content/70 text-sm mb-2">Check your content for grammar issues.</p>
-            <button className="btn btn-primary btn-sm w-full mb-2" onClick={checkGrammar} disabled={grammarLoading}>{grammarLoading ? 'Checking...' : 'Check Grammar'}</button>
-            {/* Suggestions now in sidebar, not modal */}
-            {grammarLoading ? (
-              <div className="text-center py-4">Checking grammar...</div>
-            ) : grammarSuggestions.length === 0 && !grammarLoading ? null : (
-              <div className="mt-2">
-                {grammarSuggestions.length === 0 ? (
-                  <div className="text-center py-8">No issues found!</div>
-                ) : (
-                  <>
-                    <button className="btn btn-success btn-sm mb-4 w-full" onClick={applyAllGrammarSuggestions}>Apply All</button>
-                    <ul className="divide-y">
-                      {grammarSuggestions.map((s, i) => (
-                        <li key={i} className="py-2">
-                          <div className="mb-1 text-base-content/80">{s.message}</div>
-                          <div className="mb-1 text-xs text-base-content/60">Context: <span className="font-mono bg-base-200 px-1 rounded">{s.context.text}</span></div>
-                          {s.replacements && s.replacements.length > 0 && (
-                            <div className="flex gap-2 mt-1 items-center">
-                              <button
-                                className="btn btn-xs btn-primary max-w-[120px] truncate"
-                                style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
-                                onClick={() => applyGrammarSuggestion(s)}
-                                title={s.replacements[0].value}
-                              >
-                                Apply: {s.replacements[0].value}
-                              </button>
-                              <button
-                                className="btn btn-xs btn-ghost text-error px-2"
-                                style={{ minWidth: 0 }}
-                                onClick={() => handleDismissSuggestion(s)}
-                                title="Dismiss"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="3 6 5 6 21 6"></polyline>
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                  <line x1="10" y1="11" x2="10" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
-                                  <line x1="14" y1="11" x2="14" y2="17"></line> {/* Corrected attribute x1 -> x2 */}
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+          )}
+          {activeSidebarTab === 'readability' && (
+            <div className="p-4 flex flex-col flex-grow">
+              {/* Header */}
+              <div className="flex items-center mb-4">
+                <h2 className="text-lg font-semibold">Readability</h2>
+                {/* Removed settings button */}
               </div>
-            )}
-          </div>
-        )}
-        {activeSidebarTab === 'readability' && (
-          <div className="p-4 flex flex-col flex-grow">
-            {/* Header */}
-            <div className="flex items-center mb-4">
-              <h2 className="text-lg font-semibold">Readability</h2>
-              {/* Removed settings button */}
-            </div>
 
-            {/* Analyze Button */}
-            <button className="btn btn-primary btn-sm w-full mb-4" onClick={checkReadability}>Analyze Readability</button>
+              {/* Analyze Button */}
+              <button className="btn btn-primary btn-sm w-full mb-4" onClick={checkReadability}>Analyze Readability</button>
 
-            {readability ? (
-              <div className="space-y-3 flex-grow">
-                {/* Overall Grade & Basic Stats */}
-                <div className="p-3 rounded-lg bg-base-200 border border-base-300">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-base-content/80">Grade {readability.fleschKincaidGrade}</span>
-                    <span className={`badge badge-sm ${readability.fleschKincaidGrade <= 8 ? 'badge-success' : readability.fleschKincaidGrade <= 12 ? 'badge-warning' : 'badge-error'}`}>
-                      {readability.fleschKincaidGrade <= 8 ? 'Good' : readability.fleschKincaidGrade <= 12 ? 'Fair' : 'Hard'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-base-content/60 mb-2">
-                    Based on Flesch-Kincaid
-                  </div>
-                  <hr className="border-base-300 my-2" />
-                  <div className="text-xs text-base-content/60 mb-2">
-                    {readability.wordCount} Words
+              {readability ? (
+                <div className="space-y-3 flex-grow">
+                  {/* Overall Grade & Basic Stats */}
+                  <div className="p-3 rounded-lg bg-base-200 border border-base-300">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-base-content/80">Grade {readability.fleschKincaidGrade}</span>
+                      <span className={`badge badge-sm ${readability.fleschKincaidGrade <= 8 ? 'badge-success' : readability.fleschKincaidGrade <= 12 ? 'badge-warning' : 'badge-error'}`}>
+                        {readability.fleschKincaidGrade <= 8 ? 'Good' : readability.fleschKincaidGrade <= 12 ? 'Fair' : 'Hard'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-base-content/60 mb-2">
+                      Based on Flesch-Kincaid
+                    </div>
+                    <hr className="border-base-300 my-2" />
+                    <div className="text-xs text-base-content/60 mb-2">
+                      {readability.wordCount} Words
+                    </div>
+
+                    {/* Collapsible Stats */}
+                    <button
+                      onClick={() => setShowReadabilityStats(!showReadabilityStats)}
+                      className="text-xs text-primary hover:underline flex items-center w-full justify-between"
+                    >
+                      <span>{showReadabilityStats ? 'Show fewer stats' : 'Show more stats'}</span>
+                      {showReadabilityStats ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+                    </button>
+                    {showReadabilityStats && (
+                      <div className="mt-2 space-y-1 text-xs text-base-content/60">
+                        <div>Characters: {readability.characterCount}</div>
+                        <div>Sentences: {readability.sentenceCount}</div>
+                        <div>Paragraphs: {readability.paragraphCount}</div>
+                        <div>Reading time: {readability.readingTimeMinutes} min</div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Collapsible Stats */}
-                  <button
-                    onClick={() => setShowReadabilityStats(!showReadabilityStats)}
-                    className="text-xs text-primary hover:underline flex items-center w-full justify-between"
-                  >
-                    <span>{showReadabilityStats ? 'Show fewer stats' : 'Show more stats'}</span>
-                    {showReadabilityStats ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
-                  </button>
-                  {showReadabilityStats && (
-                    <div className="mt-2 space-y-1 text-xs text-base-content/60">
-                      <div>Characters: {readability.characterCount}</div>
-                      <div>Sentences: {readability.sentenceCount}</div>
-                      <div>Paragraphs: {readability.paragraphCount}</div>
-                      <div>Reading time: {readability.readingTimeMinutes} min</div>
+                  {/* Detailed Issues */}
+                  {readability.veryHardSentenceCount > 0 && (
+                    <div className="p-3 rounded-lg bg-error/10 border border-error/30 flex justify-between items-center">
+                      <span className="text-sm font-semibold text-error">
+                        {readability.veryHardSentenceCount} of {readability.sentenceCount} sentences is very hard to read.
+                      </span>
+                      <button className="btn btn-ghost btn-xs text-error" title="View details">
+                        <FaEye />
+                      </button>
                     </div>
                   )}
+                  {readability.hardSentenceCount > 0 && (
+                    <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 flex justify-between items-center">
+                      <span className="text-sm font-semibold text-warning">
+                        {readability.hardSentenceCount} of {readability.sentenceCount} sentences is hard to read.
+                      </span>
+                      <button className="btn btn-ghost btn-xs text-warning" title="View details">
+                        <FaEye />
+                      </button>
+                    </div>
+                  )}
+                  {readability.weakenerCount > 0 && (
+                    <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
+                      <span className="text-sm font-semibold text-info">
+                        {readability.weakenerCount} weakeners.
+                      </span>
+                      <button className="btn btn-ghost btn-xs text-info" title="View details">
+                        <FaEye />
+                      </button>
+                    </div>
+                  )}
+                   {readability.passiveVoiceCount > 0 && (
+                    <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
+                      <span className="text-sm font-semibold text-info">
+                        {readability.passiveVoiceCount} uses of passive voice.
+                      </span>
+                      <button className="btn btn-ghost btn-xs text-info" title="View details">
+                        <FaEye />
+                      </button>
+                    </div>
+                  )}
+                  {readability.simpleAlternativeCount > 0 && (
+                    <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
+                      <span className="text-sm font-semibold text-purple-500">
+                        {readability.simpleAlternativeCount} word with a simpler alternative.
+                      </span>
+                      <button className="btn btn-ghost btn-xs text-purple-500" title="View details">
+                        <FaEye />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* No Issues Message */}
+                  {readability.issues.length === 0 && (
+                     <div className="text-center py-6 text-success">
+                       <FaCheckCircle className="inline-block mr-2" /> No readability issues found!
+                     </div>
+                   )}
+
                 </div>
-
-                {/* Detailed Issues */}
-                {readability.veryHardSentenceCount > 0 && (
-                  <div className="p-3 rounded-lg bg-error/10 border border-error/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-error">
-                      {readability.veryHardSentenceCount} of {readability.sentenceCount} sentences is very hard to read.
-                    </span>
-                    <button className="btn btn-ghost btn-xs text-error" title="View details">
-                      <FaEye />
-                    </button>
-                  </div>
-                )}
-                {readability.hardSentenceCount > 0 && (
-                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-warning">
-                      {readability.hardSentenceCount} of {readability.sentenceCount} sentences is hard to read.
-                    </span>
-                    <button className="btn btn-ghost btn-xs text-warning" title="View details">
-                      <FaEye />
-                    </button>
-                  </div>
-                )}
-                {readability.weakenerCount > 0 && (
-                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-info">
-                      {readability.weakenerCount} weakeners.
-                    </span>
-                    <button className="btn btn-ghost btn-xs text-info" title="View details">
-                      <FaEye />
-                    </button>
-                  </div>
-                )}
-                 {readability.passiveVoiceCount > 0 && (
-                  <div className="p-3 rounded-lg bg-info/10 border border-info/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-info">
-                      {readability.passiveVoiceCount} uses of passive voice.
-                    </span>
-                    <button className="btn btn-ghost btn-xs text-info" title="View details">
-                      <FaEye />
-                    </button>
-                  </div>
-                )}
-                {readability.simpleAlternativeCount > 0 && (
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-purple-500">
-                      {readability.simpleAlternativeCount} word with a simpler alternative.
-                    </span>
-                    <button className="btn btn-ghost btn-xs text-purple-500" title="View details">
-                      <FaEye />
-                    </button>
-                  </div>
-                )}
-
-                {/* No Issues Message */}
-                {readability.issues.length === 0 && (
-                   <div className="text-center py-6 text-success">
-                     <FaCheckCircle className="inline-block mr-2" /> No readability issues found!
-                   </div>
-                 )}
-
-              </div>
-            ) : (
-              <div className="text-center text-base-content/60 mt-8 flex-grow flex flex-col items-center justify-center">
-                <FaChartBar size={32} className="mb-2" />
-                <p>Click "Analyze Readability" to get feedback.</p>
-              </div>
-            )}
-          </div>
-        )}
-        {activeSidebarTab === 'earning' && (
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2">Earning Optimiser</h2>
-            <p className="text-base-content/70 text-sm mb-2">
-              Get advanced, AI-powered suggestions to maximise your content's earning potential. The AI will analyse your content and provide:
-              <ul className="list-disc ml-5 mt-2 text-sm text-base-content/70">
-                <li>Actionable CTA improvements for higher conversions</li>
-                <li>Affiliate program and partnership recommendations</li>
-                <li>Ideas for digital products, services, or offers</li>
-                <li>Upsell/cross-sell and funnel suggestions</li>
-                <li>Platform-specific monetisation tips</li>
-                <li>Audience segmentation and targeting advice</li>
-                <li>Lead magnet and content upgrade ideas</li>
-                <li>SEO/traffic strategies for monetisation</li>
-                <li>Trust-building and authority signals</li>
-              </ul>
-            </p>
-            <button
-              className={`btn btn-primary btn-sm w-full mb-4 ${loading === 'earning-optimiser' ? 'loading' : ''}`}
-              onClick={() => generateWithAI('earning-optimiser')}
-              disabled={!!loading}
-            >
-              {loading === 'earning-optimiser' ? 'Analysing...' : 'Run Earning Optimiser'}
-            </button>
-            {loading === 'earning-optimiser' && (
-              <div className="text-center py-4">Analysing your content for monetisation opportunities...</div>
-            )}
-            {activeSidebarTab === 'earning' && !loading && content && aiEarningInsights && (
-              <EarningInsightsSidebar markdown={aiEarningInsights} />
-            )}
-          </div>
-        )}
+              ) : (
+                <div className="text-center text-base-content/60 mt-8 flex-grow flex flex-col items-center justify-center">
+                  <FaChartBar size={32} className="mb-2" />
+                  <p>Click "Analyze Readability" to get feedback.</p>
+                </div>
+              )}
+            </div>
+          )}
+          {activeSidebarTab === 'earning' && (
+            <div className="p-4">
+              <h2 className="text-lg font-semibold mb-2">Earning Optimiser</h2>
+              <p className="text-base-content/70 text-sm mb-2">
+                Get advanced, AI-powered suggestions to maximise your content's earning potential. The AI will analyse your content and provide:
+                <ul className="list-disc ml-5 mt-2 text-sm text-base-content/70">
+                  <li>Actionable CTA improvements for higher conversions</li>
+                  <li>Affiliate program and partnership recommendations</li>
+                  <li>Ideas for digital products, services, or offers</li>
+                  <li>Upsell/cross-sell and funnel suggestions</li>
+                  <li>Platform-specific monetisation tips</li>
+                  <li>Audience segmentation and targeting advice</li>
+                  <li>Lead magnet and content upgrade ideas</li>
+                  <li>SEO/traffic strategies for monetisation</li>
+                  <li>Trust-building and authority signals</li>
+                </ul>
+              </p>
+              <button
+                className={`btn btn-primary btn-sm w-full mb-4 ${loading === 'earning-optimiser' ? 'loading' : ''}`}
+                onClick={() => generateWithAI('earning-optimiser')}
+                disabled={!!loading}
+              >
+                {loading === 'earning-optimiser' ? 'Analysing...' : 'Run Earning Optimiser'}
+              </button>
+              {loading === 'earning-optimiser' && (
+                <div className="text-center py-4">Analysing your content for monetisation opportunities...</div>
+              )}
+              {activeSidebarTab === 'earning' && !loading && content && aiEarningInsights && (
+                <EarningInsightsSidebar markdown={aiEarningInsights} />
+              )}
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
-      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem]"> {/* Increased right margin to 22rem to match sidebar width */}
+      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem] pb-48"> {/* Increased right margin, Added pb-48 */}
         {/* Clean, borderless editor with clear ending before sidebar */}
         <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
           <ReactQuill
@@ -2363,7 +2390,24 @@ const ContentHub = () => {
         defaultModelId={selectedModelId} // Pass default model ID to modal
       />
 
-      {/* ADDED: Fixed AI Settings Button */}
+      {/* ADDED: Inline Chat Component */}
+      <InlineChat
+        aiConfigs={aiConfigs}
+        selectedModelId={selectedModelId}
+        onModelChange={handleModelChange} // Pass handler
+        isVisible={isChatVisible}
+      />
+
+      {/* ADDED: Toggle Chat Button */}
+      <button
+        className="fixed bottom-6 right-[calc(16rem+1.5rem+4rem)] z-50 btn btn-circle btn-secondary shadow-lg" // Position next to settings
+        onClick={() => setIsChatVisible(!isChatVisible)}
+        title={isChatVisible ? "Hide Chat" : "Show Chat"}
+      >
+        <FaCommentDots size={20} />
+      </button>
+
+      {/* AI Settings Button */}
       <button
         className="fixed bottom-6 right-[calc(16rem+1.5rem)] z-50 btn btn-circle btn-primary shadow-lg"
         onClick={() => setIsAISettingsModalOpen(true)}

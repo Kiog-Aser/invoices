@@ -68,6 +68,7 @@
     "react-syntax-highlighter": "^15.5.0",
     "react-tooltip": "^5.26.3",
     "shepherd.js": "^14.5.0",
+    "sonner": "^2.0.3",
     "stripe": "^17.7.0",
     "tiptap": "^1.32.2",
     "uuid": "^11.1.0",
