@@ -399,7 +399,7 @@ const ContentHub = () => {
   const insertText = (text: string, isAIResponse: boolean = false) => {
     if (quillRef.current) {
       const editor = quillRef.current.getEditor();
-      const range = editor.getSelection(true);
+      const range = editor.getSelection();
       
       // If this is an AI response, ensure we're not in title format
       if (isAIResponse) {
@@ -1255,7 +1255,9 @@ const ContentHub = () => {
           language: 'en-US',
         }),
       });
+      console.log('Grammar API response:', res);
       const data = await res.json();
+      console.log('Grammar API JSON:', data);
       const suggestions = data.matches || [];
       setGrammarSuggestions(suggestions);
 
@@ -1302,39 +1304,45 @@ const ContentHub = () => {
     const editor = quillRef.current.getEditor();
     const { offset, length, replacements } = suggestion;
     if (replacements && replacements.length > 0) {
-      // --- Dismiss popup before making changes ---
+      // --- Dismiss popup ---
       dismissSuggestionPopup();
       // --- End Dismiss ---
 
-      editor.history.cutoff(); // Start a new undo step
       // Remove the underline format first
       editor.formatText(offset, length, 'grammar-suggestion', false, 'user');
-      // Apply the text change atomically
+      // Apply the text change
       editor.deleteText(offset, length, 'user');
       editor.insertText(offset, replacements[0].value, 'user');
-      editor.history.cutoff(); // End the undo step
 
-      // Remove the suggestion from the list in the sidebar (by offset/length)
+      // Remove the suggestion from the list in the sidebar
       setGrammarSuggestions(prev => prev.filter(s => s.offset !== offset || s.length !== length));
     }
   };
 
   // Apply all suggestions
-  const applyAllGrammarSuggestions = () => {
+   const applyAllGrammarSuggestions = () => {
     if (!quillRef.current) return;
+
+    // --- Dismiss popup ---
     dismissSuggestionPopup();
+    // --- End Dismiss ---
+
     const editor = quillRef.current.getEditor();
     // Sort by offset descending to avoid messing up positions
     const sorted = [...grammarSuggestions].sort((a, b) => b.offset - a.offset);
-    editor.history.cutoff(); // Start a new undo step
+    
+    editor.history.cutoff(); // Group changes
     sorted.forEach(suggestion => {
       if (suggestion.replacements && suggestion.replacements.length > 0) {
+        // Remove the underline format first
         editor.formatText(suggestion.offset, suggestion.length, 'grammar-suggestion', false, 'silent');
+        // Apply the text change
         editor.deleteText(suggestion.offset, suggestion.length, 'silent');
         editor.insertText(suggestion.offset, suggestion.replacements[0].value, 'silent');
       }
     });
-    editor.history.cutoff(); // End the undo step
+    editor.history.cutoff();
+
     setGrammarSuggestions([]); // Clear suggestions list
     setIsGrammarModalOpen(false);
     toast.success('All suggestions applied!');
