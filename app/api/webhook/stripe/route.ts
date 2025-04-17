@@ -9,8 +9,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 // Define the exact price IDs from the landing page
-const PRICE_ID_SINGLE_PROTOCOL = "price_1RAEzBQF2yOHJOkbGoyJKFUh";  // $39
-const PRICE_ID_UNLIMITED_ACCESS = "price_1RAF0yQF2yOHJOkbGp7h8r08";  // $159
+const PRICE_ID_SINGLE_PROTOCOL = "price_1RBLRmG19CrUMKRawDhN6cXJ";  // $39 (Assuming this is the correct LIVE ID)
+const PRICE_ID_UNLIMITED_ACCESS = "price_1RBLRiG19CrUMKRaaun6VaCZ";  // $159 (Updated to match config.ts)
 
 // Configuration for Next.js API route
 export const dynamic = 'force-dynamic';

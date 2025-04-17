@@ -33,7 +33,7 @@ const config = {
       {
         name: "Single Protocol",
         price: 39,
-        priceId: "free-tier",
+        priceId: "price_1RBLRmG19CrUMKRawDhN6cXJ",
         description: "Perfect for individuals",
         features: [
           { name: "1 complete writing protocol" },
@@ -45,7 +45,7 @@ const config = {
       {
         name: "Unlimited Access",
         price: 159,
-        priceId: "price_1R8LfbQF2yOHJOkbihbM8EQ5",
+        priceId: "price_1RBLRiG19CrUMKRaaun6VaCZ",
         description: "One-time payment, lifetime access",
         isFeatured: true,
         features: [
