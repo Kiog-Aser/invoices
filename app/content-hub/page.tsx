@@ -1620,7 +1620,8 @@ const ContentHub = () => {
         const blotName = getReadabilityBlotName(issue.type);
         if (blotName && typeof issue.index === 'number' && typeof issue.offset === 'number' && issue.index >= 0 && issue.offset > 0) {
           if (issue.index + issue.offset <= length) {
-            // Pass the whole issue object as the value to store details
+            const highlighted = editor.getText(issue.index, issue.offset);
+            console.log(`[Readability Highlight] ${blotName}:`, highlighted, { index: issue.index, offset: issue.offset });
             editor.formatText(issue.index, issue.offset, blotName, issue, 'silent');
           } else {
             console.warn("Skipping readability highlight due to out-of-bounds:", issue);
@@ -1747,6 +1748,30 @@ const ContentHub = () => {
       applyReadabilityHighlights([]); // Clear highlights when not in readability tab
     }
   }, [activeSidebarTab, readability]);
+
+  // Ensure only one type of highlight is visible at a time
+  useEffect(() => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    const length = editor.getLength();
+    if (activeSidebarTab === 'readability' && readability) {
+      // Clear grammar highlights
+      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+      applyReadabilityHighlights(readability.issues);
+    } else if (activeSidebarTab === 'grammar' && grammarSuggestions.length > 0) {
+      // Clear readability highlights
+      readabilityBlotConfig.forEach((config) => {
+        editor.formatText(0, length, config.name, false, 'silent');
+      });
+      applyUnderlines(grammarSuggestions);
+    } else {
+      // Clear all highlights if not in either tab
+      editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
+      readabilityBlotConfig.forEach((config) => {
+        editor.formatText(0, length, config.name, false, 'silent');
+      });
+    }
+  }, [activeSidebarTab, readability, grammarSuggestions]);
 
   return (
     <div className="min-h-screen bg-base-100 flex relative">
@@ -1967,11 +1992,10 @@ const ContentHub = () => {
                   </button>
                   {showReadabilityStats && (
                     <div className="mt-2 space-y-1 text-xs text-base-content/60">
-                      {/* Add more stats here if available in DetailedReadabilityResult */}
-                      <div>Characters: {/* Add character count if available */} N/A</div>
+                      <div>Characters: {readability.characterCount}</div>
                       <div>Sentences: {readability.sentenceCount}</div>
-                      <div>Paragraphs: {/* Add paragraph count if available */} N/A</div>
-                      <div>Reading time: {/* Add reading time if available */} N/A</div>
+                      <div>Paragraphs: {readability.paragraphCount}</div>
+                      <div>Reading time: {readability.readingTimeMinutes} min</div>
                     </div>
                   )}
                 </div>

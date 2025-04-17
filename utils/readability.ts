@@ -37,6 +37,9 @@ export interface ReadabilityResult {
   wordCount: number;
   sentenceCount: number;
   syllableCount: number;
+  characterCount: number; // Added
+  paragraphCount: number; // Added
+  readingTimeMinutes: number; // Added
   // New detailed issues
   issues: ReadabilityIssue[];
   hardSentenceCount: number;
@@ -97,6 +100,12 @@ export function analyzeReadability(text: string): ReadabilityResult {
   const wordCount = words.length || 1;
   let syllableCount = 0;
   words.forEach(word => syllableCount += countSyllables(word));
+
+  // --- New Stats ---
+  const characterCount = text.length;
+  const paragraphCount = text.trim() ? text.split(/\n{2,}/).length : 0;
+  const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  // --- End New Stats ---
 
   const fleschReadingEase = Math.round((206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (syllableCount / wordCount)) * 10) / 10;
   const fleschKincaidGrade = Math.round((0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59) * 10) / 10;
@@ -179,6 +188,9 @@ export function analyzeReadability(text: string): ReadabilityResult {
     wordCount,
     sentenceCount,
     syllableCount,
+    characterCount, // Added
+    paragraphCount, // Added
+    readingTimeMinutes, // Added
     issues,
     hardSentenceCount,
     veryHardSentenceCount,
@@ -190,7 +202,6 @@ export function analyzeReadability(text: string): ReadabilityResult {
 
 // Keep the old function for compatibility if needed, or remove it
 export function getReadability(text: string): Omit<ReadabilityResult, 'issues' | 'hardSentenceCount' | 'veryHardSentenceCount' | 'passiveVoiceCount' | 'weakenerCount' | 'simpleAlternativeCount'> {
-  // ... (original calculation logic) ...
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const sentenceCount = sentences.length || 1;
   const words = text.match(/\b\w+\b/g) || [];
@@ -201,12 +212,19 @@ export function getReadability(text: string): Omit<ReadabilityResult, 'issues' |
   }
   const fleschReadingEase = 206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (syllableCount / wordCount);
   const fleschKincaidGrade = 0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59;
-
+  // --- New Stats ---
+  const characterCount = text.length;
+  const paragraphCount = text.trim() ? text.split(/\n{2,}/).length : 0;
+  const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  // --- End New Stats ---
   return {
     fleschKincaidGrade: Math.round(fleschKincaidGrade * 10) / 10,
     fleschReadingEase: Math.round(fleschReadingEase * 10) / 10,
     wordCount,
     sentenceCount, // Added missing property
     syllableCount, // Added missing property
+    characterCount,
+    paragraphCount,
+    readingTimeMinutes,
   };
 }
