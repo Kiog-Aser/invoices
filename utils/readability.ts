@@ -1,5 +1,3 @@
-import writeGood from 'write-good';
-
 // utils/readability.ts
 // Enhanced readability utility inspired by Hemingway
 
@@ -84,8 +82,6 @@ export function analyzeReadability(text: string): ReadabilityResult {
   let simpleAlternativeCount = 0;
 
   // --- Improved Sentence Detection ---
-  // This regex matches sentences and gives you the index in the original text
-  // Handles . ! ? followed by space or end of string
   const sentenceRegex = /[^.!?\n]+[.!?]+["')\]]*|[^.!?\n]+$/g;
   let match;
   const sentences: { text: string; start: number; end: number }[] = [];
@@ -104,13 +100,10 @@ export function analyzeReadability(text: string): ReadabilityResult {
 
   const fleschReadingEase = Math.round((206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (syllableCount / wordCount)) * 10) / 10;
   const fleschKincaidGrade = Math.round((0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59) * 10) / 10;
-  // --- End Basic Scores ---
-
-  // --- Detailed Analysis ---
 
   // 1. Hard and Very Hard Sentences (by word count)
-  const HARD_THRESHOLD = 20; // Example threshold
-  const VERY_HARD_THRESHOLD = 25; // Example threshold
+  const HARD_THRESHOLD = 20;
+  const VERY_HARD_THRESHOLD = 25;
   sentences.forEach(sentence => {
     const sentenceWords = sentence.text.match(/\b\w+\b/g) || [];
     const sentenceWordCount = sentenceWords.length;
@@ -118,7 +111,7 @@ export function analyzeReadability(text: string): ReadabilityResult {
       issues.push({
         index: sentence.start,
         offset: sentence.end - sentence.start,
-        reason: `Sentence has ${sentenceWordCount} words (>${VERY_HARD_THRESHOLD}).`,
+        reason: `Sentence has ${sentenceWordCount} words (>25).`,
         text: sentence.text,
         type: 'very-hard',
       });
@@ -127,7 +120,7 @@ export function analyzeReadability(text: string): ReadabilityResult {
       issues.push({
         index: sentence.start,
         offset: sentence.end - sentence.start,
-        reason: `Sentence has ${sentenceWordCount} words (>${HARD_THRESHOLD}).`,
+        reason: `Sentence has ${sentenceWordCount} words (>20).`,
         text: sentence.text,
         type: 'hard',
       });
@@ -135,9 +128,14 @@ export function analyzeReadability(text: string): ReadabilityResult {
     }
   });
 
-  // 2. Weakeners, Passive Voice (using write-good)
-  // Let TypeScript infer the type of suggestion as any
-  const writeGoodSuggestions = writeGood(text);
+  // 2. Weakeners, Passive Voice (using write-good) - CLIENT ONLY
+  let writeGoodSuggestions: any[] = [];
+  if (typeof window !== 'undefined') {
+    // Only require write-good on the client
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const writeGood = require('write-good');
+    writeGoodSuggestions = writeGood(text);
+  }
   writeGoodSuggestions.forEach(suggestion => {
     const isPassive = suggestion.reason.includes('passive voice');
     const type = isPassive ? 'passive' : 'weakener';
@@ -156,7 +154,6 @@ export function analyzeReadability(text: string): ReadabilityResult {
   });
 
   // 3. Simpler Alternatives (using regex and word list)
-  // Need to iterate carefully to get correct indices
   const wordRegex = /\b(\w+)\b/g;
   while ((match = wordRegex.exec(text)) !== null) {
     const word = match[1].toLowerCase();

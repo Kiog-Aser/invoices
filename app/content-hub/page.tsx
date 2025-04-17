@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-import React, { useState, useRef, useEffect, Suspense, useCallback, Ref } from 'react'; // Added Ref
+import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX } from 'react'; // Added Ref and JSX
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
