@@ -3,6 +3,8 @@ import { FaPaperPlane, FaSpinner } from 'react-icons/fa';
 import { marked } from 'marked';
 import { toast } from 'sonner';
 import { type AIProviderConfig } from '@/components/AISettingsModal'; // Import type
+import Modal from './Modal';
+import { FaExpand, FaTimes } from 'react-icons/fa';
 
 interface InlineChatProps {
   aiConfigs: AIProviderConfig[];
@@ -26,6 +28,7 @@ const InlineChat: React.FC<InlineChatProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [internalSelectedModelId, setInternalSelectedModelId] = useState(parentSelectedModelId);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +48,20 @@ const InlineChat: React.FC<InlineChatProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Keyboard shortcut: Cmd+Shift+I to toggle chat
+  useEffect(() => {
+    const handleShortcut = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        onModelChange(''); // Optionally reset model
+        if (isModalOpen) setIsModalOpen(false);
+        else if (!isVisible) onModelChange(parentSelectedModelId); // Show chat if hidden
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [isModalOpen, isVisible, onModelChange, parentSelectedModelId]);
 
   // Flattened model options for dropdown
   const modelOptions = [
@@ -161,16 +178,37 @@ const InlineChat: React.FC<InlineChatProps> = ({
     }
   };
 
-  if (!isVisible) return null;
-
-  return (
-    <div className="fixed bottom-0 left-[20%] right-[22rem] z-40 bg-base-200 border-t border-base-300 shadow-lg flex flex-col max-h-[40vh]">
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+  // Helper to render the chat UI (for both inline and modal)
+  const ChatUI = (props?: { modal?: boolean }) => (
+    <div
+      className={`relative w-full h-full flex flex-col rounded-2xl bg-base-100/95 shadow-xl border border-base-300 ${props?.modal ? 'max-h-[70vh] max-w-2xl' : 'max-h-[40vh] max-w-xl'} mx-auto`}
+      style={props?.modal ? { boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18)' } : {}}
+    >
+      {/* Expand/Close button */}
+      {props?.modal ? (
+        <button
+          className="absolute top-2 right-2 btn btn-ghost btn-xs btn-circle z-10"
+          onClick={() => setIsModalOpen(false)}
+          title="Close chat"
+          tabIndex={-1}
+        >
+          <FaTimes />
+        </button>
+      ) : (
+        <button
+          className="absolute top-2 right-2 btn btn-ghost btn-xs btn-circle z-10"
+          onClick={() => setIsModalOpen(true)}
+          title="Expand chat"
+          tabIndex={-1}
+        >
+          <FaExpand />
+        </button>
+      )}
+      {/* Chat History - Added scrollbar-hide */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
         {messages.map((msg, index) => (
           <div key={index} className={`chat ${msg.role === 'user' ? 'chat-end' : 'chat-start'}`}>
             <div className={`chat-bubble ${msg.role === 'user' ? 'chat-bubble-primary' : 'chat-bubble-secondary'}`}>
-              {/* Render markdown for assistant messages */}
               {msg.role === 'assistant' ? (
                 <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof msg.content === 'string' ? msg.content : '' }} />
               ) : (
@@ -179,26 +217,27 @@ const InlineChat: React.FC<InlineChatProps> = ({
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} /> {/* Anchor for scrolling */}
+        <div ref={messagesEndRef} />
       </div>
-
       {/* Input Area */}
-      <div className="p-2 border-t border-base-300 flex items-center gap-2">
+      <div className="p-2 flex items-center gap-2 border-t border-base-200 bg-base-100 rounded-b-2xl">
         <input
           ref={inputRef}
           type="text"
           placeholder="Ask anything..."
-          className="input input-bordered input-sm flex-1"
+          className="input input-sm flex-1 bg-transparent border-none focus:ring-0 focus:outline-none shadow-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
+          style={{ boxShadow: 'none' }}
         />
         <select
-          className="select select-bordered select-sm max-w-xs"
+          className="select select-sm bg-transparent border-none focus:ring-0 focus:outline-none shadow-none max-w-xs"
           value={internalSelectedModelId}
           onChange={handleModelSelectChange}
           disabled={isLoading}
+          style={{ boxShadow: 'none' }}
         >
           {modelOptions.map(opt => (
             <option key={opt.id} value={opt.id}>{opt.label}</option>
@@ -213,6 +252,30 @@ const InlineChat: React.FC<InlineChatProps> = ({
         </button>
       </div>
     </div>
+  );
+
+  // Centered at bottom of editor area (not full page)
+  if (!isVisible) return null;
+
+  return (
+    <>
+      {/* Render inline chat only if visible and modal is NOT open */}
+      {isVisible && !isModalOpen && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bottom-6 z-40 w-full max-w-xl px-2 flex justify-center"
+        >
+          <div className="w-full pointer-events-auto">
+            {ChatUI()}
+          </div>
+        </div>
+      )}
+      {/* Modal for expanded chat: Pass prop to remove default modal styling */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} removeStyling>
+        <div className="flex flex-col justify-end h-[70vh]">
+          {ChatUI({ modal: true })}
+        </div>
+      </Modal>
+    </>
   );
 };
 
