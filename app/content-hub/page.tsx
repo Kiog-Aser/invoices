@@ -37,34 +37,23 @@ const readabilityBlotConfig: { name: string; className: string; color: string }[
 ];
 // +++ End Config +++
 
-// --- Register Custom Quill Format for Grammar Suggestions ---
+// --- Register Custom Quill Format for Grammar Suggestions and Readability Blots ---
 let Inline: any;
-let BlockEmbed: any; // Import BlockEmbed
-let Quill: any; // Define Quill type
+let Quill: any;
 if (typeof window !== 'undefined') {
-  // Only import Quill and register the blot on the client
-  // @ts-ignore
   Quill = require('quill');
   Inline = Quill.import('blots/inline');
-  BlockEmbed = Quill.import('blots/block/embed'); // Import BlockEmbed
-
-  // --- Custom Figure Blot (Image + Caption) ---
-  // --- Remove custom FigureBlot registration and related logic ---
-  // --- Remove custom FigureBlot code block ---
-  // --- Remove custom clipboard matchers for 'figure' ---
-  // --- Remove custom imageHandler logic for FigureBlot ---
 
   class GrammarSuggestionBlot extends Inline {
     static blotName = 'grammar-suggestion';
     static tagName = 'span';
     static className = 'grammar-suggestion-underline';
-
     static create(value: any) {
       let node = super.create() as HTMLElement;
       node.dataset.suggestion = JSON.stringify(value);
       node.addEventListener('click', (event) => {
         event.stopPropagation();
-        const root = node.closest('.ql-editor') as EditorRootWithPopupHandlers | null;
+        const root = node.closest('.ql-editor') as any;
         if (root?.showSuggestionPopup && node.dataset.suggestion) {
           try {
             const suggestionData = JSON.parse(node.dataset.suggestion);
@@ -96,63 +85,43 @@ if (typeof window !== 'undefined') {
   }
   Quill.register(GrammarSuggestionBlot);
 
-  // +++ Register Readability Highlight Blots +++
   readabilityBlotConfig.forEach(config => {
     class ReadabilityBlot extends Inline {
       static blotName = config.name;
       static tagName = 'span';
       static className = config.className;
-
-      // Properly create node and store issue data
       static create(value: any) {
         const node = super.create() as HTMLElement;
-        // Store issue data only if it's an object (our issue data)
         if (typeof value === 'object' && value !== null) {
-            node.dataset.issue = JSON.stringify(value);
+          node.dataset.issue = JSON.stringify(value);
         }
         return node;
       }
-
-      // Retrieve issue data from domNode
-      static formats(domNode: HTMLElement) { // Use the domNode parameter
-         const data = domNode.dataset.issue;
-         // Try parsing only if data exists
-         if (data) {
-             try {
-                 return JSON.parse(data);
-             } catch (e) {
-                 console.error("Error parsing readability issue data from DOM", e);
-             }
-         }
-         // --- Fix: Call super.formats with the correct parameter ---
-         return super.formats(domNode);
-         // --- End Fix ---
+      static formats(domNode: HTMLElement) {
+        const data = domNode.dataset.issue;
+        if (data) {
+          try {
+            return JSON.parse(data);
+          } catch (e) {
+            console.error("Error parsing readability issue data from DOM", e);
+          }
+        }
+        return super.formats(domNode);
       }
-
-      // --- Fix: Remove duplicate format method ---
-      // format(name: string, value: any) { ... } // Removed this duplicate
-
-      // Keep this format method
       format(name: string, value: any) {
-        // Use constructor.blotName to access static property correctly
         if (name === (this.constructor as any).blotName && value) {
-          // Store issue data only if it's an object
           if (typeof value === 'object' && value !== null) {
-              (this.domNode as HTMLElement).dataset.issue = JSON.stringify(value);
+            (this.domNode as HTMLElement).dataset.issue = JSON.stringify(value);
           } else {
-              // If value is not our issue object (e.g., false), remove the attribute
-              delete (this.domNode as HTMLElement).dataset.issue;
+            delete (this.domNode as HTMLElement).dataset.issue;
           }
         } else {
           super.format(name, value);
         }
       }
-      // --- End Fix ---
     }
     Quill.register(ReadabilityBlot);
   });
-  // +++ End Readability Blots +++
-
 }
 // --- End Custom Quill Format ---
 
@@ -927,11 +896,13 @@ const ContentHub = () => {
         background: transparent;
         padding: 20px 0 0 0; /* Add 20px top padding to ensure first line is visible */
       }
+      /* Only the first h1 is the title, first h2 is subtitle */
       .medium-style-editor .ql-editor h1 {
         font-size: 2.25rem;
         font-weight: 700;
         margin: 0 0 0.1em 0;
         line-height: 1.15;
+        color: #111;
       }
       .medium-style-editor .ql-editor h2 {
         font-size: 1.25rem;
@@ -939,6 +910,18 @@ const ContentHub = () => {
         color: #757575;
         margin: 0 0 1.2em 0;
         line-height: 1.2;
+      }
+      .medium-style-editor .ql-editor h1:not(:first-of-type),
+      .medium-style-editor .ql-editor h2:not(:first-of-type) {
+        color: #111;
+        margin: 1.5em 0 0.5em 0;
+      }
+      .medium-style-editor .ql-editor h2:not(:first-of-type) {
+        color: #111;
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 1.2em 0 0.5em 0;
+        line-height: 1.3;
       }
       .medium-style-editor .ql-editor h1 + h2 {
         margin-top: 0;
@@ -948,12 +931,14 @@ const ContentHub = () => {
         font-weight: 600;
         margin: 1.5em 0 0.5em 0;
         line-height: 1.3;
+        color: #111;
       }
       .medium-style-editor .ql-editor h4 {
         font-size: 1.05rem;
         font-weight: 600;
         margin: 1.2em 0 0.5em 0;
         line-height: 1.3;
+        color: #111;
       }
       .medium-style-editor .ql-editor p {
         margin: 0 0 1.1em 0;
@@ -1044,6 +1029,17 @@ const ContentHub = () => {
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
+      .medium-style-editor .ql-editor .grammar-suggestion-underline {
+        text-decoration: underline wavy red;
+        text-decoration-skip-ink: none;
+        background-color: rgba(255, 0, 0, 0.05);
+        cursor: pointer;
+      }
+      .medium-style-editor .ql-editor .readability-highlight-very-hard { background-color: rgba(239, 68, 68, 0.3); }
+      .medium-style-editor .ql-editor .readability-highlight-hard { background-color: rgba(245, 158, 11, 0.3); }
+      .medium-style-editor .ql-editor .readability-highlight-passive { background-color: rgba(59, 130, 246, 0.2); }
+      .medium-style-editor .ql-editor .readability-highlight-weakener { background-color: rgba(59, 130, 246, 0.2); }
+      .medium-style-editor .ql-editor .readability-highlight-simpler { background-color: rgba(168, 85, 247, 0.2); }
     `;
     document.head.appendChild(style);
     return () => {
@@ -1051,6 +1047,41 @@ const ContentHub = () => {
     };
   }, []);
   
+  // --- Fix paste behavior: only first line is title, rest is normal ---
+  useEffect(() => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor) return;
+    const root = editor.root;
+    const handlePaste = () => {
+      setTimeout(() => {
+        // Get all lines
+        const lines = editor.getLines();
+        if (lines.length === 0) return;
+        // Make first line h1 (title)
+        editor.formatLine(0, lines[0].length(), 'header', 1);
+        // If second line exists, make it h2 (subtitle)
+        if (lines.length > 1) {
+          editor.formatLine(lines[0].length() + 1, lines[1].length(), 'header', 2);
+        }
+        // All other lines: remove header if not user-applied
+        for (let i = 2; i < lines.length; i++) {
+          const [blot, offset] = editor.getLine(editor.getText(0, lines[0].length() + lines[1].length() + i));
+          if (blot) {
+            const formats = editor.getFormat(blot);
+            if (formats.header) {
+              // Only remove if not user-applied (optional, or always remove)
+              editor.formatLine(editor.getText(0, lines[0].length() + lines[1].length() + i).length, blot.length(), 'header', false);
+            }
+          }
+        }
+      }, 0);
+    };
+    root.addEventListener('paste', handlePaste);
+    return () => {
+      root.removeEventListener('paste', handlePaste);
+    };
+  }, [quillRef]);
+
   // Track if we're in link input mode
   const [isLinkMode, setIsLinkMode] = useState(false);
   const [linkInputValue, setLinkInputValue] = useState('');
@@ -1673,21 +1704,26 @@ const quillFormats = [
       editor.history.cutoff(); // Group applications
       issues.forEach((issue) => {
         const blotName = getReadabilityBlotName(issue.type);
-        // --- Revert: Pass the full `issue` object as the value ---
-        const formatValue = issue;
-        // --- End Revert ---
-
-        if (blotName && typeof issue.index === 'number' && typeof issue.offset === 'number' && issue.index >= 0 && issue.offset > 0) {
-          if (issue.index + issue.offset <= length) {
-            const highlightedText = editor.getText(issue.index, issue.offset);
-            console.log(`[Readability Apply V4] Formatting [${issue.index}, ${issue.offset}] with ${blotName}. Text: "${highlightedText.substring(0, 50)}..."`);
+        let highlightLength = issue.offset;
+        // Fix: If the issue.text is shorter than the highlight, adjust
+        const textToHighlight = editor.getText(issue.index, issue.offset);
+        if (issue.text && textToHighlight.trim() !== issue.text.trim()) {
+          const match = editor.getText().substr(issue.index, 50).indexOf(issue.text.trim());
+          if (match !== -1) {
+            highlightLength = issue.text.trim().length;
+          }
+        }
+        if (blotName && typeof issue.index === 'number' && typeof highlightLength === 'number' && issue.index >= 0 && highlightLength > 0) {
+          if (issue.index + highlightLength <= length) {
+            const highlightedText = editor.getText(issue.index, highlightLength);
+            console.log(`[Readability Apply V4] Formatting [${issue.index}, ${highlightLength}] with ${blotName}. Text: "${highlightedText.substring(0, 50)}..."`);
             try {
                 // Apply format with the issue object
-                editor.formatText(issue.index, issue.offset, blotName, formatValue, 'silent');
-                console.log(`[Readability Apply V4] Successfully formatted [${issue.index}, ${issue.offset}] with ${blotName}`);
+                editor.formatText(issue.index, highlightLength, blotName, issue, 'silent');
+                console.log(`[Readability Apply V4] Successfully formatted [${issue.index}, ${highlightLength}] with ${blotName}`);
             } catch (e) {
                  // Log error if applying format fails
-                 console.error(`[Readability Apply V4] Error applying format ${blotName} at [${issue.index}, ${issue.offset}]:`, e, issue);
+                 console.error(`[Readability Apply V4] Error applying format ${blotName} at [${issue.index}, ${highlightLength}]:`, e, issue);
             }
           } else {
             console.warn("[Readability Apply V4] Skipping highlight due to out-of-bounds:", issue, `Length: ${length}`);
@@ -1783,12 +1819,9 @@ const quillFormats = [
           <button 
             onClick={() => handleFormatText('link')} 
             title="Link"
-            className={isTextLinked() ? "text-green-400" : ""}
+            className=""
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
+            <FaLink className={isTextLinked() ? "text-green-500" : ""} />
           </button>
           
           {/* Separator */}
@@ -1799,7 +1832,7 @@ const quillFormats = [
             <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
           </button>
           <button onClick={() => handleFormatText('header', 2)} title="Subtitle">
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>T</span>
+            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
           </button>
           <button onClick={() => handleFormatText('blockquote')} title="Quote">
             <span style={{ fontSize: '16px' }}>"</span>
@@ -1950,43 +1983,64 @@ const quillFormats = [
   const [plusButton, setPlusButton] = useState<{ visible: boolean; top: number; lineNode: HTMLElement | null }>({ visible: false, top: 0, lineNode: null });
   const [plusMenuVisible, setPlusMenuVisible] = useState(false);
 
+  // --- Custom Paste Handler for Links ---
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+    const root = quill.root;
+    const handlePaste = (e: ClipboardEvent) => {
+      const selection = quill.getSelection();
+      if (selection && selection.length > 0) {
+        const clipboardData = e.clipboardData || (window as any).clipboardData;
+        const pastedText = clipboardData?.getData('text');
+        if (pastedText && /^https?:\/\//i.test(pastedText.trim())) {
+          e.preventDefault();
+          quill.format('link', pastedText.trim());
+          return;
+        }
+      }
+    };
+    root.addEventListener('paste', handlePaste);
+    return () => root.removeEventListener('paste', handlePaste);
+  }, [quillRef]);
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
-      {/* "+" Button Portal */}
-      {typeof window !== 'undefined' && plusButton.visible && createPortal(
-        <div
-          className="fixed z-[9990] left-[calc(20%-2rem)]" // Adjust left position as needed
-          style={{ top: `${plusButton.top}px` }}
-          onMouseDown={e => e.preventDefault()} // Prevent editor losing focus
-        >
-          <button
-            onClick={() => setPlusMenuVisible(!plusMenuVisible)}
-            className="btn btn-xs btn-ghost btn-circle border border-base-300 hover:bg-base-200"
-            title="Add content"
-          >
-            <FaPlus size={12} />
-          </button>
-          {/* "+" Button Menu */}
-          {plusMenuVisible && (
-            <div className="absolute left-full top-0 ml-2 w-32 bg-base-100 border border-base-300 rounded-md shadow-lg py-1">
-              <button
-                onClick={() => {
-                  imageHandler(); // Trigger image upload
-                  setPlusMenuVisible(false); // Close menu
-                }}
-                className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-base-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                Image
-              </button>
-              {/* Add other menu items here later */}
-            </div>
-          )}
-        </div>,
-        document.body
-      )}
 
-      {/* Floating toolbar for text selection rendered as a portal */}
+        {typeof window !== 'undefined' && plusButton.visible && createPortal(
+          <div
+            className="fixed z-[9990] left-[calc(20%-2rem)]" // Adjust left position as needed
+            style={{ top: `${plusButton.top}px` }}
+            onMouseDown={e => e.preventDefault()} // Prevent editor losing focus
+          >
+            <button
+          onClick={() => setPlusMenuVisible(!plusMenuVisible)}
+          className="btn btn-xs btn-ghost btn-circle border border-base-300 hover:bg-base-200"
+          title="Add content"
+            >
+          <FaPlus size={12} />
+            </button>
+            {/* "+" Button Menu */}
+            {plusMenuVisible && (
+          <div className="absolute left-full top-0 ml-2 w-32 bg-base-100 border border-base-300 rounded-md shadow-lg py-1">
+            <button
+              onClick={() => {
+            imageHandler(); // Trigger image upload
+            setPlusMenuVisible(false); // Close menu
+              }}
+              className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-base-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              Image
+            </button>
+            {/* Add other menu items here later */}
+          </div>
+            )}
+          </div>,
+          document.body
+        )}
+
+        {/* Floating toolbar for text selection rendered as a portal */}
       {typeof window !== 'undefined' && createPortal(
         floatingToolbarJSX,
         document.body
