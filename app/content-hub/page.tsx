@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX } from 'react'; // Added Ref and JSX
+import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX, useMemo } from 'react'; // Added Ref and JSX
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots } from 'react-icons/fa'; // Added FaCommentDots
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
@@ -39,12 +39,20 @@ const readabilityBlotConfig: { name: string; className: string; color: string }[
 
 // --- Register Custom Quill Format for Grammar Suggestions ---
 let Inline: any;
+let BlockEmbed: any; // Import BlockEmbed
 let Quill: any; // Define Quill type
 if (typeof window !== 'undefined') {
   // Only import Quill and register the blot on the client
   // @ts-ignore
   Quill = require('quill');
   Inline = Quill.import('blots/inline');
+  BlockEmbed = Quill.import('blots/block/embed'); // Import BlockEmbed
+
+  // --- Custom Figure Blot (Image + Caption) ---
+  // --- Remove custom FigureBlot registration and related logic ---
+  // --- Remove custom FigureBlot code block ---
+  // --- Remove custom clipboard matchers for 'figure' ---
+  // --- Remove custom imageHandler logic for FigureBlot ---
 
   class GrammarSuggestionBlot extends Inline {
     static blotName = 'grammar-suggestion';
@@ -902,202 +910,142 @@ const ContentHub = () => {
   
   // Add custom CSS for the placeholder styling and floating toolbar
   useEffect(() => {
-    // Add custom CSS to style the placeholder like the title
+    // Add custom CSS to style the editor like Medium and apply requested changes
     const style = document.createElement('style');
     style.textContent = `
-      .medium-style-editor .ql-editor.ql-blank::before {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: rgba(75, 85, 99, 0.4);
+      .medium-style-editor .ql-editor {
+        font-family: medium-content-sans-serif-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        font-size: 20px;
+        line-height: 1.7;
+        color: rgba(0,0,0,0.84);
+        font-weight: 400;
+        letter-spacing: 0;
         font-style: normal;
-        left: 0;
-        right: 0;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: transparent;
+        padding: 20px 0 0 0; /* Add 20px top padding to ensure first line is visible */
       }
-      
-      /* Style h1 elements to match desired title style */
       .medium-style-editor .ql-editor h1 {
         font-size: 2.25rem;
         font-weight: 700;
-        margin-bottom: 0.75em;
+        margin: 0 0 0.1em 0;
+        line-height: 1.15;
       }
-      
-      /* Style h2 elements for normal and subtitle cases */
       .medium-style-editor .ql-editor h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 0.5em;
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #757575;
+        margin: 0 0 1.2em 0;
+        line-height: 1.2;
       }
-
-      /* Add margin to paragraphs for spacing */
-      .medium-style-editor .ql-editor p {
-        margin-bottom: 1em; /* Adjust as needed */
+      .medium-style-editor .ql-editor h1 + h2 {
+        margin-top: 0;
       }
-      
-      /* Special styling for subtitle (second line with h2) */
-      .medium-style-editor .ql-editor h2,
-      .medium-style-editor .ql-editor h2.subtitle {
-        color: #9ca3af; /* More grey for subtitle */
-        font-size: 1.5rem;
+      .medium-style-editor .ql-editor h3 {
+        font-size: 1.15rem;
         font-weight: 600;
-        margin-top: -0.5em; /* Less space above subtitle */
-        margin-bottom: 0.5em; /* Less space below subtitle */
+        margin: 1.5em 0 0.5em 0;
+        line-height: 1.3;
       }
-      
-      /* Style links with understated black underline */
-      .medium-style-editor .ql-editor a {
-        color: inherit;
-        text-decoration: underline;
-        text-underline-offset: 2px;
-        transition: all 0.2s;
+      .medium-style-editor .ql-editor h4 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 1.2em 0 0.5em 0;
+        line-height: 1.3;
       }
-      
-      /* Style blockquotes - making more prominent */
+      .medium-style-editor .ql-editor p {
+        margin: 0 0 1.1em 0;
+      }
       .medium-style-editor .ql-editor blockquote {
         border-left: 3px solid #d1d5db;
         padding: 0.5rem 1rem;
-        margin: 1rem 0;
+        margin: 1.5rem 0;
         color: #4b5563;
         font-style: italic;
         background-color: rgba(0, 0, 0, 0.03);
         border-radius: 0 4px 4px 0;
       }
-
-      /* Style for grammar suggestion underlines */
-      .medium-style-editor .ql-editor .grammar-suggestion-underline {
-        text-decoration: underline wavy red;
-        text-decoration-skip-ink: none; /* Make sure underline is continuous */
-        background-color: rgba(255, 0, 0, 0.05); /* Optional subtle background */
-        cursor: pointer; /* Indicate it's interactive */
-      }
-
-      /* +++ Readability Highlight Styles +++ */
-      .medium-style-editor .ql-editor .readability-highlight-very-hard {
-        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-very-hard')?.color || 'transparent'};
-      }
-      .medium-style-editor .ql-editor .readability-highlight-hard {
-        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-hard')?.color || 'transparent'};
-      }
-      .medium-style-editor .ql-editor .readability-highlight-passive {
-        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-passive')?.color || 'transparent'};
-      }
-      .medium-style-editor .ql-editor .readability-highlight-weakener {
-        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-weakener')?.color || 'transparent'};
-      }
-      .medium-style-editor .ql-editor .readability-highlight-simpler {
-        background-color: ${readabilityBlotConfig.find((c: { name: string }) => c.name === 'readability-simpler')?.color || 'transparent'};
-      }
-      /* +++ End Readability Styles +++ */
-      
-      /* Floating toolbar styles */
+      /* Floating toolbar: black background, white icons/text */
       .floating-toolbar {
-        position: fixed; /* Use fixed instead of absolute for better positioning */
-        z-index: 9999; /* Much higher z-index to ensure visibility */
+        position: fixed;
+        z-index: 100010 !important;
+        background: #111;
+        border-radius: 8px;
+        box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+        border: 1px solid #222;
+        padding: 0.5rem 0.75rem;
         display: flex;
+        gap: 0.5rem;
         align-items: center;
-        background: #333;
-        border-radius: 12px; /* Even more rounded edges */
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-        padding: 8px;
-        transition: opacity 0.2s;
-        opacity: 1;
+        min-width: 220px;
+        min-height: 40px;
+        transition: box-shadow 0.2s;
       }
-
-      .floating-toolbar:after {
-        content: '';
-        position: absolute;
-        bottom: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 6px solid #333;
+      .floating-toolbar button, .floating-toolbar svg, .floating-toolbar strong, .floating-toolbar em, .floating-toolbar span {
+        color: #fff !important;
+        fill: #fff !important;
       }
-      
       .floating-toolbar button {
-        background: transparent;
+        background: none;
         border: none;
-        color: #fff;
-        cursor: pointer;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-size: 1rem;
+        padding: 0.25rem 0.5rem;
         border-radius: 4px;
-        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.15s;
       }
-      
       .floating-toolbar button:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: #222;
       }
-      
-      .floating-toolbar button.active {
-        background: rgba(255, 255, 255, 0.2);
-      }
-      
       .floating-toolbar .divider {
         width: 1px;
-        height: 18px;
-        background: rgba(255, 255, 255, 0.3);
-        margin: 0 6px;
+        height: 24px;
+        background: #333;
+        margin: 0 0.5rem;
       }
-      
-      /* Editor side labels (Title/Subtitle indicators) */
-      .editor-labels-container {
-        pointer-events: none;
+      /* Image hover/select border styles */
+      .medium-style-editor .ql-editor img {
+        display: block;
+        margin: 2.5em auto 0.5em auto;
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 16px 0 rgba(0,0,0,0.08);
+        background: #f8f8f8;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
       }
-      .editor-side-label {
-        position: absolute;
-        left: -85px; /* Position just to the left of editor content */
-        display: flex;
-        flex-direction: row-reverse; /* Text first, then line */
-        align-items: center;
-        color: #6b7280;
-        padding-right: 2px;
-        pointer-events: none;
-        z-index: 5;
-        /* Remove fixed height to allow container to size based on content */
+      .medium-style-editor .ql-editor img:hover {
+        border-color: #22c55e; /* light green */
       }
-      
-      .editor-side-label .label-line {
-        width: 1px; /* Slightly thicker line */
-        background-color: #d1d5db;
-        position: fixed;
-        right: 240;
-        /* Height will be determined by parent container */
+      .medium-style-editor .ql-editor img.selected {
+        border-color: #15803d; /* dark green */
       }
-      
-      .editor-side-label span {
-        font-family: system-ui, -apple-system, sans-serif;
-        font-size: 1rem; /* Bigger text */
-        white-space: nowrap; /* Prevent text wrapping */
-        margin-top: 0.5em; /* Space between line and text */
-        margin-bottom: 0.5em; /* Space between line and text */
+      /* Simple figcaption for image description */
+      .medium-style-editor .ql-editor figcaption {
+        display: block;
+        text-align: center;
+        font-size: 0.98em;
+        color: #757575;
+        margin-top: 0.5em;
+        padding: 0 1em;
+        outline: none;
+        min-height: 1.2em;
+        font-style: italic;
       }
-      
-      .title-label {
-        font-weight: 600; /* Slightly bolder */
+      .medium-style-editor .ql-editor figcaption:empty::before {
+        content: 'Type caption for image (optional)';
+        color: #adb5bd;
+        cursor: text;
       }
-      
-      .subtitle-label {
-        font-weight: 500; /* Slightly bolder */
-        color: #9ca3af;
-      }
-      .editor-side-label span {
-        color: #6b7280;
-        font-size: 1rem;
-        font-weight: 500;
-        margin: 0;
-      }
-      .editor-side-label.subtitle-label span {
-        color: #9ca3af;
-        font-weight: 400;
+      /* Remove top gap for editor area */
+      .editor-no-top-gap {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
       }
     `;
     document.head.appendChild(style);
-    
     return () => {
       document.head.removeChild(style);
     };
@@ -1343,6 +1291,35 @@ const ContentHub = () => {
        }, 100);
     }
 
+    // + Button logic for empty lines
+    if (quill && range) {
+      if (range.length === 0 && source === 'user') {
+        const [line, offset] = quill.getLine(range.index);
+        if (line && line.domNode && line.length() <= 1) {
+          const lineBounds = line.domNode.getBoundingClientRect();
+          const editorBounds = editorContainerRef.current?.getBoundingClientRect();
+          if (editorBounds) {
+            setPlusButton({
+              visible: true,
+              top: editorBounds.top + lineBounds.top + window.scrollY,
+              lineNode: line.domNode
+            });
+          } else {
+            setPlusButton({ visible: false, top: 0, lineNode: null });
+          }
+        } else {
+          setPlusButton({ visible: false, top: 0, lineNode: null });
+          setPlusMenuVisible(false);
+        }
+      } else {
+        setPlusButton({ visible: false, top: 0, lineNode: null });
+        setPlusMenuVisible(false);
+      }
+    } else {
+      setPlusButton({ visible: false, top: 0, lineNode: null });
+      setPlusMenuVisible(false);
+    }
+
   }, [popupSuggestion, dismissSuggestionPopup]); // Add dependencies
 
   // Register selection-change event whenever quillRef.current or handleSelectionChange changes
@@ -1363,28 +1340,54 @@ const ContentHub = () => {
     // Add auto-save logic here if needed
   };
 
-  // Quill modules - Toolbar is now disabled (null)
-  const quillModules = {
-    toolbar: null, // Disable default toolbar
-    // Consider adding history module for undo/redo if needed
-    history: {
-      delay: 2000,
-      maxStack: 500,
-      userOnly: true
+  // --- Image Upload and Paste Logic for FigureBlot ---
+  // --- Use Quill's default image handling ---
+const imageHandler = useCallback(() => {
+  if (typeof window === 'undefined') return;
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (!quillRef.current) return;
+        const editor = quillRef.current.getEditor();
+        const range = editor.getSelection(true);
+        editor.insertEmbed(range.index, 'image', e.target?.result, 'user');
+        editor.setSelection(range.index + 1, 0, 'silent');
+      };
+      reader.readAsDataURL(file);
     }
   };
+}, [quillRef]);
 
-  // Quill formats - Keep formats you want to support with the floating toolbar
-  const quillFormats = [
-    'header', 'bold', 'italic', 'link', 'blockquote',
-    'grammar-suggestion',
-    'readability-very-hard',
-    'readability-hard',
-    'readability-passive',
-    'readability-weakener',
-    'readability-simpler',
-    // Add other formats as needed
-  ];
+const quillModules = useMemo(() => ({
+  toolbar: { container: null, handlers: { image: imageHandler } },
+  clipboard: {
+    matchers: [
+      // Remove custom 'figure' matcher
+      // Use default image matcher
+    ],
+  },
+  history: { delay: 2000, maxStack: 500, userOnly: true },
+  // --- Explicitly disable tooltip module to remove white input box ---
+  tooltip: false,
+}), [imageHandler]);
+
+const quillFormats = [
+  'header', 'bold', 'italic', 'link', 'blockquote',
+  'grammar-suggestion',
+  'readability-very-hard',
+  'readability-hard',
+  'readability-passive',
+  'readability-weakener',
+  'readability-simpler',
+  'image', // Use default image format
+  // Add other formats as needed
+];
 
   // Function to apply format from floating toolbar
   const applyFormat = (format: string, value?: any) => {
@@ -1398,7 +1401,7 @@ const ContentHub = () => {
     }
   };
 
-  // Helper function to apply underlines based on suggestions
+  // Helper to apply underlines based on suggestions
   const applyUnderlines = (suggestions: any[]) => {
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
@@ -1728,7 +1731,7 @@ const ContentHub = () => {
         top: `${floatingToolbar.top}px`,
         left: `${floatingToolbar.left}px`
       }}
-      onMouseDown={e => e.preventDefault()} 
+      onMouseDown={e => e.preventDefault()} // Prevent editor losing focus
     >
       {isLinkMode ? (
         /* Link input mode - more compact and matches toolbar width */
@@ -1940,8 +1943,49 @@ const ContentHub = () => {
     return found ? found.label : id;
   };
 
+  // Function to upload image and insert into Quill
+   // uploadImageAndInsert dependency
+
+  // Add state for the "+" button
+  const [plusButton, setPlusButton] = useState<{ visible: boolean; top: number; lineNode: HTMLElement | null }>({ visible: false, top: 0, lineNode: null });
+  const [plusMenuVisible, setPlusMenuVisible] = useState(false);
+
   return (
     <div className="min-h-screen bg-base-100 flex relative">
+      {/* "+" Button Portal */}
+      {typeof window !== 'undefined' && plusButton.visible && createPortal(
+        <div
+          className="fixed z-[9990] left-[calc(20%-2rem)]" // Adjust left position as needed
+          style={{ top: `${plusButton.top}px` }}
+          onMouseDown={e => e.preventDefault()} // Prevent editor losing focus
+        >
+          <button
+            onClick={() => setPlusMenuVisible(!plusMenuVisible)}
+            className="btn btn-xs btn-ghost btn-circle border border-base-300 hover:bg-base-200"
+            title="Add content"
+          >
+            <FaPlus size={12} />
+          </button>
+          {/* "+" Button Menu */}
+          {plusMenuVisible && (
+            <div className="absolute left-full top-0 ml-2 w-32 bg-base-100 border border-base-300 rounded-md shadow-lg py-1">
+              <button
+                onClick={() => {
+                  imageHandler(); // Trigger image upload
+                  setPlusMenuVisible(false); // Close menu
+                }}
+                className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-base-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                Image
+              </button>
+              {/* Add other menu items here later */}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
+
       {/* Floating toolbar for text selection rendered as a portal */}
       {typeof window !== 'undefined' && createPortal(
         floatingToolbarJSX,
@@ -2295,7 +2339,7 @@ const ContentHub = () => {
       </div>
       
       {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
-      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem] pb-48"> {/* Increased right margin, Added pb-48 */}
+      <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem] pb-48 editor-no-top-gap"> {/* Increased right margin, Added pb-48 */}
         {/* Clean, borderless editor with clear ending before sidebar */}
         <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
           <ReactQuill

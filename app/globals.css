@@ -200,6 +200,12 @@ html {
   100% { opacity: 0; }
 }
 
+/* Hide Quill tooltip and tooltip-editor (white box) completely */
+.ql-tooltip,
+.ql-tooltip-editor {
+  display: none !important;
+}
+
 /* Print and PDF Styles */
 @media print {
   @page {
