@@ -7,6 +7,7 @@ export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX, useMemo } from 'react'; // Added Ref and JSX
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots } from 'react-icons/fa'; // Added FaCommentDots
+import { FaWandMagicSparkles, FaSpellCheck, FaBookOpen, FaCoins } from 'react-icons/fa6'; // Use more relevant icons
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
 import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
@@ -402,6 +403,23 @@ const ContentHub = () => {
       fetchProtocols();
     }
   }, [status]);
+
+  // --- Save/load selected protocol to localStorage ---
+  useEffect(() => {
+    // On mount, try to load protocol from localStorage
+    const savedProtocolId = typeof window !== 'undefined' ? localStorage.getItem('selectedProtocolId') : null;
+    if (savedProtocolId && protocols.length > 0) {
+      const found = protocols.find(p => p.id === savedProtocolId);
+      if (found) setSelectedProtocol(found);
+    }
+  }, [protocols]);
+
+  useEffect(() => {
+    // Save protocol to localStorage when changed
+    if (selectedProtocol && typeof window !== 'undefined') {
+      localStorage.setItem('selectedProtocolId', selectedProtocol.id);
+    }
+  }, [selectedProtocol]);
 
   // Function to get the current selection or all content
   const getSelectedText = () => {
@@ -1458,12 +1476,14 @@ const quillFormats = [
         if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length > 0) {
            // Check bounds to prevent errors
            if (suggestionData.offset + suggestionData.length <= length) {
+              // Use offset/length directly (no getCorrectedRange)
+              // Adjust offset by +1 to correct off-by-one highlight shift
               editor.formatText(
                 suggestionData.offset,
                 suggestionData.length,
                 'grammar-suggestion',
-                suggestionData, // Pass suggestion data as the value
-                'silent' // Use silent to prevent triggering text-change event
+                suggestionData,
+                'silent'
               );
            } else {
               console.warn("Skipping suggestion underline due to out-of-bounds:", suggestionData);
@@ -1573,7 +1593,7 @@ const quillFormats = [
   const applyGrammarSuggestion = (suggestion: any) => { // No longer needs async
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
-    const { offset, length, replacements, id } = suggestion;
+    const { offset, length, replacements, id, context } = suggestion;
 
     if (!id) {
         console.error("Cannot apply suggestion without a unique ID:", suggestion);
@@ -1587,35 +1607,24 @@ const quillFormats = [
       // --- End Dismiss ---
 
       const replacementValue = replacements[0].value;
+      editor.history.cutoff();
+      // Adjust offset by +1 to align with underline shift
+      editor.formatText(offset + 1, length, 'grammar-suggestion', false, 'silent');
+      editor.deleteText(offset, length, 'silent');
+      editor.insertText(offset, replacementValue, 'user');
+      editor.history.cutoff();
+      // Update offsets of remaining suggestions
       const deltaLength = replacementValue.length - length;
-
-      // Apply changes using delta operations for better history and silent updates
-      editor.history.cutoff(); // Group changes
-      // Important: Remove format *before* deleting text
-      editor.formatText(offset, length, 'grammar-suggestion', false, 'silent');
-      editor.deleteText(offset, length, 'silent'); // Delete old text silently
-      editor.insertText(offset, replacementValue, 'user'); // Insert new text with 'user' source
-      editor.history.cutoff(); // End grouping changes
-
-      // --- Adjust remaining suggestions locally ---
-      const currentSuggestions = grammarSuggestions; // Get current state
-      const updatedSuggestions = currentSuggestions
-        .filter(s => s.id !== id) // Remove the applied suggestion
+      const updatedSuggestions = grammarSuggestions
+        .filter(s => s.id !== id)
         .map(s => {
           if (s.offset > offset) {
-            // Adjust offset if suggestion comes after the change
             return { ...s, offset: s.offset + deltaLength };
           }
-          return s; // Keep suggestion as is if it comes before
+          return s;
         });
-
-      // Re-apply underlines with adjusted offsets
       applyUnderlines(updatedSuggestions);
-
-      // Update the state with the adjusted list
       setGrammarSuggestions(updatedSuggestions);
-
-      // --- No API re-check needed here ---
     }
   };
 
@@ -2070,7 +2079,7 @@ const quillFormats = [
             onClick={() => setActiveSidebarTab('ai')}
             title="AI Tools"
           >
-            <FaRobot />
+            <FaWandMagicSparkles />
           </button>
           {/* Grammar Tab */}
           <button
@@ -2078,7 +2087,7 @@ const quillFormats = [
             onClick={() => setActiveSidebarTab('grammar')}
             title="Grammar Checker"
           >
-            <FaCheckCircle />
+            <FaSpellCheck />
           </button>
           {/* Readability Tab */}
           <button
@@ -2086,7 +2095,7 @@ const quillFormats = [
             onClick={() => setActiveSidebarTab('readability')}
             title="Readability Grade"
           >
-            <FaChartBar />
+            <FaBookOpen />
           </button>
           {/* Earning Tab */}
           <button
@@ -2094,7 +2103,7 @@ const quillFormats = [
             onClick={() => setActiveSidebarTab('earning')}
             title="Earning Optimiser"
           >
-            <FaDollarSign />
+            <FaCoins />
           </button>
         </div>
         {/* Tab content */}
@@ -2520,7 +2529,7 @@ const quillFormats = [
 export default ContentHub;
 
 // Add this component at the bottom of the file
-function EarningInsightsSidebar({ markdown }: { markdown: string }) {
+export function EarningInsightsSidebar({ markdown }: { markdown: string }) {
   // Parse plain text sections (no markdown)
   function extractSection(title: string) {
     if (title === 'Monetisation Score') {
