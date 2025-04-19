@@ -14,6 +14,7 @@ import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadab
 import AISettingsModal from '@/components/AISettingsModal'; // Import the new modal
 import { type AIProviderConfig } from '@/components/AISettingsModal'; // Adjusted import
 import InlineChat from '@/components/InlineChat'; // Import the new chat component
+import { useRouter } from 'next/navigation';
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -26,7 +27,6 @@ const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
 import 'react-quill/dist/quill.snow.css';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
 // +++ Define Readability Blot Config (Moved outside client check) +++
 const readabilityBlotConfig: { name: string; className: string; color: string }[] = [
@@ -2012,6 +2012,46 @@ const quillFormats = [
     root.addEventListener('paste', handlePaste);
     return () => root.removeEventListener('paste', handlePaste);
   }, [quillRef]);
+
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(true);
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const res = await fetch('/api/user/protocol-access');
+        const data = await res.json();
+        if (!data.hasAccess) {
+          setHasAccess(false);
+          setTimeout(() => router.push('/#pricing'), 1500);
+        }
+      } catch {
+        setHasAccess(false);
+        setTimeout(() => router.push('/#pricing'), 1500);
+      } finally {
+        setAccessChecked(true);
+      }
+    }
+    checkAccess();
+  }, [router]);
+
+  if (!accessChecked) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-800">
+        <div className="text-lg font-semibold">Checking subscription status...</div>
+      </main>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-800">
+        <div className="text-lg font-semibold text-center">
+          You need an active subscription to access the editor.<br />Redirecting to pricing...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-base-100 flex relative">

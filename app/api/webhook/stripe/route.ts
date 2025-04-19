@@ -276,6 +276,47 @@ export async function POST(req: NextRequest) {
       }
     } 
     // End of checkout.session.completed handling
+
+    // --- SUBSCRIPTION EVENTS ---
+    if (
+      event.type === "customer.subscription.created" ||
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted" ||
+      event.type === "invoice.payment_succeeded" ||
+      event.type === "invoice.payment_failed"
+    ) {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+      const subscriptionId = subscription.id;
+      const status = subscription.status;
+      const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+
+      // Find user by customerId
+      const user = await User.findOne({ customerId });
+      if (!user) {
+        logToFile(`❌ No user found for subscription event. CustomerId: ${customerId}`);
+        return NextResponse.json({ received: true, warning: "No user found for subscription event" });
+      }
+
+      // Update subscription fields
+      user.subscriptionStatus = status;
+      user.subscriptionId = subscriptionId;
+      user.currentPeriodEnd = currentPeriodEnd;
+
+      // If canceled or payment failed, downgrade plan at end of period
+      if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
+        user.plan = '';
+        user.protocols.isUnlimited = false;
+      } else if (status === 'active' || status === 'trialing' || status === 'past_due') {
+        user.plan = 'pro';
+        user.protocols.isUnlimited = true;
+      }
+
+      await user.save();
+      logToFile(`✅ Updated user subscription: ${user.email} | Status: ${status} | Period End: ${currentPeriodEnd}`);
+      return NextResponse.json({ received: true, success: true });
+    }
+    // --- END SUBSCRIPTION EVENTS ---
     
     // Send success response
     logToFile("✅ Webhook processed successfully");

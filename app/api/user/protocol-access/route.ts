@@ -47,8 +47,27 @@ export async function GET() {
       });
     }
     
-    // Check if user has unlimited access or available tokens
-    // Use optional chaining and nullish coalescing to handle undefined values
+    // --- Subscription-based access control ---
+    // Allow access if user has an active paid subscription (pro plan, active/trialing, and not expired)
+    const now = new Date();
+    const isSubscriptionActive =
+      user.plan === 'pro' &&
+      (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing') &&
+      user.currentPeriodEnd &&
+      new Date(user.currentPeriodEnd) > now;
+
+    if (isSubscriptionActive) {
+      return NextResponse.json({
+        hasAccess: true,
+        remainingTokens: 999,
+        isUnlimited: true,
+        isAdmin: false,
+        subscriptionStatus: user.subscriptionStatus,
+        currentPeriodEnd: user.currentPeriodEnd,
+      });
+    }
+
+    // Fallback: legacy token/unlimited logic (for one-time purchases)
     const isUnlimited = !!user.protocols?.isUnlimited;
     const tokens = user.protocols?.tokens ?? 0;
     const hasAccess = isUnlimited || tokens > 0;
@@ -59,6 +78,8 @@ export async function GET() {
       hasAccess,
       remainingTokens: tokens,
       isUnlimited,
+      subscriptionStatus: user.subscriptionStatus || '',
+      currentPeriodEnd: user.currentPeriodEnd || null,
     });
   } catch (error) {
     console.error('Error checking protocol access:', error);

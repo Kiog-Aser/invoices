@@ -91,6 +91,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    // Stripe subscription status (active, canceled, past_due, etc.)
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'canceled', 'past_due', 'incomplete', 'incomplete_expired', 'trialing', 'unpaid', 'paused', ''],
+      default: '',
+    },
+    // Stripe subscription ID (for reference)
+    subscriptionId: {
+      type: String,
+      default: '',
+    },
+    // End of current paid period (used for access control)
+    currentPeriodEnd: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

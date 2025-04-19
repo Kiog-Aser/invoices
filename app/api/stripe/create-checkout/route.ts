@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     });
 
     const stripeSessionURL = await createCheckout({
-      mode: "payment",
+      mode: body.mode || "payment", // Use mode from frontend ("subscription" for recurring)
       priceId: body.priceId,
       successUrl: body.successUrl,
       cancelUrl: body.cancelUrl,
