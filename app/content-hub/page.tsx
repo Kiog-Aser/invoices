@@ -2023,7 +2023,7 @@ const quillFormats = [
         const data = await res.json();
         if (!data.hasAccess) {
           // Instead of showing a message, just redirect immediately
-          router.push('/#pricing');
+          router.push('/editor/#pricing');
         }
       } catch {
         router.push('/#pricing');
