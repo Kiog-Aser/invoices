@@ -2569,7 +2569,7 @@ const quillFormats = [
 export default ContentHub;
 
 // Add this component at the bottom of the file
-export function EarningInsightsSidebar({ markdown }: { markdown: string }) {
+function EarningInsightsSidebar({ markdown }: { markdown: string }) {
   // Parse plain text sections (no markdown)
   function extractSection(title: string) {
     if (title === 'Monetisation Score') {
