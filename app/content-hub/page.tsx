@@ -6,7 +6,7 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX, useMemo } from 'react'; // Added Ref and JSX
-import { FaLightbulb, FaMagic, FaCut, FaPen, FaUserCircle, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaRegCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft } from 'react-icons/fa'; // Added FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft
+import { FaLightbulb, FaMagic, FaCut, FaPen, FaPaperPlane, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaRegCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft } from 'react-icons/fa'; // Added FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft
 import { FaWandMagicSparkles, FaSpellCheck, FaBookOpen, FaCoins } from 'react-icons/fa6'; // Use more relevant icons
 import dynamicImport from 'next/dynamic';
 import { marked } from 'marked'; // Import marked library
@@ -217,6 +217,7 @@ interface EditorRootWithPopupHandlers extends HTMLElement {
 }
 
 const ContentHub = () => {
+  // --- ALL HOOKS MUST BE HERE ---
   const { data: session, status } = useSession();
   const router = useRouter();
   const [content, setContent] = useState('');
@@ -1936,16 +1937,69 @@ const quillFormats = [
   };
 
   // Model selection state
-  // Flattened model options for dropdown (used in sidebar)
-  const modelOptions = [
-    { id: 'default', label: 'Default' },
-    ...aiConfigs.flatMap(cfg =>
-      (cfg.models || '').split(',').map(modelId => ({ // Add null check for cfg.models
-        id: `${cfg.id}::${modelId.trim()}`,
-        label: `${cfg.name} – ${modelId.trim()}`
-      })).filter(opt => opt.label.includes('–') && opt.id.includes('::')) // Ensure valid options
-    )
-  ];
+  // Update modelOptions and default selection logic
+const defaultAkashModelId = aiConfigs
+  .filter((cfg: AIProviderConfig) => cfg.name?.toLowerCase().includes('akash'))
+  .flatMap((cfg: AIProviderConfig) =>
+    (cfg.models || '').split(',').map((modelId: string) => ({
+      id: `${cfg.id}::${modelId.trim()}`,
+      label: `${cfg.name} – ${modelId.trim()}`,
+      isMetaLlama: modelId.trim() === 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8'
+    }))
+  )
+  .find((opt: { id: string; label: string; isMetaLlama: boolean }) => opt.isMetaLlama)?.id || 'default';
+
+const modelOptions = [
+  { id: defaultAkashModelId, label: 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8 (Akash)' },
+  ...aiConfigs.flatMap((cfg: AIProviderConfig) =>
+    (cfg.models || '').split(',').map((modelId: string) => ({
+      id: `${cfg.id}::${modelId.trim()}`,
+      label: `${cfg.name} – ${modelId.trim()}`
+    }))
+  )
+];
+
+// Set the default model on AI config fetch
+useEffect(() => {
+  const fetchAiConfigs = async () => {
+    if (status === 'authenticated') {
+      try {
+        const response = await fetch('/api/ai/settings');
+        if (response.ok) {
+          const data = await response.json();
+          const configsWithIds = (data.configs || []).map((config: any, index: number) => ({
+            ...config,
+            id: config.id || `config-${Date.now()}-${index}`
+          }));
+          setAiConfigs(configsWithIds);
+
+          // Prefer Meta-Llama-4-Maverick-17B-128E-Instruct-FP8 (Akash) as default
+          const akashDefault = configsWithIds
+            .filter((cfg: AIProviderConfig) => cfg.name?.toLowerCase().includes('akash'))
+            .flatMap((cfg: { models: any; id: any; }) =>
+              (cfg.models || '').split(',').map((modelId: string) => ({
+                id: `${cfg.id}::${modelId.trim()}`,
+                isMetaLlama: modelId.trim() === 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8'
+              }))
+            )
+            .find((opt: { isMetaLlama: any; }) => opt.isMetaLlama)?.id;
+
+          setSelectedModelId(akashDefault || 'default');
+        } else {
+          setAiConfigs([]);
+          setSelectedModelId('default');
+        }
+      } catch {
+        setAiConfigs([]);
+        setSelectedModelId('default');
+      }
+    } else {
+      setAiConfigs([]);
+      setSelectedModelId('default');
+    }
+  };
+  fetchAiConfigs();
+}, [status]);
 
   // Function to handle model changes from chat or sidebar
   const handleModelChange = (newModelId: string) => {
@@ -1990,33 +2044,77 @@ const quillFormats = [
   const [accessChecked, setAccessChecked] = useState(false);
   const [hasAccess, setHasAccess] = useState(true);
 
-  useEffect(() => {
-    async function checkAccess() {
-      try {
-        const res = await fetch('/api/user/protocol-access');
-        const data = await res.json();
-        if (!data.hasAccess) {
-          // Instead of showing a message, just redirect immediately
-          router.push('/editor/#pricing');
-        }
-      } catch {
-        router.push('/#pricing');
-      } finally {
-        setAccessChecked(true);
+  
+
+  // Add this state near the other useState hooks
+  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatModelId, setChatModelId] = useState(selectedModelId);
+
+  // Handle sending a message to the AI (same logic as InlineChat, but sidebar UI)
+  const sendChatMessage = useCallback(async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+    const userMessage = { role: 'user' as const, content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    const apiChatHistory = chatMessages.map(msg => ({ role: msg.role, content: msg.content }));
+
+    try {
+      const body: any = {
+        text: userMessage.content,
+        action: 'chat',
+        stream: true,
+        chatHistory: apiChatHistory,
+      };
+      if (chatModelId !== 'default') {
+        const [providerId, modelId] = chatModelId.split('::');
+        body.providerId = providerId;
+        body.modelId = modelId;
       }
+      const response = await fetch('/api/ai/content-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok || !response.body) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get response from AI' }));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      // Streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let assistantResponse = '';
+      let hasAssistant = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          assistantResponse += chunk;
+          setChatMessages(prev => {
+            if (hasAssistant || (prev.length && prev[prev.length - 1].role === 'assistant')) {
+              hasAssistant = true;
+              return [
+                ...prev.slice(0, -1),
+                { role: 'assistant', content: assistantResponse }
+              ];
+            }
+            hasAssistant = true;
+            return [...prev, { role: 'assistant', content: assistantResponse }];
+          });
+        }
+      }
+    } catch (error: any) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }]);
+    } finally {
+      setIsChatLoading(false);
     }
-    checkAccess();
-  }, [router]);
-
-  if (!accessChecked) {
-    // Render nothing while checking access
-    return null;
-  }
-
-  if (!hasAccess) {
-    // Render nothing if no access (redirect happens above)
-    return null;
-  }
+  }, [chatInput, isChatLoading, chatMessages, chatModelId]);
 
   return (
     <div className="min-h-screen w-full flex bg-white">
@@ -2071,11 +2169,11 @@ const quillFormats = [
               <>{/* AI Suggestions tab content (enhance, quick prompts, model select, etc) */}
                 <div className="mb-6">
                   <label className="text-xs text-gray-500 font-semibold mb-1 block">AI Model</label>
-                  <select
-                    className="select select-bordered w-full mb-2"
+                    <select
+                    className="bg-white border border-gray-300 text-sm text-gray-700 px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition max-w-full"
                     value={selectedModelId}
                     onChange={e => handleModelChange(e.target.value)}
-                  >
+                    >
                     {modelOptions.map(opt => (
                       <option key={opt.id} value={opt.id}>{opt.label}</option>
                     ))}
@@ -2333,24 +2431,116 @@ const quillFormats = [
         </div>
         </div>
         {/* Chat window (right, like example) */}
-        {isChatVisible && (
-          <div className="fixed top-0 right-0 h-screen w-[420px] bg-white border-l border-[#e3e8f0] shadow-2xl z-40 flex flex-col">
+        {/* Chat open button (fixed, right) */}
+        {!isChatSidebarOpen && (
+          <button
+            className="fixed top-8 right-8 z-50 bg-blue-600 text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-blue-700 transition"
+            onClick={() => setIsChatSidebarOpen(true)}
+            title="Open AI Chat"
+            style={{ outline: 'none' }}
+          >
+            <FaCommentDots size={22} />
+          </button>
+        )}
+
+        {/* Chat Sidebar */}
+        {isChatSidebarOpen && (
+          <div className="fixed top-0 right-0 h-screen w-full max-w-[420px] bg-white border-l border-[#e3e8f0] shadow-2xl z-50 flex flex-col">
+            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[#e3e8f0]">
-              <span className="font-bold text-lg text-blue-600">AI Chat</span>
-              <button className="btn btn-ghost btn-sm" onClick={() => setIsChatVisible(false)}><FaTimes /></button>
+              <span className="font-bold text-lg text-blue-600 flex items-center gap-2">
+                <FaCommentDots className="text-blue-400" /> Chat
+              </span>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setIsChatSidebarOpen(false)}
+                title="Close chat"
+              >
+                <FaTimes />
+              </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* ...existing InlineChat or custom chat UI, but styled as a right panel... */}
-              <InlineChat
-                aiConfigs={aiConfigs}
-                selectedModelId={selectedModelId}
-                onModelChange={handleModelChange}
-                isVisible={true}
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+              {chatMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-base-content/60 pt-16">
+                  <FaCommentDots className="text-4xl mb-4 text-blue-200" />
+                  <div className="text-lg font-medium">How can I assist you?</div>
+                </div>
+              )}
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`rounded-2xl px-4 py-3 max-w-[80%] shadow ${
+                      msg.role === 'user'
+                        ? 'bg-blue-500 text-white self-end'
+                        : 'bg-base-200 text-base-content self-start'
+                    }`}
+                    style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}
+                    dangerouslySetInnerHTML={msg.role === 'assistant'
+                      ? { __html: typeof msg.content === 'string' ? msg.content : '' }
+                      : undefined}
+                  >
+                    {msg.role === 'user' ? msg.content : null}
+                  </div>
+                </div>
+              ))}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl px-4 py-3 bg-base-200 text-base-content max-w-[80%] shadow animate-pulse">
+                    ...
+                  </div>
+                </div>
+              )}
+              <div id="chat-bottom" />
+            </div>
+            {/* Input Area - minimal, no border, compact, matches theme */}
+            <form
+              className="flex items-center gap-2 px-4 py-3 bg-white"
+              style={{ borderTop: 'none' }}
+              onSubmit={e => {
+                e.preventDefault();
+                sendChatMessage();
+              }}
+            >
+              <input
+                type="text"
+                className="flex-1 bg-white rounded-full px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+                placeholder="Type your request…"
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                disabled={isChatLoading}
+                autoFocus
+                style={{ minWidth: 0 }}
               />
-            </div>
+              <select
+                className="bg-transparent text-sm text-gray-500 px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-200"
+                value={selectedModelId}
+                style={{ minWidth: 90, maxWidth: 120 }}
+                onChange={e => handleModelChange(e.target.value)}
+              >
+                {modelOptions.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="ml-1 p-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition disabled:opacity-60"
+                disabled={isChatLoading || !chatInput.trim()}
+                style={{ minWidth: 36, minHeight: 36 }}
+                title="Send"
+              >
+                {isChatLoading ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <FaPaperPlane size={16} />
+                )}
+              </button>
+            </form>
           </div>
         )}
-        {/* Chat open button (fixed, right) */}
 
         {/* AI Settings Modal - update to modern look */}
         <AISettingsModal
