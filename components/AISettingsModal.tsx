@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaPlus, FaTrash, FaSyncAlt } from 'react-icons/fa';
-import { toast } from 'react-hot-toast'; // Import toast for feedback
-import AIProviderConfigItem from './AIProviderConfigItem'; // Import the new component
+import { FaTimes, FaPlus } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
+import AIProviderConfigItem from './AIProviderConfigItem';
 
-// Export the interface so it can be imported elsewhere
 export interface AIProviderConfig { 
   id: string; 
   name: string;
@@ -23,7 +22,6 @@ interface AISettingsModalProps {
   defaultModelId?: string;
 }
 
-// State for individual test status
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
 const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSave, initialConfigs = [], initialDefaultModelId = 'default' }) => {
@@ -33,7 +31,6 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
   const [testMessages, setTestMessages] = useState<Record<string, string>>({});
   const [defaultModelId, setDefaultModelId] = useState<string>(initialDefaultModelId);
 
-  // Load initial configs and default model ID
   useEffect(() => {
     const initialisedConfigs = (initialConfigs || []).map(config => ({
        ...config,
@@ -65,7 +62,6 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
       const { [id]: _, ...rest } = prev;
       return rest;
     });
-    // If the removed config was the default, reset default to system default
     if (defaultModelId.startsWith(`${id}::`)) {
         setDefaultModelId('default');
     }
@@ -83,25 +79,21 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
       await onSave({ configs, defaultModelId });
     } catch (error) {
       console.error("Failed to save AI settings:", error);
-      // Optionally show an error message to the user
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to test a specific connection
   const handleTestConnection = async (id: string) => {
     const configToTest = configs.find(c => c.id === id);
     if (!configToTest) return;
 
-    // Basic validation before testing
     if (!configToTest.endpoint || !configToTest.apiKey || !configToTest.models) {
       setTestStatuses(prev => ({ ...prev, [id]: 'error' }));
       setTestMessages(prev => ({ ...prev, [id]: 'Endpoint, API Key, and at least one Model are required.' }));
       return;
     }
 
-    // Use the first model listed for the test
     const modelToTest = configToTest.models.split(',')[0]?.trim();
     if (!modelToTest) {
         setTestStatuses(prev => ({ ...prev, [id]: 'error' }));
@@ -110,7 +102,7 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
     }
 
     setTestStatuses(prev => ({ ...prev, [id]: 'testing' }));
-    setTestMessages(prev => ({ ...prev, [id]: '' })); // Clear previous message
+    setTestMessages(prev => ({ ...prev, [id]: '' }));
 
     try {
       const response = await fetch('/api/ai/test-connection', {
@@ -119,7 +111,7 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
         body: JSON.stringify({
           endpoint: configToTest.endpoint,
           apiKey: configToTest.apiKey,
-          model: modelToTest, // Send the specific model to test
+          model: modelToTest,
         }),
       });
 
@@ -128,7 +120,6 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
       if (contentType && contentType.includes('application/json')) {
         result = await response.json();
       } else {
-        // Not JSON, likely an error page
         setTestStatuses(prev => ({ ...prev, [id]: 'error' }));
         setTestMessages(prev => ({ ...prev, [id]: 'Server error: Non-JSON response. Check API route and server logs.' }));
         toast.error(`Connection test for "${configToTest.name}" failed: Server error (non-JSON response)`);
@@ -148,68 +139,67 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
       setTestMessages(prev => ({ ...prev, [id]: error.message || 'Connection test failed.' }));
       toast.error(`Connection test for "${configToTest.name}" failed: ${error.message}`);
     } finally {
-      // Keep status as success/error, don't reset to idle immediately
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box w-11/12 max-w-3xl">
-        <button
-          className="btn btn-sm btn-circle absolute right-2 top-2"
-          onClick={onClose}
-          disabled={isLoading}
-        >
-          <FaTimes />
-        </button>
-        <h3 className="font-bold text-lg mb-4">AI Provider Settings</h3>
-
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-          {configs.map((config) => {
-            const status = testStatuses[config.id] || 'idle';
-            const message = testMessages[config.id] || '';
-            // Use the new component here
-            return (
-              <AIProviderConfigItem
-                key={config.id}
-                config={config}
-                status={status}
-                message={message}
-                isLoading={isLoading}
-                onConfigChange={handleConfigChange}
-                onRemoveConfig={handleRemoveConfig}
-                onTestConnection={handleTestConnection}
-              />
-            );
-          })}
-        </div>
-
-        <button className="btn btn-ghost btn-sm mt-4" onClick={handleAddConfig} disabled={isLoading}>
-          <FaPlus className="mr-2" /> Add Provider
-        </button>
-
-        <div className="mt-6">
-          <label className="label-text font-medium mb-1 block">Default model for new content</label>
-          <select
-            className="select select-bordered w-full"
-            value={defaultModelId}
-            onChange={e => setDefaultModelId(e.target.value)}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="relative w-full max-w-2xl mx-auto rounded-2xl bg-white shadow-2xl border border-base-300 p-0 flex flex-col"
+        style={{ minHeight: 0, maxHeight: '90vh' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-base-200">
+          <h3 className="font-bold text-lg font-mono text-blue-700">AI Provider Settings</h3>
+          <button
+            className="btn btn-sm btn-circle bg-base-200 hover:bg-base-300"
+            onClick={onClose}
+            disabled={isLoading}
           >
-            <option value="default">Default (system)</option>
-            {configs.flatMap(cfg =>
-              cfg.models.split(',').map(modelId => (
-                <option key={`${cfg.id}::${modelId.trim()}`} value={`${cfg.id}::${modelId.trim()}`}>{cfg.name} – {modelId.trim()}</option>
-              ))
-            )}
-          </select>
+            <FaTimes />
+          </button>
         </div>
-
-        <div className="modal-action mt-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4" style={{ minHeight: 0 }}>
+          <div className="space-y-4">
+            {configs.map((config) => {
+              const status = testStatuses[config.id] || 'idle';
+              const message = testMessages[config.id] || '';
+              return (
+                <AIProviderConfigItem
+                  key={config.id}
+                  config={config}
+                  status={status}
+                  message={message}
+                  isLoading={isLoading}
+                  onConfigChange={handleConfigChange}
+                  onRemoveConfig={handleRemoveConfig}
+                  onTestConnection={handleTestConnection}
+                />
+              );
+            })}
+          </div>
+          <button className="btn btn-ghost btn-sm mt-4" onClick={handleAddConfig} disabled={isLoading}>
+            <FaPlus className="mr-2" /> Add Provider
+          </button>
+          <div className="mt-6">
+            <label className="label-text font-medium mb-1 block">Default model for new content</label>
+            <select
+              className="select select-bordered w-full"
+              value={defaultModelId}
+              onChange={e => setDefaultModelId(e.target.value)}
+            >
+              <option value="default">Default (system)</option>
+              {configs.flatMap(cfg =>
+                cfg.models.split(',').map(modelId => (
+                  <option key={`${cfg.id}::${modelId.trim()}`} value={`${cfg.id}::${modelId.trim()}`}>{cfg.name} – {modelId.trim()}</option>
+                ))
+              )}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end px-6 py-4 border-t border-base-200 bg-base-100 rounded-b-2xl">
           <button className="btn btn-ghost" onClick={onClose} disabled={isLoading}>Cancel</button>
           <button
-            className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
+            className={`btn btn-primary ${isLoading ? 'loading' : ''} font-mono`}
             onClick={handleSaveChanges}
             disabled={isLoading || configs.length === 0}
           >
@@ -217,8 +207,6 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose, onSa
           </button>
         </div>
       </div>
-       {/* Click outside to close */}
-       <div className="modal-backdrop" onClick={isLoading ? undefined : onClose}></div>
     </div>
   );
 };
