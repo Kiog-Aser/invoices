@@ -2022,12 +2022,11 @@ const quillFormats = [
         const res = await fetch('/api/user/protocol-access');
         const data = await res.json();
         if (!data.hasAccess) {
-          setHasAccess(false);
-          setTimeout(() => router.push('/#pricing'), 1500);
+          // Instead of showing a message, just redirect immediately
+          router.push('/#pricing');
         }
       } catch {
-        setHasAccess(false);
-        setTimeout(() => router.push('/#pricing'), 1500);
+        router.push('/#pricing');
       } finally {
         setAccessChecked(true);
       }
@@ -2036,21 +2035,13 @@ const quillFormats = [
   }, [router]);
 
   if (!accessChecked) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-800">
-        <div className="text-lg font-semibold">Checking subscription status...</div>
-      </main>
-    );
+    // Render nothing while checking access
+    return null;
   }
 
   if (!hasAccess) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-800">
-        <div className="text-lg font-semibold text-center">
-          You need an active subscription to access the editor.<br />Redirecting to pricing...
-        </div>
-      </main>
-    );
+    // Render nothing if no access (redirect happens above)
+    return null;
   }
 
   return (

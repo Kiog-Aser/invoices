@@ -35,6 +35,8 @@ const ButtonCheckout = ({
         ? 'http://localhost:3000'
         : 'https://notifast.fun';
 
+      // Use the current page as cancelUrl if not provided
+      const currentUrl = window.location.href;
       const response = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: {
@@ -44,7 +46,7 @@ const ButtonCheckout = ({
           priceId,
           mode,
           successUrl: successUrl || `${domain}/dashboard/success`,
-          cancelUrl: cancelUrl || `${domain}/dashboard`,
+          cancelUrl: cancelUrl || currentUrl,
           // Pass the user ID in the request so it can be included in client_reference_id
           userId: session?.user?.id
         }),

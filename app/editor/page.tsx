@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ButtonCheckout from '@/components/ButtonCheckout'; // Import ButtonCheckout
+import HeaderLanding from './HeaderLanding';
 
 // Placeholder icons (replace with actual icons or illustrations if available)
 const FeatureIcon = ({ d }: { d: string }) => (
@@ -21,6 +22,7 @@ export default function EditorLanding() {
 
   return (
     <main className="min-h-screen bg-gray-50 text-gray-800 font-sans antialiased">
+      <HeaderLanding />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-indigo-700 via-purple-600 to-pink-500 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-20"></div> {/* Subtle overlay */}
