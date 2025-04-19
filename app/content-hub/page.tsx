@@ -8,6 +8,7 @@ export const revalidate = 0;
 import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX, useMemo } from 'react'; // Added Ref and JSX
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaPaperPlane, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaRegCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft } from 'react-icons/fa'; // Added FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft
 import { FaWandMagicSparkles, FaSpellCheck, FaBookOpen, FaCoins } from 'react-icons/fa6'; // Use more relevant icons
+import { FaBold as FaBoldSolid, FaItalic as FaItalicSolid, FaQuoteLeft as FaQuoteLeftSolid } from 'react-icons/fa6'; // Import solid icons
 import dynamicImport from 'next/dynamic';
 import Delta from 'quill-delta'; // <<<--- ADD THIS IMPORT
 import { marked } from 'marked'; // Import marked library
@@ -1672,34 +1673,19 @@ const quillFormats = [
         if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length >= 1) {
            // Check bounds to prevent errors
            // Quill's length is often 1 more than expected for the last character due to newline
-           const editorContentLength = editor.getLength() -1; // Adjust for potential trailing newline
-           if (suggestionData.offset + suggestionData.length <= editorContentLength) {
-              // Use offset/length directly
-              editor.formatText(
-                suggestionData.offset,
-                suggestionData.length,
-                'grammar-suggestion',
-                suggestionData,
-                'silent'
-              );
-           } else if (suggestionData.offset < editorContentLength) {
-              // If offset is valid but length goes over, format up to the end
-              const adjustedLength = editorContentLength - suggestionData.offset;
-              if (adjustedLength > 0) {
-                 editor.formatText(
-                   suggestionData.offset,
-                   adjustedLength,
-                   'grammar-suggestion',
-                   { ...suggestionData, length: adjustedLength }, // Update data with adjusted length
-                   'silent'
-                 );
-                 console.warn("Adjusted suggestion underline length due to out-of-bounds:", suggestionData);
-              } else {
-                 console.warn("Skipping suggestion underline, offset valid but length calculation failed:", suggestionData);
-              }
-           } else {
-              console.warn("Skipping suggestion underline due to out-of-bounds offset:", suggestionData);
-           }
+           const editorContentLength = editor.getLength() - 1; // Exclude trailing newline
+           const highlightEnd = suggestionData.offset + suggestionData.length;
+           const highlightLength =
+             highlightEnd < editorContentLength
+               ? suggestionData.length + 1
+               : suggestionData.length;
+           editor.formatText(
+             suggestionData.offset,
+             highlightLength,
+             'grammar-suggestion',
+             suggestionData,
+             'silent'
+           );
         } else {
            console.warn("Skipping suggestion underline due to invalid offset/length:", suggestionData);
         }
@@ -1849,28 +1835,16 @@ const quillFormats = [
           highlightLength >= 1
         ) {
           // Check bounds
-          const editorContentLength = editor.getLength() - 1; // Adjust for potential trailing newline
-          if (highlightIndex + highlightLength <= editorContentLength) {
-            try {
-              editor.formatText(highlightIndex, highlightLength, blotName, issue, 'silent');
-            } catch (e) {
-              console.warn("Error applying readability format:", e, issue);
-            }
-          } else if (highlightIndex < editorContentLength) {
-             // Adjust length if it goes over
-             const adjustedLength = editorContentLength - highlightIndex;
-             if (adjustedLength > 0) {
-                try {
-                   editor.formatText(highlightIndex, adjustedLength, blotName, { ...issue, text: issue.text.substring(0, adjustedLength) }, 'silent');
-                   console.warn("Adjusted readability highlight length due to out-of-bounds:", issue);
-                } catch (e) {
-                   console.warn("Error applying adjusted readability format:", e, issue);
-                }
-             } else {
-                console.warn("Skipping readability highlight, offset valid but length calculation failed:", issue);
-             }
-          } else {
-             console.warn("Skipping readability highlight due to out-of-bounds offset:", issue);
+          const editorContentLength = editor.getLength() - 1; // Exclude trailing newline
+          const highlightEnd = highlightIndex + highlightLength;
+          const finalLength =
+            highlightEnd < editorContentLength
+              ? highlightLength + 1
+              : highlightLength;
+          try {
+            editor.formatText(highlightIndex, finalLength, blotName, issue, 'silent'); // Add +1 to length for correct highlighting
+          } catch (e) {
+            console.warn("Error applying readability format:", e, issue);
           }
         } else {
            console.warn("Skipping readability highlight due to invalid index/length:", issue);
@@ -1950,38 +1924,64 @@ const quillFormats = [
         /* Normal formatting toolbar */
         <>
           {/* Text formatting group */}
-          <button onClick={() => handleFormatText('bold')} title="Bold">
-            <strong>B</strong>
-          </button>
-          <button onClick={() => handleFormatText('italic')} title="Italic">
-            <em>i</em>
-          </button>
-          {/* Link button with special color when active */}
-          <button 
-            onClick={() => handleFormatText('link')} 
-            title="Link"
-            className=""
-          >
-            <FaLink className={isTextLinked() ? "text-green-500" : ""} />
-          </button>
+          {(() => {
+            let format: any = {};
+            if (quillRef.current) {
+              const editor = quillRef.current.getEditor();
+              const selection = editor.getSelection();
+              if (selection) format = editor.getFormat(selection);
+            }
+            const activeClass = (cond: boolean) => cond ? "text-green-500" : "";
           
-          {/* Separator */}
-          <div className="divider"></div>
-          
-          {/* Structure formatting group */}
-          <button onClick={() => handleFormatText('header', 1)} title="Title">
-            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
-          </button>
-          <button onClick={() => handleFormatText('header', 2)} title="Subtitle">
-            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
-          </button>
-          <button onClick={() => handleFormatText('blockquote')} title="Quote">
-            <span style={{ fontSize: '16px' }}>"</span>
-          </button>
-
-          {/* Separator */}
-          <div className="divider"></div>
-
+            return (
+              <>
+                <button
+                  onClick={() => handleFormatText('bold')}
+                  title="Bold"
+                  className="transition"
+                >
+                  {format.bold ? <FaBoldSolid className="text-green-500" /> : <FaBold />}
+                </button>
+                <button
+                  onClick={() => handleFormatText('italic')}
+                  title="Italic"
+                  className="transition"
+                >
+                  {format.italic ? <FaItalicSolid className="text-green-500" /> : <FaItalic />}
+                </button>
+                <button
+                  onClick={() => handleFormatText('link')}
+                  title="Link"
+                  className={format.link ? "text-green-500" : ""}
+                >
+                  <FaLink />
+                </button>
+                <div className="divider"></div>
+                <button
+                  onClick={() => handleFormatText('header', 1)}
+                  title="Title"
+                  className={format.header === 1 ? "text-green-500" : ""}
+                >
+                  <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
+                </button>
+                <button
+                  onClick={() => handleFormatText('header', 2)}
+                  title="Subtitle"
+                  className={format.header === 2 ? "text-green-500" : ""}
+                >
+                  <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
+                </button>
+                <button
+                  onClick={() => handleFormatText('blockquote')}
+                  title="Quote"
+                  className="transition"
+                >
+                  {format.blockquote ? <FaQuoteLeftSolid className="text-green-500" /> : <FaQuoteLeft />}
+                </button>
+                <div className="divider"></div>
+              </>
+            );
+          })()}
         </>
       )}
     </div>
@@ -2493,7 +2493,7 @@ useEffect(() => {
 
       </aside>
       {/* Main Content Area (Editor + Right Sidebar) */}
-      <main className="flex-1 flex flex-col relative min-h-screen transition-all duration-300" style={{ marginLeft: sidebarOpen ? 320 : 64 }}>
+      <main className="flex-1 flex flex-col relative min-h-screen transition-all duration-300" style={{ marginLeft: (sidebarOpen ? 320 : 64) + 32 }}>
         {/* Editor Container */}
         <div
           ref={editorContainerRef}
