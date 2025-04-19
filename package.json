@@ -59,6 +59,7 @@
     "nodemailer": "^6.9.13",
     "openai": "^4.90.0",
     "puppeteer": "^24.5.0",
+    "quill-delta": "^5.1.0",
     "react": "18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",

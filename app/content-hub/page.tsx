@@ -9,6 +9,7 @@ import React, { useState, useRef, useEffect, Suspense, useCallback, Ref, JSX, us
 import { FaLightbulb, FaMagic, FaCut, FaPen, FaPaperPlane, FaFilter, FaLink, FaTimes, FaCog, FaPlus, FaTrash, FaSave, FaSync, FaBold, FaItalic, FaQuoteLeft, FaHeading, FaRobot, FaRegCheckCircle, FaChartBar, FaDollarSign, FaEye, FaChevronDown, FaChevronUp, FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft } from 'react-icons/fa'; // Added FaCommentDots, FaChevronRight, FaCheckCircle, FaRegClock, FaChevronLeft
 import { FaWandMagicSparkles, FaSpellCheck, FaBookOpen, FaCoins } from 'react-icons/fa6'; // Use more relevant icons
 import dynamicImport from 'next/dynamic';
+import Delta from 'quill-delta'; // <<<--- ADD THIS IMPORT
 import { marked } from 'marked'; // Import marked library
 import { getReadability, analyzeReadability, ReadabilityResult as DetailedReadabilityResult, ReadabilityIssue } from '@/utils/readability'; // Import ReadabilityIssue
 import AISettingsModal from '@/components/AISettingsModal'; // Import the new modal
@@ -257,6 +258,66 @@ const ContentHub = () => {
 
   // Earning optimiser AI insights state
   const [aiEarningInsights, setAIEarningInsights] = useState<string | null>(null);
+
+  // State for autosave status and word count <<<--- ADD THESE BACK
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [wordCount, setWordCount] = useState(0);
+
+  // --- Autosave Logic ---
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerAutosave = useCallback(() => {
+    setSaveStatus('unsaved');
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+    autosaveTimeoutRef.current = setTimeout(() => {
+      setSaveStatus('saving');
+      console.log("Autosaving content...");
+      setTimeout(() => {
+        localStorage.setItem('contentHubAutosave', content);
+        localStorage.setItem('contentHubTitleAutosave', title);
+        setSaveStatus('saved');
+        console.log("Content autosaved.");
+      }, 1000);
+    }, 2000);
+  }, [content, title]);
+
+  // Load content on mount
+  useEffect(() => {
+    const savedContent = localStorage.getItem('contentHubAutosave');
+    const savedTitle = localStorage.getItem('contentHubTitleAutosave');
+    if (savedContent) {
+      setContent(savedContent);
+       if (quillRef.current) {
+         const editor = quillRef.current.getEditor();
+         editor.clipboard.dangerouslyPasteHTML(0, savedContent);
+         const text = editor.getText();
+         setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+       }
+    }
+    if (savedTitle) {
+      setTitle(savedTitle);
+    }
+    setSaveStatus('saved');
+  }, []);
+
+  // Trigger autosave on content change & calculate word count
+  useEffect(() => {
+    if (status === 'authenticated') {
+        triggerAutosave();
+    }
+    if (quillRef.current) {
+        const text = quillRef.current.getEditor().getText();
+        setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+    }
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [content, status, triggerAutosave]);
+  // --- End Autosave Logic ---
 
   // +++ Popup Handler Functions (Updated) +++
   // Simple dismiss function - Moved earlier
@@ -631,6 +692,32 @@ const ContentHub = () => {
     return personalContext;
   };
 
+  // +++ Handle Specific Edit Suggestion Response +++
+  const handleEditSuggestionResponse = (suggestion: { replacement: string; index: number; length: number }) => {
+    if (!quillRef.current || !suggestion) return;
+    const editor = quillRef.current.getEditor();
+    const { replacement, index, length } = suggestion;
+
+    // Validate the suggestion range before applying
+    const editorLength = editor.getLength();
+    if (typeof index !== 'number' || typeof length !== 'number' || index < 0 || length < 0 || index + length > editorLength) {
+      console.error("Invalid suggestion range received:", suggestion);
+      toast.error("Received an invalid edit suggestion.");
+      return;
+    }
+
+    editor.history.cutoff(); // Start grouping changes
+    // Apply the change: delete original text and insert replacement
+    editor.deleteText(index, length, 'silent'); // Delete silently
+    editor.insertText(index, replacement, 'user'); // Insert as user action for undo
+    editor.setSelection(index, replacement.length); // Select the change
+    editor.history.cutoff(); // End grouping changes
+
+    toast.success("Edit applied!");
+  };
+  // +++ End Handle Specific Edit Suggestion Response +++
+
+
   // AI enhancement functions
   const generateWithAI = async (action: string) => {
     const selectedText = action === 'ideas' ||
@@ -640,9 +727,18 @@ const ContentHub = () => {
                          action === 'carousel' ||
                          action === 'storytelling' ||
                          action === 'expert-breakdown'
-                         ? '' : getSelectedText();
+                         ? '' : getSelectedText(); // getSelectedText now returns the full text if nothing is selected
 
-    if (!selectedText.trim() &&
+    // For suggest_edit, we need the selection range as well
+    let selectionRange: { index: number; length: number } | null = null;
+    if (action === 'suggest_edit' && quillRef.current) {
+        const editor = quillRef.current.getEditor();
+        selectionRange = editor.getSelection(); // Get current selection { index, length }
+        if (!selectionRange || selectionRange.length === 0) {
+            toast.error('Please select the text you want to suggest an edit for.');
+            return;
+        }
+    } else if (!selectedText.trim() &&
         action !== 'ideas' &&
         action !== 'article' &&
         action !== 'social' &&
@@ -654,18 +750,28 @@ const ContentHub = () => {
       return;
     }
 
+
     setLoading(action);
     if (action === 'earning-optimiser') setAIEarningInsights(null); // Reset insights
 
     try {
       const personalContext = selectedProtocol ? getPersonalizedPrompt(action) : {};
       const body: any = {
-        text: selectedText,
+        text: selectedText, // The text to work on (full or selection)
         action,
         title, // Pass the current document title
         personalContext,
-        stream: true // Explicitly request streaming
+        // Request non-streaming for suggest_edit, streaming for others
+        stream: action !== 'suggest_edit'
       };
+
+      // Add selection range info for suggest_edit
+      if (action === 'suggest_edit' && selectionRange) {
+        body.selectionIndex = selectionRange.index;
+        body.selectionLength = selectionRange.length;
+      }
+
+
       if (selectedModelId !== 'default') {
         // Parse providerId and modelId from dropdown value
         const [providerId, modelId] = selectedModelId.split('::');
@@ -684,6 +790,24 @@ const ContentHub = () => {
         const errorData = await response.json().catch(() => ({ error: 'Failed to process with AI' }));
         throw new Error(errorData.error || 'Failed to process with AI');
       }
+
+      // --- Handle suggest_edit (non-streaming) ---
+      if (action === 'suggest_edit') {
+        const suggestion = await response.json();
+        // **API Change Needed:** The API for 'suggest_edit' should return a JSON like:
+        // { replacement: "suggested text", index: original_index, length: original_length }
+        // where index/length refer to the *original* document state when the request was made.
+        if (suggestion && typeof suggestion.replacement === 'string' && typeof suggestion.index === 'number' && typeof suggestion.length === 'number') {
+            handleEditSuggestionResponse(suggestion);
+        } else {
+            console.error("Invalid response format for suggest_edit:", suggestion);
+            toast.error("Could not get a valid edit suggestion.");
+        }
+        setLoading(null); // Ensure loading state is cleared
+        return; // Exit early for non-streaming response
+      }
+      // --- End suggest_edit handling ---
+
 
       // Special handling for earning-optimiser: stream and set HTML
       if (action === 'earning-optimiser') {
@@ -716,10 +840,11 @@ const ContentHub = () => {
           setAIEarningInsights(finalHtml);
         }
         toast.success('Earning optimisation complete!');
+        setLoading(null); // Ensure loading state is cleared here too
         return;
       }
 
-      // Handle the streaming response
+      // Handle the streaming response for other actions
       await handleStreamingResponse(response, () => {
         toast.success(`Content ${action} complete!`);
       });
@@ -728,95 +853,123 @@ const ContentHub = () => {
       console.error('Error generating content:', error);
       toast.error(error.message || 'Something went wrong. Please try again.');
     } finally {
-      setLoading(null);
+      // setLoading(null); // Already handled within specific action blocks or after await handleStreamingResponse
     }
   };
 
-  // Function to handle streaming AI responses
+  // Function to handle streaming AI responses (Ensure loading state is cleared on completion/error)
   const handleStreamingResponse = async (response: Response, onComplete?: () => void) => {
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    let accumulatedMarkdown = ''; // Store raw markdown
+    let success = false;
+    let initialInsertion = true;
     let insertionIndex: number | null = null;
-    let initialInsertion = true; // Flag to handle initial insertion differently
+    let insertedLength = 0; // Track length of AI inserted content for replacement
 
     if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      const range = editor.getSelection(true); // Get current cursor position
-      insertionIndex = range.index; // Store initial insertion point
-
-      // Add null check for insertionIndex before using it
-      if (insertionIndex !== null) {
-        // Ensure we are not inserting into a header line initially
-        const lineFormats = editor.getFormat(insertionIndex);
-        if (lineFormats.header) {
-          editor.insertText(insertionIndex, '\n'); // Add a newline if cursor is in header
-          insertionIndex++;
-          editor.formatLine(insertionIndex, 1, 'header', false); // Ensure the new line is not a header
-          editor.setSelection(insertionIndex, 0); // Move cursor to the new line
-        }
-      }
-    }
-
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        accumulatedMarkdown += chunk;
-
-        if (quillRef.current && insertionIndex !== null) {
-          const editor = quillRef.current.getEditor();
-          // Convert the *entire accumulated* markdown to HTML
-          const htmlContent = marked(accumulatedMarkdown);
-
-          // For the first chunk, just insert
-          if (initialInsertion) {
-            // Use dangerouslyPasteHTML to insert the parsed HTML
-            // We need to delete any potential placeholder newline added before
-            const currentLength = editor.getLength();
-            editor.deleteText(insertionIndex, currentLength - insertionIndex); // Clear anything after initial index
-            editor.clipboard.dangerouslyPasteHTML(insertionIndex, htmlContent);
-            initialInsertion = false;
-          } else {
-            // For subsequent chunks, replace the previously inserted HTML
-            // Find the length of the previously inserted HTML to replace it
-            // This is tricky and might be inefficient. A better approach might involve deltas.
-            // Let's try replacing from the initial insertion point.
-            const currentLength = editor.getLength();
-            editor.deleteText(insertionIndex, currentLength - insertionIndex); // Clear old content
-            editor.clipboard.dangerouslyPasteHTML(insertionIndex, htmlContent); // Insert new full content
-          }
-
-          // Update cursor position to the end of the inserted content
-          // Getting the length *after* paste might be asynchronous, use a small delay
-          setTimeout(() => {
-            const newLength = editor.getLength();
-            editor.setSelection(newLength, 0); // Move cursor to the very end
-          }, 0);
-        }
-      }
-    }
-
-    // Final cleanup: Ensure the final HTML is rendered correctly
-    if (quillRef.current && insertionIndex !== null && !initialInsertion) {
         const editor = quillRef.current.getEditor();
-        const finalHtmlContent = marked(accumulatedMarkdown);
-        const currentLength = editor.getLength();
-        editor.deleteText(insertionIndex, currentLength - insertionIndex);
-        editor.clipboard.dangerouslyPasteHTML(insertionIndex, finalHtmlContent);
-        setTimeout(() => {
-            const finalLength = editor.getLength();
-            editor.setSelection(finalLength, 0);
-        }, 0);
+        const range = editor.getSelection(true);
+        insertionIndex = range.index;
+
+        // Add null check for insertionIndex
+        if (insertionIndex !== null) {
+            const lineFormats = editor.getFormat(insertionIndex);
+            if (lineFormats.header) {
+                editor.insertText(insertionIndex, '\n', 'silent'); // Insert newline silently
+                insertionIndex++;
+                editor.formatLine(insertionIndex, 1, 'header', false, 'silent'); // Format silently
+                editor.setSelection(insertionIndex, 0);
+            }
+        }
     }
 
+    if (insertionIndex === null) {
+        console.error("Could not determine insertion index for streaming response.");
+        toast.error("Could not insert AI response.");
+        setLoading(null);
+        return;
+    }
 
-    if (onComplete) onComplete();
+    // --- Start Grouping AI Insertion ---
+    quillRef.current?.getEditor().history.cutoff();
+
+    try {
+        if (!response.body) throw new Error('Response body is null');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+        let accumulatedMarkdown = '';
+
+        while (!done) {
+            const { value, done: readerDone } = await reader.read();
+            done = readerDone;
+            if (value) {
+                const chunk = decoder.decode(value, { stream: true });
+                accumulatedMarkdown += chunk;
+
+                if (quillRef.current) {
+                    const editor = quillRef.current.getEditor();
+                    const htmlContent = marked(accumulatedMarkdown);
+                    const delta = editor.clipboard.convert(htmlContent); // Convert HTML to Delta
+
+                    if (initialInsertion) {
+                        // Insert the first chunk
+                        editor.updateContents([{ retain: insertionIndex }, ...delta.ops], 'silent'); // Insert silently
+                        insertedLength = delta.length();
+                        initialInsertion = false;
+                    } else {
+                        // Replace the previously inserted content
+                        const replaceDelta = new Delta()
+                            .retain(insertionIndex)
+                            .delete(insertedLength) // Delete old content
+                            .concat(delta); // Insert new content
+                        editor.updateContents(replaceDelta, 'silent'); // Replace silently
+                        insertedLength = delta.length(); // Update inserted length
+                    }
+
+                    // Move cursor to the end of the inserted content (optional, can be jumpy)
+                    // editor.setSelection(insertionIndex + insertedLength, 0);
+                }
+            }
+        }
+
+        // --- Finalize and Add to History ---
+        if (quillRef.current && !initialInsertion) {
+            const editor = quillRef.current.getEditor();
+            // Create a delta representing the *final* insertion as a user action
+            const finalHtmlContent = marked(accumulatedMarkdown);
+            const finalDelta = editor.clipboard.convert(finalHtmlContent);
+            const finalUserActionDelta = new Delta()
+                .retain(insertionIndex)
+                .delete(insertedLength) // Remove the silently inserted content
+                .concat(finalDelta); // Add the final content as a user action
+
+            // Apply the final change with 'user' source AFTER the cutoff
+            editor.updateContents(finalUserActionDelta, 'user');
+            editor.setSelection(insertionIndex + finalDelta.length(), 0); // Move cursor to end
+        } else if (quillRef.current && initialInsertion && accumulatedMarkdown) {
+             // Handle case where content was generated but loop didn't run subsequent times
+             const editor = quillRef.current.getEditor();
+             const finalHtmlContent = marked(accumulatedMarkdown);
+             const finalDelta = editor.clipboard.convert(finalHtmlContent);
+             editor.updateContents([{ retain: insertionIndex }, ...finalDelta.ops], 'user'); // Insert as user action
+             editor.setSelection(insertionIndex + finalDelta.length(), 0);
+        }
+
+        success = true;
+    } catch (error: any) {
+        console.error("Error handling streaming response:", error);
+        toast.error(`Stream error: ${error.message}`);
+        // Attempt to rollback the silent changes if error occurred mid-stream? Difficult.
+        // Best effort: rely on the initial cutoff. User might need to undo multiple times if error happens late.
+    } finally {
+        // --- End Grouping AI Insertion ---
+        // Cutoff again AFTER the final 'user' update (if successful) or on error
+        quillRef.current?.getEditor().history.cutoff();
+
+        setLoading(null);
+        if (success && onComplete) {
+            onComplete();
+        }
+    }
   };
 
   // Handle protocol selection
@@ -918,14 +1071,14 @@ const ContentHub = () => {
       }
       /* Only the first h1 is the title, first h2 is subtitle */
       .medium-style-editor .ql-editor h1 {
-        font-size: 2.25rem;
+        font-size: 2.8rem; /* Increased title size */
         font-weight: 700;
         margin: 0 0 0.1em 0;
         line-height: 1.15;
         color: #111;
       }
       .medium-style-editor .ql-editor h2 {
-        font-size: 1.25rem;
+        font-size: 1.5rem; /* Increased subtitle size */
         font-weight: 500;
         color: #757575;
         margin: 0 0 1.2em 0;
@@ -1060,6 +1213,32 @@ const ContentHub = () => {
       .medium-style-editor .ql-editor .readability-highlight-passive { background-color: rgba(59, 130, 246, 0.2); }
       .medium-style-editor .ql-editor .readability-highlight-weakener { background-color: rgba(59, 130, 246, 0.2); }
       .medium-style-editor .ql-editor .readability-highlight-simpler { background-color: rgba(168, 85, 247, 0.2); }
+      /* Editor Placeholder Styling */
+      .medium-style-editor .ql-editor.ql-blank::before {
+        content: attr(data-placeholder);
+        position: absolute;
+        left: 0; /* Align with editor padding */
+        top: 20px; /* Align with editor padding */
+        color: rgba(0,0,0,0.3);
+        pointer-events: none;
+        font-style: normal;
+        font-size: 2.8rem; /* Match h1 size */
+        font-weight: 700; /* Match h1 weight */
+        line-height: 1.15; /* Match h1 line-height */
+      }
+      /* Ensure editor container is clickable */
+      .medium-style-editor {
+        cursor: text;
+        min-height: 100px; /* Ensure some minimum clickable height */
+      }
+      /* Hide scrollbar */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
     `;
     document.head.appendChild(style);
     return () => {
@@ -1069,38 +1248,52 @@ const ContentHub = () => {
   
   // --- Fix paste behavior: only first line is title, rest is normal ---
   useEffect(() => {
-    const editor = quillRef.current?.getEditor();
-    if (!editor) return;
-    const root = editor.root;
-    const handlePaste = () => {
-      setTimeout(() => {
-        // Get all lines
-        const lines = editor.getLines();
-        if (lines.length === 0) return;
-        // Make first line h1 (title)
-        editor.formatLine(0, lines[0].length(), 'header', 1);
-        // If second line exists, make it h2 (subtitle)
-        if (lines.length > 1) {
-          editor.formatLine(lines[0].length() + 1, lines[1].length(), 'header', 2);
-        }
-        // All other lines: remove header if not user-applied
-        for (let i = 2; i < lines.length; i++) {
-          const [blot, offset] = editor.getLine(editor.getText(0, lines[0].length() + lines[1].length() + i));
-          if (blot) {
-            const formats = editor.getFormat(blot);
-            if (formats.header) {
-              // Only remove if not user-applied (optional, or always remove)
-              editor.formatLine(editor.getText(0, lines[0].length() + lines[1].length() + i).length, blot.length(), 'header', false);
-            }
-          }
-        }
-      }, 0);
+    if (!quillRef.current) return;
+    const quill = quillRef.current.getEditor();
+
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault(); // Prevent default paste behavior
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      const text = clipboardData.getData('text/plain');
+      const html = clipboardData.getData('text/html');
+
+      quill.history.cutoff(); // Group paste operation
+
+      if (html) {
+        // If HTML is available, use it but process it
+        const delta = quill.clipboard.convert(html); // Convert HTML to Delta
+        // Modify the delta if needed (e.g., strip unwanted formats)
+        quill.updateContents(delta, 'user'); // Apply delta, source 'user' for undo
+      } else if (text) {
+        // Fallback to plain text
+        const range = quill.getSelection(true);
+        quill.insertText(range.index, text, 'user'); // Insert text, source 'user' for undo
+      }
+
+      // Ensure formatting is correct after paste (e.g., first line H1)
+      // This might need adjustment based on desired paste behavior
+      const firstLineFormat = quill.getFormat(0);
+      if (!firstLineFormat.header) {
+        quill.formatLine(0, 1, 'header', 1, 'silent'); // Re-apply header silently if needed
+      }
+
+      quill.history.cutoff(); // End grouping
     };
-    root.addEventListener('paste', handlePaste);
+
+    quill.root.addEventListener('paste', handlePaste);
+
     return () => {
-      root.removeEventListener('paste', handlePaste);
+      if (quillRef.current) {
+         // Check if root exists before removing listener
+         const editorRoot = quillRef.current.getEditor()?.root;
+         if (editorRoot) {
+            editorRoot.removeEventListener('paste', handlePaste);
+         }
+      }
     };
-  }, [quillRef]);
+  }, [quillRef]); // Dependency on quillRef
 
   // Track if we're in link input mode
   const [isLinkMode, setIsLinkMode] = useState(false);
@@ -1475,10 +1668,13 @@ const quillFormats = [
           length: Number(suggestion.length),
         };
         // Check if offset and length are valid before formatting
-        if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length > 0) {
+        // Ensure length is at least 1
+        if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length >= 1) {
            // Check bounds to prevent errors
-           if (suggestionData.offset + suggestionData.length <= length) {
-              // Use offset/length directly (no getCorrectedRange)
+           // Quill's length is often 1 more than expected for the last character due to newline
+           const editorContentLength = editor.getLength() -1; // Adjust for potential trailing newline
+           if (suggestionData.offset + suggestionData.length <= editorContentLength) {
+              // Use offset/length directly
               editor.formatText(
                 suggestionData.offset,
                 suggestionData.length,
@@ -1486,8 +1682,23 @@ const quillFormats = [
                 suggestionData,
                 'silent'
               );
+           } else if (suggestionData.offset < editorContentLength) {
+              // If offset is valid but length goes over, format up to the end
+              const adjustedLength = editorContentLength - suggestionData.offset;
+              if (adjustedLength > 0) {
+                 editor.formatText(
+                   suggestionData.offset,
+                   adjustedLength,
+                   'grammar-suggestion',
+                   { ...suggestionData, length: adjustedLength }, // Update data with adjusted length
+                   'silent'
+                 );
+                 console.warn("Adjusted suggestion underline length due to out-of-bounds:", suggestionData);
+              } else {
+                 console.warn("Skipping suggestion underline, offset valid but length calculation failed:", suggestionData);
+              }
            } else {
-              console.warn("Skipping suggestion underline due to out-of-bounds:", suggestionData);
+              console.warn("Skipping suggestion underline due to out-of-bounds offset:", suggestionData);
            }
         } else {
            console.warn("Skipping suggestion underline due to invalid offset/length:", suggestionData);
@@ -1509,81 +1720,6 @@ const quillFormats = [
 
     // --- Check Cache ---
     try {
-      const cachedDataString = localStorage.getItem(cacheKey);
-      if (cachedDataString) {
-        const cachedData = JSON.parse(cachedDataString);
-        if (cachedData.content === text && Array.isArray(cachedData.suggestions)) {
-          console.log("Using cached grammar suggestions.");
-          setGrammarSuggestions(cachedData.suggestions);
-          applyUnderlines(cachedData.suggestions); // Apply underlines from cache
-          setIsGrammarModalOpen(true);
-          setActiveSidebarTab('grammar');
-          setGrammarLoading(false);
-          return; // Exit early
-        } else {
-          // Content mismatch, remove old cache
-          localStorage.removeItem(cacheKey);
-        }
-      }
-    } catch (e) {
-      console.error("Error reading grammar cache:", e);
-      localStorage.removeItem(cacheKey); // Clear potentially corrupted cache
-    }
-    // --- End Cache Check ---
-
-    // Clear underlines before API call if cache missed
-    const length = editor.getLength();
-    editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
-    setGrammarSuggestions([]); // Clear suggestions state if cache missed
-
-    try {
-      const res = await fetch('https://api.languagetool.org/v2/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          text,
-          language: 'en-US',
-        }),
-      });
-      console.log('Grammar API response:', res);
-      if (!res.ok) {
-          throw new Error(`API request failed with status ${res.status}`);
-      }
-      const data = await res.json();
-      console.log('Grammar API JSON:', data);
-      const suggestions = (data.matches || []).map((suggestion: any, index: number) => ({
-          ...suggestion,
-          // Ensure each suggestion has a unique ID for reliable filtering later
-          id: `suggestion-${Date.now()}-${index}`
-      }));
-
-      // --- Store in Cache ---
-      try {
-          localStorage.setItem(cacheKey, JSON.stringify({ content: text, suggestions }));
-      } catch (e: any) { // Use 'any' or define a specific error type
-          console.error("Error saving grammar cache:", e);
-          // Optionally clear cache if quota is exceeded
-          if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
-               localStorage.removeItem(cacheKey);
-               toast.error("Could not cache grammar results (storage full).");
-          }
-      }
-      // --- End Store Cache ---
-
-      setGrammarSuggestions(suggestions);
-      applyUnderlines(suggestions); // Apply underlines from API result
-
-      if (suggestions.length > 0) {
-        setIsGrammarModalOpen(true);
-        setActiveSidebarTab('grammar');
-      } else {
-        toast.success('No grammar issues found!');
-      }
-
-    } catch (e: any) {
-      toast.error(`Grammar check failed: ${e.message || 'Unknown error'}`);
-      console.error('Grammar check error:', e);
-      setGrammarSuggestions([]); // Clear suggestions on error
       applyUnderlines([]); // Ensure underlines are cleared on error
     } finally {
       setGrammarLoading(false);
@@ -1706,17 +1842,38 @@ const quillFormats = [
         // Use issue.index and issue.text.length
         const highlightIndex = typeof issue.index === 'number' ? issue.index : 0;
         let highlightLength = issue.text ? issue.text.length : 0;
+        // Ensure length is at least 1
         if (
           blotName &&
           highlightIndex >= 0 &&
-          highlightLength > 0 &&
-          highlightIndex + highlightLength <= length
+          highlightLength >= 1
         ) {
-          try {
-            editor.formatText(highlightIndex, highlightLength, blotName, issue, 'silent');
-          } catch (e) {
-            // ignore
+          // Check bounds
+          const editorContentLength = editor.getLength() - 1; // Adjust for potential trailing newline
+          if (highlightIndex + highlightLength <= editorContentLength) {
+            try {
+              editor.formatText(highlightIndex, highlightLength, blotName, issue, 'silent');
+            } catch (e) {
+              console.warn("Error applying readability format:", e, issue);
+            }
+          } else if (highlightIndex < editorContentLength) {
+             // Adjust length if it goes over
+             const adjustedLength = editorContentLength - highlightIndex;
+             if (adjustedLength > 0) {
+                try {
+                   editor.formatText(highlightIndex, adjustedLength, blotName, { ...issue, text: issue.text.substring(0, adjustedLength) }, 'silent');
+                   console.warn("Adjusted readability highlight length due to out-of-bounds:", issue);
+                } catch (e) {
+                   console.warn("Error applying adjusted readability format:", e, issue);
+                }
+             } else {
+                console.warn("Skipping readability highlight, offset valid but length calculation failed:", issue);
+             }
+          } else {
+             console.warn("Skipping readability highlight due to out-of-bounds offset:", issue);
           }
+        } else {
+           console.warn("Skipping readability highlight due to invalid index/length:", issue);
         }
       });
       editor.history.cutoff();
@@ -1821,6 +1978,10 @@ const quillFormats = [
           <button onClick={() => handleFormatText('blockquote')} title="Quote">
             <span style={{ fontSize: '16px' }}>"</span>
           </button>
+
+          {/* Separator */}
+          <div className="divider"></div>
+
         </>
       )}
     </div>
@@ -1870,7 +2031,7 @@ const quillFormats = [
             // Ensure IDs are generated if missing
             const configsWithIds = (data.configs || []).map((config: any, index: number) => ({
               ...config,
-              id: config.id || `config-${Date.now()}-${index}` // Ensure unique ID
+              id: config.id || `config-${Date.now()}-${index}`
             }));
             setAiConfigs(configsWithIds);
             // Ensure defaultModelId exists in the fetched configs or default to 'default'
@@ -2118,8 +2279,8 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen w-full flex bg-white">
-      {/* Sidebar - collapsible, full height, no rounded corners, modern look */}
-      <aside className={`h-screen flex flex-col bg-[#f8fafc] border-r border-[#e3e8f0] shadow-xl transition-all duration-300 ${sidebarOpen ? 'w-80' : 'w-16'} fixed left-0 top-0 z-30`}>
+      {/* Left Sidebar */}
+      <aside className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 flex flex-col ${sidebarOpen ? 'w-80' : 'w-16'} bg-[#f7f8fa] border-r border-[#e3e8f0]`}>
         {/* Sidebar toggle button */}
         <button
           className="absolute top-4 right-[-18px] z-40 bg-blue-500 text-white rounded-full shadow-lg w-8 h-8 flex items-center justify-center hover:bg-blue-600 transition"
@@ -2164,7 +2325,7 @@ useEffect(() => {
             <button className={`flex-1 flex items-center justify-center py-2 rounded-full text-sm font-semibold transition ${activeSidebarTab === 'earning' ? 'bg-blue-500 text-white shadow' : 'bg-white/80 text-blue-500 border border-blue-200'} ${sidebarOpen ? '' : 'w-10 h-10 p-0'}`} onClick={() => setActiveSidebarTab('earning')} title="Earning"><FaCoins className="text-lg" /></button>
           </div>
           {/* Tab content (modern, minimal, scrollable) */}
-          <div className={`flex-1 overflow-y-auto ${sidebarOpen ? 'px-1 pb-4' : 'hidden'}`} style={{ maxHeight: 'calc(100vh - 120px)' }}>
+          <div className={`flex-1 overflow-y-auto scrollbar-hide ${sidebarOpen ? 'px-1 pb-4' : 'hidden'}`} style={{ maxHeight: 'calc(100vh - 120px)' }}>
             {activeSidebarTab === 'ai' && (
               <>{/* AI Suggestions tab content (enhance, quick prompts, model select, etc) */}
                 <div className="mb-6">
@@ -2222,7 +2383,7 @@ useEffect(() => {
                         Apply All
                       </button>
                     </div>
-                    <div className="overflow-y-auto" style={{ maxHeight: 320 }}>
+                    <div className="overflow-y-auto scrollbar-hide" style={{ maxHeight: 320 }}>
                       {grammarSuggestions.map((suggestion, idx) => (
                         <div key={suggestion.id || idx} className="rounded-lg border border-base-300 bg-base-100 p-3 mb-2 flex flex-col gap-1 shadow-sm">
                           <div className="flex items-center gap-2">
@@ -2265,7 +2426,9 @@ useEffect(() => {
               <div className="p-4 flex flex-col h-full">
                 <h2 className="text-lg font-semibold mb-2">Readability Analysis</h2>
                 <p className="text-base-content/70 text-sm mb-2">Analyze your content for readability and clarity.</p>
-                <button className="btn btn-primary btn-sm w-full mb-2" onClick={checkReadability} disabled={!!loading}>{loading === 'readability' ? 'Analyzing...' : 'Analyze Readability'}</button>
+                <button className="btn btn-primary btn-sm w-full mb-2" onClick={checkReadability} disabled={loading === 'readability'}>
+                  {loading === 'readability' ? 'Analyzing...' : 'Analyze Readability'}
+                </button>
                 {readability && (
                   <div className="flex flex-col gap-3 mt-2">
                     {/* Stats */}
@@ -2296,7 +2459,9 @@ useEffect(() => {
                       </div>
                     </div>
                     {/* Issues grouped Hemingway-style */}
-                    <ReadabilityIssuesHemingway issues={readability.issues} />
+                    <div className="overflow-y-auto scrollbar-hide flex-1" style={{ maxHeight: 'calc(100vh - 350px)' }}> {/* Make issues scrollable and ensure it fills remaining space */}
+                      <ReadabilityIssuesHemingway issues={readability.issues} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -2327,97 +2492,98 @@ useEffect(() => {
         {/* Modern settings button at bottom */}
 
       </aside>
-      {/* Main Editor Area - full width, no background, no rounded corners */}
-      <main className="flex-1 flex flex-col relative min-h-screen ml-0" style={{ marginLeft: sidebarOpen ? 320 : 64 }}>
-        {/* Editor and content area, no extra background, no border, no rounded corners */}
-        <div ref={editorContainerRef} className="flex-1 px-0 py-8 w-full max-w-full mx-auto editor-no-top-gap">
-          {/* ...existing code for ReactQuill, toolbar, plus button, etc... */}
+      {/* Main Content Area (Editor + Right Sidebar) */}
+      <main className="flex-1 flex flex-col relative min-h-screen transition-all duration-300" style={{ marginLeft: sidebarOpen ? 320 : 64 }}>
+        {/* Editor Container */}
+        <div
+          ref={editorContainerRef}
+          className={`flex-1 px-8 py-8 pb-48 editor-no-top-gap transition-all duration-300 relative`} // removed mx-auto
+          style={{
+            maxWidth: '700px',
+            marginRight: isChatSidebarOpen ? '440px' : 'auto',
+            marginLeft: 0, // always left-aligned
+          }}
+        >
+          {/* + Button Portal */}
           {typeof window !== 'undefined' && plusButton.visible && createPortal(
             <div
-              className="fixed z-[9990] left-[calc(20%-2rem)]" // Adjust left position as needed
-              style={{ top: `${plusButton.top}px` }}
-              onMouseDown={e => e.preventDefault()} // Prevent editor losing focus
+              className="fixed z-[9990]"
+              style={{
+                top: `${plusButton.top}px`,
+                left: `${((editorContainerRef.current?.getBoundingClientRect()?.left ?? 0) + (editorContainerRef.current?.clientWidth ?? 0) / 2) - (700 / 2) - 40}px`
+              }}
+              onMouseDown={e => e.preventDefault()}
             >
               <button
-            onClick={() => setPlusMenuVisible(!plusMenuVisible)}
-            className="btn btn-xs btn-ghost btn-circle border border-base-300 hover:bg-base-200"
-            title="Add content"
+                onClick={() => setPlusMenuVisible(!plusMenuVisible)}
+                className="btn btn-xs btn-ghost btn-circle border border-base-300 hover:bg-base-200"
+                title="Add content"
               >
-            <FaPlus size={12} />
+                <FaPlus size={12} />
               </button>
               {/* "+" Button Menu */}
               {plusMenuVisible && (
-            <div className="absolute left-full top-0 ml-2 w-32 bg-base-100 border border-base-300 rounded-md shadow-lg py-1">
-              <button
-                onClick={() => {
-              imageHandler(); // Trigger image upload
-              setPlusMenuVisible(false); // Close menu
-                }}
-                className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-base-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                Image
-              </button>
-              {/* Add other menu items here later */}
-            </div>
+                <div className="absolute left-full top-0 ml-2 w-32 bg-base-100 border border-base-300 rounded-md shadow-lg py-1 z-[9991]">
+                  <button
+                    onClick={() => {
+                      imageHandler();
+                      setPlusMenuVisible(false);
+                    }}
+                    className="flex items-center w-full px-3 py-1.5 text-sm hover:bg-base-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    Image
+                  </button>
+                  {/* Add other menu items here later */}
+                </div>
               )}
             </div>,
             document.body
           )}
 
-          {/* Floating toolbar for text selection rendered as a portal */}
-        {typeof window !== 'undefined' && createPortal(
-          floatingToolbarJSX,
-          document.body
-        )}
-        {/* +++ Suggestion Popup Portal (Updated Props) +++ */}
-        {typeof window !== 'undefined' && popupSuggestion && popupPosition && createPortal(
-          // Add a container div if needed for the outside click listener
-          <div className="suggestion-popup-container">
-              <SuggestionPopup
-                suggestion={popupSuggestion}
-                position={popupPosition as { top: number; left: number }}
-                onApply={applyGrammarSuggestion}
-                onDismiss={() => handleDismissSuggestion(popupSuggestion)} // Pass dismiss handler with suggestion data
-                // Removed onMouseEnter/onMouseLeave
-              />
-          </div>,
-          document.body
-        )}
-        {/* +++ End Suggestion Popup Portal +++ */}
-        
-        {/* Main content area with minimal editor - positioned with proper margins to avoid sidebar overlap */}
-        <div ref={editorContainerRef} className="flex-1 px-8 py-8 w-[55%] ml-[20%] mr-[22rem] pb-48 editor-no-top-gap"> {/* Increased right margin, Added pb-48 */}
-          {/* Clean, borderless editor with clear ending before sidebar */}
-          <div className="min-h-[calc(100vh-100px)] max-w-[100%]">
+          {/* Floating toolbar portal */}
+          {typeof window !== 'undefined' && createPortal(
+            floatingToolbarJSX, // Assuming floatingToolbarJSX is defined correctly elsewhere
+            document.body
+          )}
+
+          {/* Suggestion Popup Portal */}
+          {typeof window !== 'undefined' && popupSuggestion && popupPosition && createPortal(
+            <div className="suggestion-popup-container">
+                <SuggestionPopup
+                  suggestion={popupSuggestion}
+                  position={popupPosition as { top: number; left: number }}
+                  onApply={applyGrammarSuggestion}
+                  onDismiss={() => handleDismissSuggestion(popupSuggestion)}
+                />
+            </div>,
+            document.body
+          )}
+
+          {/* Inner div for the actual Quill editor */}
+          <div ref={editorContainerRef} className="min-h-[calc(100vh-100px)] w-full">
             <ReactQuill
               forwardedRef={quillRef}
               value={content}
-              onChange={(value: string) => {
+              onChange={(value: string, delta: any, source: string, editorInstance: any) => {
                 setContent(value);
-
+                const text = editorInstance.getText();
+                const firstLine = text.split('\n')[0].trim();
+                if (firstLine !== title) {
+                  setTitle(firstLine);
+                }
+                const placeholder = firstLine ? 'Tell your story...' : 'Title';
                 if (quillRef.current) {
                   const editor = quillRef.current.getEditor();
-                  const selection = editor.getSelection();
-                  if (selection) {
-                    const [line, offset] = editor.getLine(selection.index);
-                    const lineText = line.domNode.innerText;
-                  }
-                  // Always extract the first line of text as the title, regardless of formatting
-                  const text = editor.getText();
-                  const firstLine = text.split('\n')[0].trim();
-                  if (firstLine !== title) {
-                    setTitle(firstLine);
-                  }
+                  editor.root.dataset.placeholder = placeholder;
                 }
               }}
               onFocus={() => {
-                // When editor gets focus and is empty, apply heading format
                 if (!content && quillRef.current) {
                   const editor = quillRef.current.getEditor();
-                  editor.format('header', 1);
+                  editor.formatLine(0, 1, 'header', 1);
+                  editor.root.dataset.placeholder = 'Title';
                 }
-                // Always update indicator on focus
                 addEditorLabels();
               }}
               modules={quillModules}
@@ -2428,31 +2594,29 @@ useEffect(() => {
               style={editorStyles}
             />
           </div>
-        </div>
-        </div>
-        {/* Chat window (right, like example) */}
+        </div> {/* Closing div for the editor container */}
+
         {/* Chat open button (fixed, right) */}
         {!isChatSidebarOpen && (
           <button
             className="fixed top-8 right-8 z-50 bg-blue-600 text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-blue-700 transition"
             onClick={() => setIsChatSidebarOpen(true)}
             title="Open AI Chat"
-            style={{ outline: 'none' }}
           >
-            <FaCommentDots size={22} />
+            <FaCommentDots />
           </button>
         )}
 
-        {/* Chat Sidebar */}
+        {/* Chat Sidebar (Right) */}
         {isChatSidebarOpen && (
-          <div className="fixed top-0 right-0 h-screen w-full max-w-[420px] bg-white border-l border-[#e3e8f0] shadow-2xl z-50 flex flex-col">
+          <aside className="fixed top-0 right-0 h-full w-[420px] bg-white border-l border-[#e3e8f0] shadow-lg z-50 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[#e3e8f0]">
               <span className="font-bold text-lg text-blue-600 flex items-center gap-2">
                 <FaCommentDots className="text-blue-400" /> Chat
               </span>
               <button
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm btn-circle" // Make it a circle
                 onClick={() => setIsChatSidebarOpen(false)}
                 title="Close chat"
               >
@@ -2460,7 +2624,7 @@ useEffect(() => {
               </button>
             </div>
             {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            <div className="flex-1 overflow-y-auto scrollbar-hide px-6 py-4 space-y-6">
               {chatMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-base-content/60 pt-16">
                   <FaCommentDots className="text-4xl mb-4 text-blue-200" />
@@ -2539,10 +2703,10 @@ useEffect(() => {
                 )}
               </button>
             </form>
-          </div>
+          </aside>
         )}
 
-        {/* AI Settings Modal - update to modern look */}
+        {/* Modals */}
         <AISettingsModal
           isOpen={isAISettingsModalOpen}
           onClose={() => setIsAISettingsModalOpen(false)}
@@ -2550,7 +2714,6 @@ useEffect(() => {
           initialConfigs={aiConfigs}
           defaultModelId={selectedModelId}
         />
-        {/* Protocol selection modal remains as before */}
         {isProtocolModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-base-100 p-6 rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
@@ -2592,8 +2755,24 @@ useEffect(() => {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </main> {/* Closing tag for main content area */}
+
+      {/* Status Bar - Placed outside main, but within the root div */}
+      <footer
+        className="fixed bottom-0 left-0 right-0 h-8 bg-gray-50 border-t border-gray-200 flex items-center justify-between px-4 z-40 transition-all duration-300"
+        style={{ paddingLeft: sidebarOpen ? 'calc(320px + 1rem)' : 'calc(64px + 1rem)', paddingRight: isChatSidebarOpen ? 'calc(420px + 1rem)' : '1rem' }} // Adjust padding based on both sidebars
+      >
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          {saveStatus === 'saved' && <><FaRegCheckCircle className="text-green-500" /><span>Saved</span></>}
+          {saveStatus === 'saving' && <><FaSync className="animate-spin" /><span>Saving...</span></>}
+          {saveStatus === 'unsaved' && <><FaRegClock className="text-yellow-500" /><span>Unsaved changes</span></>}
+        </div>
+        <div className="text-xs text-gray-500">
+          {wordCount} word{wordCount !== 1 ? 's' : ''}
+        </div>
+      </footer>
+
+    </div> // This closing div matches the opening div of the main return statement
   );
 };
 
