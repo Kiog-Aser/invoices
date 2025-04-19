@@ -24,7 +24,7 @@ export default function EditorLanding() {
     <main className="min-h-screen bg-base-100 text-base-content font-mono antialiased">
       <HeaderLanding />
       {/* Hero Section */}
-      <section id="hero" className="min-h-[90vh] lg:min-h-screen flex items-center relative overflow-hidden py-16 sm:py-20 md:py-24 lg:py-28 bg-base-300">
+      <section id="hero" className="min-h-[90vh] lg:min-h-screen flex items-center relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-24 bg-base-300">
         {/* Retro grid background */}
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
         
@@ -34,75 +34,62 @@ export default function EditorLanding() {
         
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center max-w-4xl mx-auto mb-12">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-mono">
-              Write Smarter,<br/>Not Harder.
-            </h1>
-            
-            {/* Feature checkboxes instead of paragraph */}
-            <div className="max-w-2xl mx-auto mb-10 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                  </svg>
-                </div>
-                <span className="font-mono text-base-content/80">AI-powered writing assistance</span>
-              </div>
-              <div className="flex items-center justify-center mb-3">
-                <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                  </svg>
-                </div>
-                <span className="font-mono text-base-content/80">Advanced grammar checking</span>
-              </div>
-              <div className="flex items-center justify-center mb-3">
-                <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                  </svg>
-                </div>
-                <span className="font-mono text-base-content/80">Readability analysis tools</span>
-              </div>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-mono">
+          Write Smarter,<br/>Not Harder.
+        </h1>
+        
+        {/* Feature checkboxes instead of paragraph */}
+        <div className="max-w-2xl mx-auto mb-10 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+          </svg>
             </div>
-            
-            {/* Single CTA button */}
-            <div className="flex justify-center">
-              <ButtonCheckout
-                priceId={yearlyPriceId}
-                mode="subscription"
-                className="btn btn-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 px-10 py-3 text-lg"
-              >
-                Start Writing Today - $50/yr
-              </ButtonCheckout>
+            <span className="font-mono text-base-content/80">AI-powered writing assistance</span>
+          </div>
+          <div className="flex items-center justify-center mb-3">
+            <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+          </svg>
             </div>
-            <p className="mt-4 text-sm text-base-content/60 font-mono">
-              <span className="ml-2">
-                Or <ButtonCheckout 
-                  priceId={monthlyPriceId} 
-                  mode="subscription" 
-                  asLink={true} 
-                  className="font-bold underline hover:text-primary transition"
-                >
-                  start monthly for $5
-                </ButtonCheckout>.
-              </span>
-            </p>
+            <span className="font-mono text-base-content/80">Advanced grammar checking</span>
+          </div>
+          <div className="flex items-center justify-center mb-3">
+            <div className="rounded-full p-1 bg-success/20 text-success mr-3 flex-shrink-0">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+          </svg>
+            </div>
+            <span className="font-mono text-base-content/80">Readability analysis tools</span>
+          </div>
+        </div>
+        
+        {/* Single CTA button */}
+        <div className="flex justify-center">
+          <ButtonCheckout
+            priceId={yearlyPriceId}
+            mode="subscription"
+            className="btn btn-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 px-10 py-3 text-lg"
+          >
+            Start Writing Today - $50/yr
+          </ButtonCheckout>
+        </div>
+        <p className="mt-4 text-sm text-base-content/60 font-mono">
+          <span className="ml-2">
+            Or <ButtonCheckout 
+          priceId={monthlyPriceId} 
+          mode="subscription" 
+          asLink={true} 
+          className="font-bold underline hover:text-primary transition"
+            >
+          start monthly for $5
+            </ButtonCheckout>.
+          </span>
+        </p>
           </div>
           
-          <div className="flex justify-center">
-            <div className="relative">
-              {/* Editor illustration with frame effect */}
-              <img 
-                src="/editor-illustration.svg" 
-                alt="AI Writing Editor Illustration" 
-                className="w-full max-w-2xl relative z-10 rounded-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]"
-              />
-              {/* Decorative elements behind image */}
-              <div className="absolute -bottom-4 -right-4 w-full max-w-2xl h-full rounded-lg bg-primary/20 z-0"></div>
-              <div className="absolute -top-4 -left-4 w-20 h-20 bg-secondary/30 rounded-full blur-lg"></div>
-            </div>
-          </div>
         </div>
       </section>
 
