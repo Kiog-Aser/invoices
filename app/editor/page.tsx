@@ -107,7 +107,7 @@ export default function EditorLanding() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-base-100">
+      <section id="features" className="py-20 bg-base-100">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-base-300 rounded-xl shadow-md border border-base-content/10 mb-6">
@@ -183,7 +183,7 @@ export default function EditorLanding() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-base-300 relative overflow-hidden">
+      <section id="pricing" className="py-20 bg-base-300 relative overflow-hidden">
         {/* Retro grid background */}
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
         
@@ -300,7 +300,7 @@ export default function EditorLanding() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-base-100 relative">
+      <section id="feedback" className="py-20 bg-base-100 relative">
         <div className="absolute right-0 top-0 w-1/3 h-1/3 bg-gradient-to-bl from-primary/10 to-transparent opacity-60"></div>
         <div className="absolute left-0 bottom-0 w-1/3 h-1/3 bg-gradient-to-tr from-secondary/10 to-transparent opacity-60"></div>
         <div className="container mx-auto px-6 relative z-10">
@@ -392,7 +392,7 @@ export default function EditorLanding() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-base-300">
+      <section id="faq" className="py-20 bg-base-300">
         <div className="container mx-auto px-6 max-w-3xl">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-base-100 rounded-xl shadow-md border border-base-content/10 mb-6">
