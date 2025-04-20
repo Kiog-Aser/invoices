@@ -44,9 +44,11 @@ const readabilityBlotConfig: { name: string; className: string; color: string }[
 let Inline: any;
 let Quill: any;
 if (typeof window !== 'undefined') {
+  // @ts-ignore
   Quill = require('quill');
   Inline = Quill.import('blots/inline');
 
+  // Grammar Suggestion Blot
   class GrammarSuggestionBlot extends Inline {
     static blotName = 'grammar-suggestion';
     static tagName = 'span';
@@ -56,13 +58,13 @@ if (typeof window !== 'undefined') {
       node.dataset.suggestion = JSON.stringify(value);
       node.addEventListener('click', (event) => {
         event.stopPropagation();
-        const root = node.closest('.ql-editor') as any;
-        if (root?.showSuggestionPopup && node.dataset.suggestion) {
+        const root = node.closest('.ql-editor');
+        if ((root as EditorRootWithPopupHandlers)?.showSuggestionPopup && node.dataset.suggestion) {
           try {
             const suggestionData = JSON.parse(node.dataset.suggestion);
-            root.showSuggestionPopup(suggestionData, node);
+            (root as EditorRootWithPopupHandlers).showSuggestionPopup?.(suggestionData, node);
           } catch (e) {
-            console.error("Error parsing suggestion data on click", e);
+            // ignore
           }
         }
       });
@@ -72,8 +74,8 @@ if (typeof window !== 'undefined') {
       if (domNode.dataset.suggestion) {
         try {
           return JSON.parse(domNode.dataset.suggestion);
-        } catch (e) {
-          console.error('Error parsing suggestion data from DOM', e);
+        } catch {
+          // ignore
         }
       }
       return super.formats(domNode);
@@ -154,7 +156,7 @@ const SuggestionPopup: React.FC<SuggestionPopupProps> = ({
 
   return (
     <div
-      className="absolute z-[10000] bg-white rounded-lg shadow-xl border border-gray-200 p-4 text-sm text-gray-700 w-64" // Adjusted width and padding
+      className="suggestion-popup-container absolute z-[10000] bg-white rounded-lg shadow-xl border border-gray-200 p-4 text-sm text-gray-700 w-64" // Adjusted width and padding
       style={{ top: position.top, left: position.left }}
       onClick={handlePopupClick} // Prevent clicks inside from closing it
       // Removed onMouseEnter/onMouseLeave as it's click-based now
@@ -351,7 +353,7 @@ const ContentHub = () => {
   useEffect(() => {
     const editor = quillRef.current?.getEditor();
     if (editor) {
-      const root = editor.root as EditorRootWithPopupHandlers;
+      const root = (editor.root as unknown as EditorRootWithPopupHandlers);
       root.showSuggestionPopup = showSuggestionPopup;
 
       // Cleanup function
@@ -1650,44 +1652,44 @@ const quillFormats = [
   const applyUnderlines = (suggestions: any[]) => {
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-  
+    const editorLength = editor.getLength(); // Get total length once
+
     // Clear previous underlines first
-    editor.formatText(0, length, 'grammar-suggestion', false, 'silent');
-  
+    editor.formatText(0, editorLength, 'grammar-suggestion', false, 'silent');
+
     // Apply new underlines
     if (suggestions.length > 0) {
       editor.history.cutoff(); // Prevent underlining from being a single undo step
       suggestions.forEach((suggestion: any, index: number) => {
         // Ensure suggestion has a unique ID if it doesn't already
         const suggestionId = suggestion.id || `suggestion-${Date.now()}-${index}`;
+        // Ensure offset and length are valid numbers
+        const offset = Number(suggestion.offset) + 1; // Shift right by 1
+        // Use actual suggestion text length to avoid off-by-one underlines
+        const length = typeof suggestion.text === 'string' ? suggestion.text.length : Number(suggestion.length);
+
         const suggestionData = {
           ...suggestion, // Include all original suggestion data
           id: suggestionId, // Ensure ID is present
-          // Make sure offset and length are numbers
-          offset: Number(suggestion.offset),
-          length: Number(suggestion.length),
+          offset: offset,
+          length: length,
         };
-        // Check if offset and length are valid before formatting
-        // Ensure length is at least 1
-        if (typeof suggestionData.offset === 'number' && typeof suggestionData.length === 'number' && suggestionData.offset >= 0 && suggestionData.length >= 1) {
-           // Check bounds to prevent errors
-           // Quill's length is often 1 more than expected for the last character due to newline
-           const editorContentLength = editor.getLength() - 1; // Exclude trailing newline
-           const highlightEnd = suggestionData.offset + suggestionData.length;
-           const highlightLength =
-             highlightEnd < editorContentLength
-               ? suggestionData.length + 1
-               : suggestionData.length;
-           editor.formatText(
-             suggestionData.offset,
-             highlightLength,
-             'grammar-suggestion',
-             suggestionData,
-             'silent'
-           );
+
+        // Check if offset and length are valid numbers and within bounds
+        if (!isNaN(offset) && !isNaN(length) && offset >= 0 && length > 0 && offset + length <= editorLength) {
+          try {
+            editor.formatText(
+              offset,
+              length,
+              'grammar-suggestion',
+              suggestionData, // Pass suggestion data as the value
+              'silent' // Use silent to prevent triggering text-change event
+            );
+          } catch (e) {
+             console.warn("Error applying grammar underline:", e, suggestionData);
+          }
         } else {
-           console.warn("Skipping suggestion underline due to invalid offset/length:", suggestionData);
+           console.warn("Skipping suggestion underline due to invalid offset/length or out-of-bounds:", suggestionData, {editorLength});
         }
       });
       editor.history.cutoff();
@@ -1696,17 +1698,45 @@ const quillFormats = [
 
   // Grammar check function using free LanguageTool public API
   const checkGrammar = async () => {
-    if (!quillRef.current) return;
-    setGrammarLoading(true);
-    // Keep existing suggestions while loading to avoid flicker if cache hit
-    // setGrammarSuggestions([]);
     const editor = quillRef.current.getEditor();
     const text = editor.getText();
     const cacheKey = 'grammarCache';
 
-    // --- Check Cache ---
+    // Check cache
     try {
-      applyUnderlines([]); // Ensure underlines are cleared on error
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.content === text) {
+          setGrammarSuggestions(parsed.suggestions);
+          applyUnderlines(parsed.suggestions);
+          setGrammarLoading(false);
+          return;
+        }
+      }
+    } catch {}
+
+    try {
+      const response = await fetch('https://api.languagetool.org/v2/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          text,
+          language: 'en-US',
+        }),
+      });
+      const data = await response.json();
+      const suggestions = (data.matches || []).map((m: any, i: number) => ({
+        ...m,
+        id: m.rule?.id + '-' + m.offset + '-' + i,
+        offset: m.offset,
+        length: m.length,
+      }));
+      setGrammarSuggestions(suggestions);
+      applyUnderlines(suggestions);
+      localStorage.setItem(cacheKey, JSON.stringify({ content: text, suggestions }));
+    } catch (e) {
+      toast.error('Grammar check failed.');
     } finally {
       setGrammarLoading(false);
     }
@@ -1806,48 +1836,37 @@ const quillFormats = [
   const applyReadabilityHighlights = (issues: ReadabilityIssue[]) => {
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
+    const editorLength = editor.getLength(); // Get total length once
 
     // --- Reset Highlights First (Using Delta) ---
     const resetAttributes: { [key: string]: null } = {};
     readabilityBlotConfig.forEach(config => {
       resetAttributes[config.name] = null;
     });
-    const resetDelta = { ops: [{ retain: length, attributes: resetAttributes }] };
-    try {
-      editor.updateContents(resetDelta, 'silent');
-    } catch (e) {
-      // ignore
+    const resetDelta = { ops: [{ retain: editorLength, attributes: resetAttributes }] };
+    try { editor.updateContents(resetDelta, 'silent'); } catch (e) {
+        console.warn("Error resetting readability highlights:", e);
     }
 
-    // Apply new highlights using correct index/length
+    // --- Apply New Highlights ---
     if (issues.length > 0) {
       editor.history.cutoff();
       issues.forEach((issue) => {
         const blotName = getReadabilityBlotName(issue.type);
-        // Use issue.index and issue.text.length
-        const highlightIndex = typeof issue.index === 'number' ? issue.index : 0;
-        let highlightLength = issue.text ? issue.text.length : 0;
-        // Ensure length is at least 1
-        if (
-          blotName &&
-          highlightIndex >= 0 &&
-          highlightLength >= 1
-        ) {
-          // Check bounds
-          const editorContentLength = editor.getLength() - 1; // Exclude trailing newline
-          const highlightEnd = highlightIndex + highlightLength;
-          const finalLength =
-            highlightEnd < editorContentLength
-              ? highlightLength + 1
-              : highlightLength;
+        const highlightIndex = typeof issue.index === 'number' ? issue.index + 1 : -1; // Shift right by 1
+        // Use actual issue text length to ensure accurate span
+        const highlightLength = typeof issue.text === 'string' ? issue.text.length : Number(issue.offset);
+
+        // Validate index and length
+        if (blotName && highlightIndex >= 0 && highlightLength > 0 && highlightIndex + highlightLength <= editorLength) {
           try {
-            editor.formatText(highlightIndex, finalLength, blotName, issue, 'silent'); // Add +1 to length for correct highlighting
+            // Pass the full issue object as the value for the blot
+            editor.formatText(highlightIndex, highlightLength, blotName, issue, 'silent');
           } catch (e) {
-            console.warn("Error applying readability format:", e, issue);
+             console.warn("Error applying readability highlight:", e, {issue, highlightIndex, highlightLength, editorLength});
           }
         } else {
-           console.warn("Skipping readability highlight due to invalid index/length:", issue);
+           console.warn("Skipping readability highlight due to invalid index/length or out-of-bounds:", {issue, highlightIndex, highlightLength, editorLength});
         }
       });
       editor.history.cutoff();
@@ -2099,68 +2118,65 @@ const quillFormats = [
 
   // Model selection state
   // Update modelOptions and default selection logic
-const defaultAkashModelId = aiConfigs
-  .filter((cfg: AIProviderConfig) => cfg.name?.toLowerCase().includes('akash'))
-  .flatMap((cfg: AIProviderConfig) =>
-    (cfg.models || '').split(',').map((modelId: string) => ({
-      id: `${cfg.id}::${modelId.trim()}`,
-      label: `${cfg.name} – ${modelId.trim()}`,
-      isMetaLlama: modelId.trim() === 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8'
-    }))
-  )
-  .find((opt: { id: string; label: string; isMetaLlama: boolean }) => opt.isMetaLlama)?.id || 'default';
+const modelOptions = useMemo(() => {
+  // Always show 'Default' at top, then all user configs
+  const options: {id: string; label: string}[] = [];
+  options.push({ id: 'default', label: 'Default' });
+  aiConfigs.forEach(cfg => {
+    (cfg.models || '').split(',').forEach(modelId => {
+      const trimmed = modelId.trim();
+      options.push({
+        id: `${cfg.id}::${trimmed}`,
+        label: `${cfg.name} – ${trimmed}`
+      });
+    });
+  });
+  return options;
+}, [aiConfigs]);
 
-const modelOptions = [
-  { id: defaultAkashModelId, label: 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8 (Akash)' },
-  ...aiConfigs.flatMap((cfg: AIProviderConfig) =>
-    (cfg.models || '').split(',').map((modelId: string) => ({
-      id: `${cfg.id}::${modelId.trim()}`,
-      label: `${cfg.name} – ${modelId.trim()}`
-    }))
-  )
-];
-
-// Set the default model on AI config fetch
+// Set selectedModelId based on DB default, fallback to Llama, else first option
 useEffect(() => {
-  const fetchAiConfigs = async () => {
-    if (status === 'authenticated') {
-      try {
-        const response = await fetch('/api/ai/settings');
-        if (response.ok) {
-          const data = await response.json();
-          const configsWithIds = (data.configs || []).map((config: any, index: number) => ({
-            ...config,
-            id: config.id || `config-${Date.now()}-${index}`
-          }));
-          setAiConfigs(configsWithIds);
+  if (aiConfigs.length === 0) {
+    setSelectedModelId('default'); // Ensure a fallback if no configs load
+    return;
+  }
 
-          // Prefer Meta-Llama-4-Maverick-17B-128E-Instruct-FP8 (Akash) as default
-          const akashDefault = configsWithIds
-            .filter((cfg: AIProviderConfig) => cfg.name?.toLowerCase().includes('akash'))
-            .flatMap((cfg: { models: any; id: any; }) =>
-              (cfg.models || '').split(',').map((modelId: string) => ({
-                id: `${cfg.id}::${modelId.trim()}`,
-                isMetaLlama: modelId.trim() === 'Meta-Llama-4-Maverick-17B-128E-Instruct-FP8'
-              }))
-            )
-            .find((opt: { isMetaLlama: any; }) => opt.isMetaLlama)?.id;
+  // Find the Llama option first for fallback
+  const llamaOption = modelOptions.find(opt => opt.label === 'Default');
+  const firstOptionId = modelOptions[0]?.id; // Get the ID of the first available option
 
-          setSelectedModelId(akashDefault || 'default');
-        } else {
-          setAiConfigs([]);
-          setSelectedModelId('default');
-        }
-      } catch {
-        setAiConfigs([]);
+  fetch('/api/ai/settings')
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      const dbDefault = data?.defaultModelId;
+      // Prioritize DB default if it exists in the current options
+      if (dbDefault && modelOptions.some(opt => opt.id === dbDefault)) {
+        setSelectedModelId(dbDefault);
+      }
+      // Fallback to Llama if DB default is not valid or not found
+      else if (llamaOption) {
+        setSelectedModelId(llamaOption.id);
+      }
+      // Fallback to the very first option in the list if Llama isn't available
+      else if (firstOptionId) {
+         setSelectedModelId(firstOptionId);
+      }
+      // Final fallback if options are somehow empty after checks
+      else {
+         setSelectedModelId('default');
+      }
+    })
+    .catch(() => {
+      // On fetch error, fallback to Llama or first option
+      if (llamaOption) {
+        setSelectedModelId(llamaOption.id);
+      } else if (firstOptionId) {
+        setSelectedModelId(firstOptionId);
+      } else {
         setSelectedModelId('default');
       }
-    } else {
-      setAiConfigs([]);
-      setSelectedModelId('default');
-    }
-  };
-  fetchAiConfigs();
-}, [status]);
+    });
+}, [aiConfigs, modelOptions]); // Rerun when configs or options change
 
   // Function to handle model changes from chat or sidebar
   const handleModelChange = (newModelId: string) => {
@@ -2277,6 +2293,11 @@ useEffect(() => {
     }
   }, [chatInput, isChatLoading, chatMessages, chatModelId]);
 
+  // Sync chat sidebar model state when main selection changes
+  useEffect(() => {
+    setChatModelId(selectedModelId);
+  }, [selectedModelId]);
+
   return (
     <div className="min-h-screen w-full flex bg-white">
       {/* Left Sidebar */}
@@ -2331,9 +2352,9 @@ useEffect(() => {
                 <div className="mb-6">
                   <label className="text-xs text-gray-500 font-semibold mb-1 block">AI Model</label>
                     <select
-                    className="bg-white border border-gray-300 text-sm text-gray-700 px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition max-w-full"
                     value={selectedModelId}
                     onChange={e => handleModelChange(e.target.value)}
+                    // ...other props
                     >
                     {modelOptions.map(opt => (
                       <option key={opt.id} value={opt.id}>{opt.label}</option>
