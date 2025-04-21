@@ -17,6 +17,7 @@ import AISettingsModal from '@/components/AISettingsModal'; // Import the new mo
 import { type AIProviderConfig } from '@/components/AISettingsModal'; // Adjusted import
 import InlineChat from '@/components/InlineChat'; // Import the new chat component
 import { useRouter } from 'next/navigation';
+import InteractiveExperience from '@/components/InteractiveExperience';
 
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamicImport(() => import('react-quill').then(mod => ({
@@ -220,6 +221,23 @@ interface EditorRootWithPopupHandlers extends HTMLElement {
   showSuggestionPopup?: (suggestionData: any, targetElement: HTMLElement) => void;
 }
 
+// Sidebar Experience Button (small, with beta badge)
+function SidebarExperienceButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="relative w-full flex items-center justify-center mt-2 mb-4">
+      <button
+        className="btn btn-xs btn-accent w-full flex items-center gap-2"
+        onClick={onClick}
+        aria-label="Open Interactive Experience"
+      >
+        <FaMagic className="text-xs" />
+        <span>Experience</span>
+        <span className="ml-1 text-[10px] font-bold text-accent-content bg-accent rounded px-1 py-0.5 absolute top-0 right-2">bèta</span>
+      </button>
+    </div>
+  );
+}
+
 const ContentHub = () => {
   // --- ALL HOOKS MUST BE HERE ---
   const { data: session, status } = useSession();
@@ -237,6 +255,8 @@ const ContentHub = () => {
   const [selectedModelId, setSelectedModelId] = useState<string>('default'); // Keep this state
   const [isChatVisible, setIsChatVisible] = useState(false); // State for chat visibility
   const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar open/close state
+  // Add state for interactive experience modal
+  const [isExperienceOpen, setIsExperienceOpen] = useState(false);
 
   // State for the floating toolbar
   const [floatingToolbar, setFloatingToolbar] = useState<{ visible: boolean; top: number; left: number }>({ visible: false, top: 0, left: 0 });
@@ -1503,8 +1523,7 @@ const ContentHub = () => {
       const toolbarElement = toolbarRef.current;
       const toolbarWidth = 250;
       const toolbarHeight = toolbarElement?.offsetHeight || 40;
-      // Always position above selection, with extra space
-      const extraSpace = 16; // px
+      const extraSpace = 26; // px (increase gap above selection)
       const editorRoot = quill.root;
       const rootRect = editorRoot.getBoundingClientRect();
       // Calculate position relative to the viewport for position: fixed
@@ -1950,52 +1969,28 @@ const quillFormats = [
               const selection = editor.getSelection();
               if (selection) format = editor.getFormat(selection);
             }
-            const activeClass = (cond: boolean) => cond ? "text-green-500" : "";
+            const activeClass = (cond: boolean) => cond ? 'text-green-500' : 'text-white/80';
           
             return (
               <>
-                <button
-                  onClick={() => handleFormatText('bold')}
-                  title="Bold"
-                  className="transition"
-                >
-                  {format.bold ? <FaBoldSolid className="text-green-500" /> : <FaBold />}
+                <button onClick={() => handleFormatText('bold')} title="Bold" className="transition p-2 rounded hover:bg-gray-700">
+                  <FaBold className={activeClass(format.bold)} />
                 </button>
-                <button
-                  onClick={() => handleFormatText('italic')}
-                  title="Italic"
-                  className="transition"
-                >
-                  {format.italic ? <FaItalicSolid className="text-green-500" /> : <FaItalic />}
+                <button onClick={() => handleFormatText('italic')} title="Italic" className="transition p-2 rounded hover:bg-gray-700">
+                  <FaItalic className={activeClass(format.italic)} />
                 </button>
-                <button
-                  onClick={() => handleFormatText('link')}
-                  title="Link"
-                  className={format.link ? "text-green-500" : ""}
-                >
-                  <FaLink />
+                <button onClick={() => handleFormatText('link')} title="Link" className="transition p-2 rounded hover:bg-gray-700">
+                  <FaLink className={activeClass(format.link)} />
                 </button>
                 <div className="divider"></div>
-                <button
-                  onClick={() => handleFormatText('header', 1)}
-                  title="Title"
-                  className={format.header === 1 ? "text-green-500" : ""}
-                >
-                  <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
+                <button onClick={() => handleFormatText('header', 1)} title="Title" className="transition p-2 rounded hover:bg-gray-700">
+                  <span className={activeClass(format.header === 1)} style={{ fontSize: '22px', fontWeight: 'bold' }}>T</span>
                 </button>
-                <button
-                  onClick={() => handleFormatText('header', 2)}
-                  title="Subtitle"
-                  className={format.header === 2 ? "text-green-500" : ""}
-                >
-                  <span style={{ fontSize: '18px', fontWeight: 'bold' }}>T</span>
+                <button onClick={() => handleFormatText('header', 2)} title="Subtitle" className="transition p-2 rounded hover:bg-gray-700 flex items-end pb-1">
+                  <span className={activeClass(format.header === 2)} style={{ fontSize: '16px', fontWeight: 'bold' }}>T</span>
                 </button>
-                <button
-                  onClick={() => handleFormatText('blockquote')}
-                  title="Quote"
-                  className="transition"
-                >
-                  {format.blockquote ? <FaQuoteLeftSolid className="text-green-500" /> : <FaQuoteLeft />}
+                <button onClick={() => handleFormatText('blockquote')} title="Quote" className="transition p-2 rounded hover:bg-gray-700">
+                  <FaQuoteLeft className={activeClass(format.blockquote)} />
                 </button>
                 <div className="divider"></div>
               </>
@@ -2511,7 +2506,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Modern settings button at bottom */}
-
+        <SidebarExperienceButton onClick={() => setIsExperienceOpen(true)} />
       </aside>
       {/* Main Content Area (Editor + Right Sidebar) */}
       <main className="flex-1 flex flex-col relative min-h-screen transition-all duration-300" style={{ marginLeft: (sidebarOpen ? 320 : 64) + 32 }}>
@@ -2792,7 +2787,8 @@ useEffect(() => {
           {wordCount} word{wordCount !== 1 ? 's' : ''}
         </div>
       </footer>
-
+      {/* Place the InteractiveExperience modal at the root level */}
+      <InteractiveExperience isOpen={isExperienceOpen} onClose={() => setIsExperienceOpen(false)} />
     </div> // This closing div matches the opening div of the main return statement
   );
 };
