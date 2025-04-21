@@ -343,6 +343,22 @@ export default function InteractiveExperience({ isOpen, onClose, protocol }: Int
     }
   }
 
+  // Add handler for copying draft
+  function handleCopyDraft() {
+    if (!draft) {
+      toast.error('Nothing to copy.');
+      return;
+    }
+    navigator.clipboard.writeText(draft)
+      .then(() => {
+        toast.success('Draft copied to clipboard!');
+      })
+      .catch(err => {
+        console.error('Failed to copy draft: ', err);
+        toast.error('Failed to copy draft.');
+      });
+  }
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[99999] bg-base-100 flex flex-col items-center justify-center">
@@ -410,14 +426,31 @@ export default function InteractiveExperience({ isOpen, onClose, protocol }: Int
           </div>
         )}
         {step === 'done' && (
-          <div className="w-full flex flex-col items-center gap-6">
+          <div className="w-full flex flex-col items-center gap-4">
             <div className="text-2xl font-bold text-success">Session complete!</div>
             <div className="bg-base-200 rounded-lg p-4 w-full text-center">You can now review, edit, or export your draft.</div>
-            <button className="btn btn-outline w-full" onClick={onClose}>Close</button>
+            {/* Add a textarea to display the draft for easy viewing/manual copy */}
+            <textarea 
+              className="textarea textarea-bordered w-full h-32 text-sm bg-base-100" 
+              value={draft} 
+              readOnly 
+              placeholder="Your draft will appear here."
+            />
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <button className="btn btn-outline" onClick={onClose}>Close</button>
+              {/* Add Copy Draft button */}
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleCopyDraft} 
+                disabled={!draft.trim()}
+              >
+                Copy Draft
+              </button>
+            </div>
             <button className="btn btn-primary w-full" onClick={() => setStep('checklist')}>Quality Checklist</button>
-            <button className="btn btn-accent w-full" onClick={handlePublishMedium} disabled={!mediumToken}>Publish to Medium</button>
+            <button className="btn btn-accent w-full" onClick={handlePublishMedium} disabled={!mediumToken || !draft.trim()}>Publish to Medium</button>
             <MediumTokenInput mediumToken={mediumToken} setMediumToken={setMediumToken} />
-            <button className="btn btn-secondary w-full" onClick={() => setStep('repurpose')}>Repurpose for Other Platforms</button>
+            <button className="btn btn-info w-full" onClick={() => setStep('repurpose')}>Repurpose Ideas</button>
           </div>
         )}
         {step === 'checklist' && (
