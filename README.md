@@ -17,8 +17,8 @@ A modern, production-ready SaaS boilerplate built with Next.js App Router, TypeS
 
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/your-org/saas-boilerplate.git
-   cd saas-boilerplate
+   git clone https://github.com/Kiog-Aser/SaaSTemplate.git
+   cd SaaSTemplate
    ```
 2. **Install dependencies:**
    ```bash
