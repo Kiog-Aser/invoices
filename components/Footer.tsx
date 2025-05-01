@@ -20,7 +20,7 @@ const Footer = () => {
         <div className="flex lg:items-start md:flex-row md:flex-nowrap flex-wrap flex-col gap-10">
           <div className="w-64 flex-shrink-0 md:mx-0 mx-auto text-center md:text-left">
             <Link
-              href="/#"
+              href="/"
               aria-current="page"
               className="flex gap-2 justify-center md:justify-start items-center bg-base-100 px-3 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block"
             >
@@ -51,10 +51,10 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <Link href="/testimonial/new" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
+                <Link href="/testimonial/new" className="font-mono text-base-content hover:text-primary transition-colors">
                   Leave A Testimonial
                 </Link>
-                <Link href="/feature-requests" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
+                <Link href="/feature-requests" className="font-mono text-base-content hover:text-primary transition-colors">
                   Feature Request
                 </Link>
                 <Link href="/#pricing" className="font-mono text-base-content hover:text-primary transition-colors">
@@ -69,30 +69,23 @@ const Footer = () => {
               </div>
 
               <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <Link href="/tos" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Terms of services
+                <Link href="/tos" className="font-mono text-base-content hover:text-primary transition-colors">
+                  Terms of Service
                 </Link>
-                <Link href="/privacy-policy" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Privacy policy
+                <Link href="/privacy-policy" className="font-mono text-base-content hover:text-primary transition-colors">
+                  Privacy Policy
                 </Link>
               </div>
             </div>
             
             <div className="lg:w-1/3 md:w-1/2 w-full px-4 flex flex-col md:items-start items-start">
               <div className="font-mono font-bold text-base-content tracking-widest text-sm mb-3 bg-base-100 px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block">
-                FOLLOW ME
+                ABOUT
               </div>
 
               <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <Link href="https://medium.com/@milhoornaert" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Medium
-                </Link>
-                <Link href="https://x.com/MilHoornaert" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
-                   𝕏
-                </Link>
-                <Link href="http://news.milh.tech" target="_blank" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Newsletter
-                </Link>
+                <span className="font-mono text-base-content/70">A modern SaaS boilerplate for rapid product launches.</span>
+                <span className="font-mono text-base-content/60">Built with Next.js, TypeScript, Tailwind CSS, and more.</span>
               </div>
             </div>
           </div>

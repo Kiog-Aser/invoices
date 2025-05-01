@@ -46,58 +46,47 @@ const Problem = () => {
 
   return (
     <section className="bg-base-200 min-h-[90vh] lg:min-h-screen flex items-center relative overflow-hidden">
-      {/* No retro grid background to create zebra pattern alternation */}
-      
       {/* Decorative elements */}
       <div className="absolute top-20 right-20 w-40 h-40 bg-primary/10 rounded-full blur-xl"></div>
       <div className="absolute bottom-20 left-20 w-60 h-60 bg-secondary/10 rounded-full blur-xl"></div>
-      
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 relative py-16 sm:py-20 md:py-24">
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 bg-base-100 rounded-xl shadow-md border border-base-content/10 mb-4 sm:mb-6">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-            <span className="font-mono text-xs sm:text-sm tracking-widest">THE CHALLENGE</span>
+            <span className="font-mono text-xs sm:text-sm tracking-widest">COMMON PROBLEMS</span>
           </div>
-          
           <h2 className="font-bold font-mono text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 mx-auto max-w-3xl">
-            Content creation <span className="text-primary">shouldn't be chaotic</span>
+            Building a SaaS <span className="text-primary">shouldn't be overwhelming</span>
           </h2>
-          
           <p className="max-w-2xl mx-auto text-base-content/80 text-base sm:text-lg mb-6 sm:mb-8 font-mono">
-            Without a clear strategy, creators waste time, produce inconsistent content, and struggle to build a loyal audience.
+            Most founders waste time reinventing the wheel, struggle with integrations, and lose momentum before launch.
           </p>
         </div>
-
         <div className={`flex flex-col md:flex-row items-center justify-center gap-3 sm:gap-4 transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="w-full md:w-1/3">
             <ProblemStep 
               number="01"
-              title="Idea Overwhelm" 
-              description="Too many ideas, no clear direction on what to post next. You spend hours stuck in decision paralysis."
+              title="Too Much Boilerplate" 
+              description="You spend weeks setting up auth, payments, and dashboards instead of building your core product."
             />
           </div>
-          
           <Arrow />
-          
           <div className="w-full md:w-1/3">
             <ProblemStep 
               number="02"
-              title="Inconsistent Posting" 
-              description="Random posting schedule confuses algorithms and audience. Your growth remains stagnant despite your efforts."
+              title="Integration Headaches" 
+              description="Connecting databases, APIs, and UI frameworks is error-prone and time-consuming."
             />
           </div>
-          
           <Arrow />
-          
           <div className="w-full md:w-1/3">
             <ProblemStep 
               number="03"
-              title="Audience Disconnect" 
-              description="Your content lacks cohesive strategy, failing to build authority. Audience grows slowly with high churn."
+              title="Slow to Launch" 
+              description="By the time you’re ready, the market has moved on or you’ve lost motivation."
             />
           </div>
         </div>
-        
         <div className="text-center mt-8 sm:mt-12 md:mt-16">
           <div className="inline-block">
             <a href="#solution" className="btn btn-primary btn-md sm:btn-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 font-mono">
@@ -105,7 +94,7 @@ const Problem = () => {
               <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </a>
             <p className="text-sm text-base-content/60 mt-3 sm:mt-4 font-mono">
-              A systematic approach to content creation
+              A faster way to launch your SaaS
             </p>
           </div>
         </div>

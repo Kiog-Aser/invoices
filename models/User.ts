@@ -44,52 +44,13 @@ const userSchema = new mongoose.Schema(
         return val || '';
       }
     },
-    // Protocol access configuration
-    protocols: {
-      tokens: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-      isUnlimited: {
-        type: Boolean,
-        default: false
-      },
-      purchasedCount: {
-        type: Number,
-        default: 0
-      },
-      lastGenerated: {
-        type: Date
-      }
-    },
     provider: {
       type: String,
       required: false, // Make it optional for backward compatibility
     },
-    hasGivenTestimonial: {
-      type: Boolean,
-      default: false,
-    },
     isAdmin: {
       type: Boolean,
       default: false,
-    },
-    aiProviderConfigs: {
-      type: [
-        {
-          id: { type: String, required: true },
-          name: { type: String, required: true },
-          endpoint: { type: String, required: true },
-          models: { type: String, required: true },
-          apiKey: { type: String, required: true },
-        }
-      ],
-      default: [],
-    },
-    defaultAIModelId: {
-      type: String,
-      required: false,
     },
     // Stripe subscription status (active, canceled, past_due, etc.)
     subscriptionStatus: {

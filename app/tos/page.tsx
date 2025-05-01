@@ -30,70 +30,25 @@ export const metadata = getSEOTags({
   canonicalUrlRelative: "/tos",
 });
 
-const TOS = () => {
+export default function Page() {
   return (
-    <main className="max-w-xl mx-auto">
-      <div className="p-5">
-        <Link href="/" className="btn btn-ghost">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-5 h-5"
-          >
-            <path
-              fillRule="evenodd"
-              d="M15 10a.75.75 0 01-.75.75H7.612l2.158 1.96a.75.75 0 11-1.04 1.08l-3.5-3.25a.75.75 0 010-1.08l3.5-3.25a.75.75 0 111.04 1.08L7.612 9.25h6.638A.75.75 0 0115 10z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </Link>
-        <h1 className="text-3xl font-extrabold pb-6">
-          Terms and Conditions for {config.appName}
-        </h1>
-
-        <pre
-          className="leading-relaxed whitespace-pre-wrap"
-          style={{ fontFamily: "sans-serif" }}
-        >
-          {`Last Updated: March 14, 2025
-
-Terms & Services
-Effective Date: March 14, 2025
-
-Welcome to NotiFast! By accessing or using our website (https://notifa.st) and services, you agree to the following Terms & Services. If you do not agree, please do not use our services.
-
-1. Services
-NotiFast provides tools to increase conversions with simulated notifications. Users can utilize pre-built templates or create their own. By purchasing the Pro Plan, users receive lifetime access to all Pro features, including updates.
-
-2. User Data Collection
-We collect the following personal data:
-- Name
-- Email
-- Payment Information
-Additionally, we collect non-personal data through web cookies. For more details, please refer to our Privacy Policy: https://notifa.st/privacy-policy.
-
-3. Payments & Refunds
-All purchases are final. Refunds are not provided unless required by law.
-
-4. User Responsibilities
-Users agree to use NotiFast in compliance with applicable laws and not for fraudulent or misleading purposes.
-
-5. Modifications & Updates
-NotiFast reserves the right to update these Terms & Services. Users will be notified via email of any changes.
-
-6. Governing Law
-These Terms & Services are governed by the laws of Belgium.
-
-7. Contact Information
-For any questions, please contact us at: mil@notifa.st.
-
-By using NotiFast, you acknowledge that you have read, understood, and agreed to these Terms & Services.`}
-        </pre>
+    <main className="max-w-3xl mx-auto px-4 py-16 text-base-content">
+      <h1 className="text-3xl font-bold mb-6 font-mono">Terms of Service</h1>
+      <div className="prose prose-neutral max-w-none">
+        <p>Welcome to {process.env.NEXT_PUBLIC_APP_NAME || "SaaS Boilerplate"}! By using this website and service, you agree to the following terms. If you do not agree, please do not use our services.</p>
+        <h2>1. Services</h2>
+        <p>This boilerplate provides a starting point for SaaS products. You are responsible for customizing and deploying your own product.</p>
+        <h2>2. User Data</h2>
+        <p>We do not collect or store any personal data by default. If you deploy your own SaaS, you are responsible for your users' data and compliance with applicable laws.</p>
+        <h2>3. Payments & Refunds</h2>
+        <p>All payments are handled by your own Stripe integration. This boilerplate does not process payments on your behalf.</p>
+        <h2>4. User Responsibilities</h2>
+        <p>You agree to use this boilerplate in compliance with all applicable laws and not for fraudulent or malicious purposes.</p>
+        <h2>5. Modifications</h2>
+        <p>These terms may be updated at any time. Please review them regularly.</p>
+        <h2>6. Disclaimer</h2>
+        <p>This boilerplate is provided as-is, without warranty of any kind. Use at your own risk.</p>
       </div>
     </main>
   );
-};
-
-export default TOS;
+}

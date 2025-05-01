@@ -3,13 +3,13 @@ import { ConfigProps } from "./types/config";
 
 const config = {
   // REQUIRED
-  appName: "CreatiFun",
+  appName: "SaasBoilerplate",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Create a structured writing protocol that eliminates frustration and delivers results. Stop the endless content struggle.",
+    "A modern, fully-featured SaaS boilerplate built with Next.js, TypeScript, Tailwind CSS, and MongoDB.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
-  domainName: process.env.VERCEL_URL || "systems-ai.vercel.app",
+  domainName: process.env.VERCEL_URL || "your-domain.com",
   // REQUIRED — the path to your favicon file
   faviconPath: "/favicon.ico",
   // REQUIRED: Your marketplace's logo
@@ -18,7 +18,7 @@ const config = {
   ogImagePath: "/opengraph-image.png",
   // Optional: The Google Analytics measurement ID
   googleAnalytics: {
-     measurementId: "G-YZLD2B6FQ3",
+    measurementId: "",
   },
 
   crisp: {
@@ -31,29 +31,29 @@ const config = {
     publicKey: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
     plans: [
       {
-        name: "Single Protocol",
-        price: 39,
-        priceId: "price_1RBLRmG19CrUMKRawDhN6cXJ",
+        name: "Basic",
+        price: 19,
+        priceId: "", // ADD YOUR STRIPE PRICE ID HERE
         description: "Perfect for individuals",
         features: [
-          { name: "1 complete writing protocol" },
-          { name: "Content pillars & topic ideas" },
-          { name: "Weekly content calendar" },
-          { name: "Content creation frameworks" }
+          { name: "Basic features" },
+          { name: "Email support" },
+          { name: "1 project" },
+          { name: "1 GB storage" }
         ]
       },
       {
-        name: "Unlimited Access",
-        price: 159,
-        priceId: "price_1RBLRiG19CrUMKRaaun6VaCZ",
-        description: "One-time payment, lifetime access",
+        name: "Pro",
+        price: 49,
+        priceId: "", // ADD YOUR STRIPE PRICE ID HERE
+        description: "Great for professionals",
         isFeatured: true,
         features: [
-          { name: "Unlimited writing protocols" },
-          { name: "Advanced customization options" },
-          { name: "Content repurposing system" },
+          { name: "All Basic features" },
           { name: "Priority support" },
-          { name: "All future updates included" }
+          { name: "5 projects" },
+          { name: "5 GB storage" },
+          { name: "Advanced analytics" }
         ]
       }
     ]
@@ -61,21 +61,21 @@ const config = {
 
   aws: {
     // If you use AWS S3/Cloudfront, put values in here
-    bucket: "bucket-name",
-    bucketUrl: `https://bucket-name.s3.amazonaws.com/`,
-    cdn: "https://cdn-id.cloudfront.net/",
+    bucket: "",
+    bucketUrl: `https://your-bucket-name.s3.amazonaws.com/`,
+    cdn: "https://your-cdn-id.cloudfront.net/",
   },
   mailgun: {
     // subdomain to use when sending emails, if you don't have a subdomain, just remove it. Highly recommended to have one (i.e. mg.yourdomain.com or mail.yourdomain.com)
-    subdomain: "mg",
+    subdomain: "mail",
     // REQUIRED — Email 'From' field to be used when sending magic login links
-    fromNoReply: `CreatiFun <noreply@mg.systems-ai.com>`,
+    fromNoReply: `SaasBoilerplate <noreply@mail.your-domain.com>`,
     // REQUIRED — Email 'From' field to be used when sending other emails, like abandoned carts, updates etc..
-    fromAdmin: `Support at CreatiFun <support@mg.systems-ai.com>`,
+    fromAdmin: `Support at SaasBoilerplate <support@mail.your-domain.com>`,
     // Email shown to customer if need support. Leave empty if not needed => if empty, set up Crisp above, otherwise you won't be able to offer customer support."
-    supportEmail: "support@mg.systems-ai.com",
+    supportEmail: "support@mail.your-domain.com",
     // When someone replies to supportEmail sent by the app, forward it to the email below (otherwise it's lost). If you set supportEmail to empty, this will be ignored.
-    forwardRepliesTo: "milloranh@gmail.com",
+    forwardRepliesTo: "your-email@example.com",
   },
   colors: {
     // REQUIRED — The DaisyUI theme to use (added to the main layout.js). Leave blank for default (light & dark mode). If you any other theme than light/dark, you need to add it in config.tailwind.js in daisyui.themes.

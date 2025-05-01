@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 let isConnected = false;
+let listenersRegistered = false;
 
 const connectMongo = async () => {
   if (!process.env.MONGODB_URI) {
@@ -26,23 +27,31 @@ const connectMongo = async () => {
   };
 
   try {
-    // Handle initial connection
-    mongoose.connection.on('connected', () => {
-      isConnected = true;
-      console.log('🔌 Mongoose connected successfully');
-    });
+    // Set higher max listeners to prevent warnings
+    mongoose.connection.setMaxListeners(25);
 
-    // Handle disconnection
-    mongoose.connection.on('disconnected', () => {
-      isConnected = false;
-      console.log('❗ Mongoose disconnected, will auto-reconnect');
-    });
+    // Only register listeners once to avoid duplicates
+    if (!listenersRegistered) {
+      // Handle initial connection
+      mongoose.connection.on('connected', () => {
+        isConnected = true;
+        console.log('🔌 Mongoose connected successfully');
+      });
 
-    // Handle errors
-    mongoose.connection.on('error', (err) => {
-      isConnected = false;
-      console.error('❌ Mongoose connection error:', err);
-    });
+      // Handle disconnection
+      mongoose.connection.on('disconnected', () => {
+        isConnected = false;
+        console.log('❗ Mongoose disconnected, will auto-reconnect');
+      });
+
+      // Handle errors
+      mongoose.connection.on('error', (err) => {
+        isConnected = false;
+        console.error('❌ Mongoose connection error:', err);
+      });
+
+      listenersRegistered = true;
+    }
 
     if (!isConnected) {
       await mongoose.connect(process.env.MONGODB_URI, opts);
