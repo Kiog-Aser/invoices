@@ -1,36 +1,60 @@
-# ShipFast — Typescript
+# SaasBoilerplate
 
-Hey maker 👋 it's Marc from [ShipFast](https://shipfa.st/docs). Let's get your startup off the ground, FAST ⚡️
+A modern, production-ready SaaS boilerplate built with Next.js App Router, TypeScript, Tailwind CSS, DaisyUI, NextAuth, MongoDB, and Stripe. Designed for rapid SaaS MVP launches with best practices for performance, security, and developer experience.
 
-<sub>**Watch/Star the repo to be notified when updates are pushed**</sub>
+## Features
+- Next.js App Router (RSC-first, SSR, SEO)
+- TypeScript throughout
+- Tailwind CSS & DaisyUI (20+ themes, dark mode)
+- NextAuth authentication (email, Google, GitHub)
+- Stripe payments (subscriptions, webhooks, upgrade/downgrade)
+- MongoDB/Mongoose models
+- Responsive, beautiful UI (mobile-first)
+- Modular, functional code structure
+- Production-ready: SEO, analytics, error handling, and more
 
-## Get Started
+## Getting Started
 
-1. Follow the [Get Started Tutorial](https://shipfa.st/docs) to clone the repo and run your local server 💻
+1. **Clone the repo:**
+   ```bash
+   git clone https://github.com/your-org/saas-boilerplate.git
+   cd saas-boilerplate
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+3. **Configure environment:**
+   - Copy `.env.example` to `.env.local` and fill in required values (MongoDB, Stripe, etc).
+   - Edit `config.ts` for branding, pricing, and feature toggles.
+4. **Run locally:**
+   ```bash
+   npm run dev
+   ```
+5. **Deploy:**
+   - Deploy to Vercel, Railway, or your preferred platform.
 
-<sub>**Looking for the /pages router version?** Use this [documentation](https://shipfa.st/docs-old) instead</sub>
+## Folder Structure
+- `app/` — Next.js App Router pages
+- `components/` — Reusable UI components (PascalCase)
+- `models/` — Mongoose models
+- `libs/` — Utility libraries (API, auth, stripe, etc)
+- `public/` — Static assets
+- `styles/` — Global styles
+- `types/` — TypeScript types
+- `utils/` — Helper functions
 
-2. Follow the [Ship In 5 Minutes Tutorial](https://shipfa.st/docs/tutorials/ship-in-5-minutes) to learn the foundation and ship your app quickly ⚡️
+## Customization
+- Update `config.ts` for your app name, description, pricing, and theme.
+- Replace logo and images in `app/` and `public/`.
+- Edit legal pages in `app/tos/page.tsx` and `app/privacy-policy/page.tsx`.
+- Add or remove features as needed.
 
-## Links
+## License
+MIT — Free for personal and commercial use. Attribution appreciated but not required.
 
--   [📚 Documentation](https://shipfa.st/docs)
--   [📣 Updates](https://shipfast.beehiiv.com/)
--   [🧑‍💻 Discord](https://shipfa.st/dashboard)
--   [🥇 Leaderboard](https://shipfa.st/leaderboard)
+---
 
-## Support
-
-Reach out to me on [Twitter](https://twitter.com/marc_louvion) or marc@shipfa.st
-
-\_
-
-Let's ship it, FAST ⚡️
-
-P.S.
-
--   Want to showcase your startups? Get your [Indie Page](https://indiepa.ge?ref=shipfast_readme) and share your entrepreneur's journey. Join 3,132 founders ⭐️
--   Don't get banned from Stripe for 1 dispute. Use [ByeDispute](https://byedispute.com/?ref=shipfast_readme) to prevent them from happenening 🛡️
--   Make your launch go viral and get your first customers with [LaunchViral](https://launchvir.al/?ref=shipfast_readme) 🚀
--   Stop paying 0.4% per Stripe invoices [Zenvoice](https://zenvoice.io/?ref=shipfast_readme) 🤕
-# SaaSTemplate
+**Built with ❤️ using ShipFast boilerplate best practices.**
