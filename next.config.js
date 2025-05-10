@@ -26,6 +26,23 @@ const nextConfig = {
       },
     ];
   },
+  // Rewrites to support PostHog ingestion and assets
+  async rewrites() {
+    return [
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://eu-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://eu.i.posthog.com/:path*',
+      },
+      {
+        source: '/ingest/decide',
+        destination: 'https://eu.i.posthog.com/decide',
+      },
+    ];
+  },
   // Configure static and dynamic rendering
   output: 'standalone',
   // Skip static generation for problematic paths to avoid build errors
