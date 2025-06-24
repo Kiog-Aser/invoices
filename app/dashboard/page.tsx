@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ButtonAccount from '@/components/ButtonAccount';
+import config from '@/config';
 
 interface Project {
   id: string;
@@ -138,7 +139,9 @@ export default function DashboardPage() {
   };
 
   const getFullUrl = (publicUrl: string | undefined, slug?: string) => {
-    const domain = window.location.origin;
+    const domain = process.env.NODE_ENV === 'development' 
+      ? window.location.origin 
+      : `https://${config.domainName}`;
     const url = publicUrl || `/invoice/${slug || 'unknown'}`;
     return `${domain}${url}`;
   };

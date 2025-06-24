@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectMongo from "@/libs/mongoose";
 import Project from "@/models/Project";
 import { sendEmail } from "@/libs/resend";
+import config from "@/config";
 import crypto from "crypto";
 
 // POST /api/invoice/[slug]/send-link - Send invoice access link to customer
@@ -31,9 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create the access link
-    const domain = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3001';
+    const domain = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3001'
+      : `https://${config.domainName}`;
     
     const accessLink = `${domain}/invoice/${params.slug}/view?token=${token}&email=${encodeURIComponent(email)}`;
 

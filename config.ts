@@ -9,7 +9,7 @@ const config = {
     "Get invoices for our purchases from Mil Hoornaert.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
-  domainName: process.env.VERCEL_URL || "invoices.milh.tech",
+  domainName: "invoice.milh.tech",
   // REQUIRED — the path to your favicon file
   faviconPath: "/favicon.ico",
   // REQUIRED: Your marketplace's logo

@@ -88,7 +88,7 @@ export const sendWelcomeEmail = async (to: string, userName: string) => {
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${config.domainName}/dashboard" 
+          <a href="https://${config.domainName}/dashboard" 
              style="background-color: #4ade80; color: white; padding: 12px 24px; 
                     text-decoration: none; border-radius: 6px; display: inline-block; 
                     font-weight: 600;">
@@ -115,7 +115,7 @@ Hi ${userName},
 
 Thank you for joining ${config.appName}! We're excited to have you on board.
 
-Get started by visiting: ${config.domainName}/dashboard
+Get started by visiting: https://${config.domainName}/dashboard
 
 If you have any questions, feel free to reach out to our support team.
 
