@@ -429,11 +429,17 @@ export default function InvoiceViewPage() {
                       <h3 className="text-sm font-medium text-gray-500 mb-3">From</h3>
                       <div className="text-sm space-y-1">
                         <div className="font-semibold">{companyData.name}</div>
-                        <div>{companyData.address.line1}</div>
+                        {companyData.address.line1 && <div>{companyData.address.line1}</div>}
                         {companyData.address.line2 && <div>{companyData.address.line2}</div>}
-                        <div>{companyData.address.city}, {companyData.address.postal_code}</div>
-                        <div>{companyData.address.country}</div>
-                        <div className="text-blue-600">{companyData.email}</div>
+                        {(companyData.address.city || companyData.address.postal_code) && (
+                          <div>
+                            {[companyData.address.city, companyData.address.postal_code]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </div>
+                        )}
+                        {companyData.address.country && <div>{companyData.address.country}</div>}
+                        {companyData.email && <div className="text-blue-600">{companyData.email}</div>}
                         {companyData.phone && <div>{companyData.phone}</div>}
                       </div>
                     </div>

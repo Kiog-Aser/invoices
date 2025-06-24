@@ -284,8 +284,12 @@ function generateInvoiceHTML(invoiceId: string, customerData: any, project: any,
             <div class="company-name">${project.companyData?.name || project.name}</div>
             ${project.companyData?.address?.line1 ? `<div>${project.companyData.address.line1}</div>` : ''}
             ${project.companyData?.address?.line2 ? `<div>${project.companyData.address.line2}</div>` : ''}
-            ${project.companyData?.address?.city && project.companyData?.address?.postal_code ? 
-              `<div>${project.companyData.address.city}, ${project.companyData.address.postal_code}</div>` : ''}
+            ${(() => {
+              const city = project.companyData?.address?.city || '';
+              const postalCode = project.companyData?.address?.postal_code || '';
+              const cityPostal = [city, postalCode].filter(Boolean).join(', ');
+              return cityPostal ? `<div>${cityPostal}</div>` : '';
+            })()}
             ${project.companyData?.address?.country ? `<div>${project.companyData.address.country}</div>` : ''}
             <div style="margin-top: 10px;">
                 ${project.companyData?.email ? `<div>${project.companyData.email}</div>` : ''}

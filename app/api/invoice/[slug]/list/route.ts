@@ -192,6 +192,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       });
 
       // Check subscriptions for each customer (free trials, free plans, etc.)
+      // Only attempt if we likely have subscription permissions
       for (const customer of customers.data) {
         try {
           const subscriptions = await stripe.subscriptions.list({
@@ -242,8 +243,14 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
               }
             }
           });
-        } catch (subError) {
-          console.warn('Error fetching subscriptions for customer:', customer.id, subError);
+        } catch (subError: any) {
+          // If it's a permission error for subscriptions, skip gracefully
+          if (subError.type === 'StripePermissionError' && subError.message?.includes('rak_subscription_read')) {
+            console.log('Subscription permissions not available, skipping subscription check for customer:', customer.id);
+            // Continue without breaking - this is not critical for business details
+          } else {
+            console.warn('Error fetching subscriptions for customer:', customer.id, subError);
+          }
         }
       }
 

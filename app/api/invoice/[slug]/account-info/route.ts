@@ -32,6 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         hasBusinessProfile: !!account.business_profile,
         hasSettings: !!account.settings,
         hasAddress: !!account.business_profile?.support_address,
+        addressDetails: account.business_profile?.support_address || null,
         country: account.country,
         email: account.email
       });
@@ -116,6 +117,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         name: companyData.name,
         hasEmail: !!companyData.email,
         hasAddress: !!(companyData.address.line1 || companyData.address.city),
+        addressExtracted: companyData.address,
         hasPhone: !!companyData.phone
       });
 

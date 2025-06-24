@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         charges_enabled: account.charges_enabled,
         payouts_enabled: account.payouts_enabled,
         default_currency: account.default_currency,
-        created: new Date(account.created * 1000).toISOString(),
+        created: account.created ? new Date(account.created * 1000).toISOString() : null,
         
         business_profile: {
           exists: !!account.business_profile,
