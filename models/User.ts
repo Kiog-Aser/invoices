@@ -68,6 +68,15 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Invoice management specific fields
+    totalProjects: {
+      type: Number,
+      default: 0,
+    },
+    totalInvoiceSearches: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

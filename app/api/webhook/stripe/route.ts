@@ -176,88 +176,26 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, warning: "No user found" });
       }
 
-      // Ensure user has a protocols object
-      if (!user.protocols) {
-        user.protocols = {
-          tokens: 0,
-          isUnlimited: false,
-          purchasedCount: 0
-        };
-        logToFile("✅ Created protocols object for user");
-      }
+      // Handle different pricing plans for ZenVoice clone
       
-      // SIMPLIFY: Handle different pricing plans with clear logging
-      
-      // Case 1: Single Protocol ($39)
-      if (priceId === PRICE_ID_SINGLE_PROTOCOL) {
-        logToFile(`🎫 Adding single protocol token to user ${user._id}`);
-        
-        // Ensure protocols object exists
-        if (!user.protocols) {
-          user.protocols = {
-            tokens: 0,
-            isUnlimited: false,
-            purchasedCount: 0
-          };
-        }
-        
-        // Force-set user.protocols.tokens to be a number
-        if (typeof user.protocols.tokens !== 'number') {
-          user.protocols.tokens = 0;
-          logToFile(`🔧 Reset tokens to 0 as it was not a number`);
-        }
-        
-        // Add token with clear numerical logging
-        const oldTokens = user.protocols.tokens || 0;
-        user.protocols.tokens = oldTokens + 1;
-        
-        logToFile(`🎫 Token added: ${oldTokens} → ${user.protocols.tokens}`);
-        
-        // Force-set purchased count to be a number
-        if (typeof user.protocols.purchasedCount !== 'number') {
-          user.protocols.purchasedCount = 0;
-          logToFile(`🔧 Reset purchasedCount to 0 as it was not a number`);
-        }
-        
-        // Increment purchased count
-        user.protocols.purchasedCount = (user.protocols.purchasedCount || 0) + 1;
-        logToFile(`📊 Updated purchased count to ${user.protocols.purchasedCount}`);
-      }
-      
-      // Case 2: Unlimited Access ($159)
-      else if (priceId === PRICE_ID_UNLIMITED_ACCESS) {
-        logToFile(`🔓 Granting unlimited protocol access to user ${user._id}`);
-        
-        // Ensure protocols object exists
-        if (!user.protocols) {
-          user.protocols = {
-            tokens: 0,
-            isUnlimited: false,
-            purchasedCount: 0
-          };
-        }
-        
-        // Set unlimited access
-        user.protocols.isUnlimited = true;
-        logToFile(`🔓 Set isUnlimited to true`);
-      }
-      
-      // Case 3: Unknown product
-      else {
-        logToFile(`⚠️ Unknown price ID: ${priceId} - not granting special access`);
+      // For now, just set user to 'pro' plan for any purchase (since this is for invoice management)
+      if (priceId === PRICE_ID_SINGLE_PROTOCOL || priceId === PRICE_ID_UNLIMITED_ACCESS) {
+        logToFile(`💳 Setting user ${user._id} to pro plan for invoice management`);
+        user.plan = 'pro';
+      } else {
+        logToFile(`⚠️ Unknown price ID: ${priceId} - setting to pro plan anyway`);
+        user.plan = 'pro';
       }
       
       // Save the user with error handling
       try {
-        // Use a direct MongoDB update to ensure nested fields are updated correctly
+        // Update user plan and customer ID
         const updateResult = await User.updateOne(
           { _id: user._id },
           { 
             $set: {
               customerId: user.customerId, // Ensure customerId is saved
-              'protocols.tokens': user.protocols.tokens,
-              'protocols.isUnlimited': user.protocols.isUnlimited,
-              'protocols.purchasedCount': user.protocols.purchasedCount
+              plan: user.plan
             }
           }
         );
@@ -266,10 +204,7 @@ export async function POST(req: NextRequest) {
         
         // Get the fresh user data to confirm changes
         const updatedUser = await User.findById(user._id);
-        logToFile(`✅ Successfully saved user ${user._id} with new access:
-        - Tokens: ${updatedUser.protocols?.tokens}
-        - Unlimited: ${updatedUser.protocols?.isUnlimited}
-        - Purchased count: ${updatedUser.protocols?.purchasedCount}`);
+        logToFile(`✅ Successfully saved user ${user._id} with plan: ${updatedUser.plan}`);
       } catch (saveError) {
         logToFile(`❌ Error saving user: ${saveError instanceof Error ? saveError.message : String(saveError)}`);
         return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
@@ -306,10 +241,8 @@ export async function POST(req: NextRequest) {
       // If canceled or payment failed, downgrade plan at end of period
       if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
         user.plan = '';
-        user.protocols.isUnlimited = false;
       } else if (status === 'active' || status === 'trialing' || status === 'past_due') {
         user.plan = 'pro';
-        user.protocols.isUnlimited = true;
       }
 
       await user.save();
