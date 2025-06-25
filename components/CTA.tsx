@@ -1,22 +1,23 @@
-import Image from "next/image";
 import ButtonSignin from "./ButtonSignin";
-import config from "@/config";
 
 function CTA() {
   return (
-    <section className="relative py-24 bg-base-200 overflow-hidden flex flex-col items-center justify-center">
-      {/* Decorative background */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[length:20px_20px] opacity-20 pointer-events-none" />
-      <div className="absolute top-10 right-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl" />
-      <div className="absolute bottom-10 left-10 w-60 h-60 bg-secondary/10 rounded-full blur-2xl" />
-      <div className="relative z-10 max-w-2xl mx-auto text-center px-4">
-        <h2 className="text-3xl md:text-5xl font-extrabold font-mono mb-6 text-base-content">
-          Ready to launch your SaaS faster?
+    <section className="py-20 bg-white">
+      <div className="max-w-4xl mx-auto px-4 text-center">
+        <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          Ditch Stripe Invoicing fee and<br />
+          focus on your startup
         </h2>
-        <p className="text-lg md:text-xl text-base-content/70 mb-10 font-mono">
-          {config.appName} gives you authentication, payments, and a beautiful dashboard out of the box. Focus on your product, not boilerplate.
+        <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+          Let your customers generate, edit, and download<br />
+          invoices themselves.
         </p>
-        <ButtonSignin className="btn btn-primary btn-lg px-8 font-mono shadow-md" text={`Get ${config.appName}`} />
+        
+        <ButtonSignin 
+          text="Get InvoiceLink →"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-12 py-4 rounded-xl text-lg border-0 shadow-lg hover:shadow-xl transition-all duration-200 mb-20"
+        />
+
       </div>
     </section>
   );

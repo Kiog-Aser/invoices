@@ -19,6 +19,41 @@ const projectSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Company information fetched from Stripe
+    companyInfo: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      website: {
+        type: String,
+        trim: true,
+      },
+      logoUrl: {
+        type: String,
+        trim: true,
+      },
+      favicon: {
+        type: String,
+        trim: true,
+      },
+      primaryColor: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        trim: true,
+      },
+      country: {
+        type: String,
+        trim: true,
+      },
+      lastUpdated: {
+        type: Date,
+        default: null,
+      }
+    },
     // Owner of this project
     userId: {
       type: mongoose.Schema.Types.ObjectId,

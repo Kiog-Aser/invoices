@@ -1,93 +1,75 @@
 import Link from "next/link";
 import Image from "next/image";
-import config from "@/config";
 import logo from "@/app/icon.png";
-
-// Add the Footer to the bottom of your landing page and more.
-// The support link is connected to the config.js file. If there's no config.resend.supportEmail, the link won't be displayed.
+import config from "@/config";
 
 const Footer = () => {
   return (
-    <footer className="bg-base-300 border-t border-base-content/10 relative overflow-hidden">
-      {/* Retro grid background */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] bg-[length:20px_20px] opacity-25"></div>
-      
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-40 w-40 h-40 bg-primary/5 rounded-full blur-xl"></div>
-      <div className="absolute bottom-40 left-20 w-60 h-60 bg-secondary/5 rounded-full blur-xl"></div>
-      
-      <div className="max-w-7xl mx-auto px-8 py-24 relative">
-        <div className="flex lg:items-start md:flex-row md:flex-nowrap flex-wrap flex-col gap-10">
-          <div className="w-64 flex-shrink-0 md:mx-0 mx-auto text-center md:text-left">
-            <Link
-              href="/"
-              aria-current="page"
-              className="flex gap-2 justify-center md:justify-start items-center bg-base-100 px-3 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block"
-            >
-              <Image
-                src={logo}
-                alt={`${config.appName} logo`}
-                priority={true}
-                className="w-6 h-6"
-                width={24}
-                height={24}
+    <footer className="bg-gray-50 py-12">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid md:grid-cols-4 gap-8">
+          {/* Logo and description */}
+          <div className="md:col-span-1">
+            <div className="flex items-center gap-2 mb-4">
+              <Image 
+                src={logo} 
+                alt="InvoiceLink" 
+                width={32} 
+                height={32} 
+                className="rounded-lg"
               />
-              <strong className="font-mono font-bold tracking-tight text-base md:text-lg">
-                {config.appName}
-              </strong>
-            </Link>
-
-            <p className="mt-4 text-sm text-base-content/80 font-mono">
-              {config.appDescription}
+              <span className="font-bold text-xl text-gray-900">InvoiceLink</span>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">
+              Stripe invoices made easy. Let your customers generate and download invoices themselves. No more manual work. No Stripe fee. No more headaches.
             </p>
-            <p className="mt-3 text-sm text-base-content/60 font-mono">
-              Copyright © {new Date().getFullYear()} - All rights reserved
+            <p className="text-gray-500 text-sm">
+              Copyright © 2025 - All rights reserved
             </p>
           </div>
-          <div className="flex-grow flex flex-wrap -mb-10 md:mt-0 text-center">
-            <div className="lg:w-1/3 md:w-1/2 w-full px-4 flex flex-col md:items-start items-start">
-              <div className="font-mono font-bold text-base-content tracking-widest text-sm mb-3 bg-base-100 px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block">
-                LINKS
-              </div>
 
-              <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <Link href="/testimonial/new" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Leave A Testimonial
-                </Link>
-                <Link href="/feature-requests" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Feature Request
-                </Link>
-                <Link href="/#pricing" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Pricing
-                </Link>
-              </div>
+          {/* Links */}
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-4 uppercase text-sm tracking-wider">LINKS</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="#" className="text-gray-600 hover:text-gray-900">Support</Link></li>
+              <li><Link href="#" className="text-gray-600 hover:text-gray-900">Pricing</Link></li>
+              <li><Link href="#" className="text-gray-600 hover:text-gray-900">Affiliates</Link></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-4 uppercase text-sm tracking-wider">LEGAL</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/tos" className="text-gray-600 hover:text-gray-900">Terms of services</Link></li>
+              <li><Link href="/privacy-policy" className="text-gray-600 hover:text-gray-900">Privacy policy</Link></li>
+            </ul>
+          </div>
+
+          {/* More */}
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-4 uppercase text-sm tracking-wider">MORE</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="https://ai.milh.tech" target="_blank" className="text-gray-600 hover:text-gray-900">Free AI Course</Link></li>
+              <li><Link href="https://creati.fun" target="_blank" className="text-gray-600 hover:text-gray-900">CreatiFun</Link></li>
+              <li><Link href="https://talent.surf" target="_blank" className="text-gray-600 hover:text-gray-900">TalentSurf</Link></li>
+              <li><Link href="https://notifast.fun" target="_blank" className="text-gray-600 hover:text-gray-900">NotiFast</Link></li>
+              <li><Link href="https://github.com/Kiog-Aser/invoices" target="_blank" className="text-gray-600 hover:text-gray-900">GitHub</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Creator section */}
+        <div className="border-t border-gray-200 mt-8 pt-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center">
+              <span className="text-sm">👋</span>
             </div>
-
-            <div className="lg:w-1/3 md:w-1/2 w-full px-4 flex flex-col md:items-start items-start">
-              <div className="font-mono font-bold text-base-content tracking-widest text-sm mb-3 bg-base-100 px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block">
-                LEGAL
-              </div>
-
-              <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <Link href="/tos" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Terms of Service
-                </Link>
-                <Link href="/privacy-policy" className="font-mono text-base-content hover:text-primary transition-colors">
-                  Privacy Policy
-                </Link>
-              </div>
-            </div>
-            
-            <div className="lg:w-1/3 md:w-1/2 w-full px-4 flex flex-col md:items-start items-start">
-              <div className="font-mono font-bold text-base-content tracking-widest text-sm mb-3 bg-base-100 px-3 py-1 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] border border-base-content/10 inline-block">
-                ABOUT
-              </div>
-
-              <div className="flex flex-col md:items-start items-start gap-3 mb-10 text-sm mt-4">
-                <span className="font-mono text-base-content/70">A modern SaaS boilerplate for rapid product launches.</span>
-                <span className="font-mono text-base-content/60">Built with Next.js, TypeScript, Tailwind CSS, and more.</span>
-              </div>
-            </div>
+            <p className="text-gray-600 text-sm">
+              Hey Curious 👋 I'm <strong>Mil</strong>, the creator of InvoiceLink. You can follow my work on{" "}
+              <Link href="https://x.com/MilHoornaert" target="_blank" className="text-blue-600 underline">Twitter</Link>.
+            </p>
           </div>
         </div>
       </div>

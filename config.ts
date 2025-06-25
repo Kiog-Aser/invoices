@@ -6,7 +6,7 @@ const config = {
   appName: "Invoices — Mil Hoornaert",
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "Get invoices for our purchases from Mil Hoornaert.",
+    "Stop paying 0.4% for Stripe invoices. Create unlimited invoice access links for your customers. Let them search, edit, and download invoices for free.",
   // REQUIRED (no https://, not trialing slash at the end)
   // This will respect the deployment URL (like Vercel) if no custom domain is set
   domainName: "invoice.milh.tech",
@@ -67,9 +67,9 @@ const config = {
   },
   resend: {
     // REQUIRED — Email 'From' field to be used when sending magic login links
-    fromNoReply: `Mil hoornaerrt <noreply@mails.milh.tech>`,
+    fromNoReply: `InvoiceLink <noreply@mails.milh.tech>`,
     // REQUIRED — Email 'From' field to be used when sending other emails, like abandoned carts, updates etc..
-    fromAdmin: `Mil Hoornaert <support@mails.milh.tech>`,
+    fromAdmin: `InvoiceLink <support@mails.milh.tech>`,
     // Email shown to customer if need support. Leave empty if not needed => if empty, set up Crisp above, otherwise you won't be able to offer customer support."
     supportEmail: "support@mails.milh.tech",
     // When someone replies to supportEmail sent by the app, forward it to the email below (otherwise it's lost). If you set supportEmail to empty, this will be ignored.
