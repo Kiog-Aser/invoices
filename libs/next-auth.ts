@@ -11,6 +11,12 @@ const domain = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).host
 const isDevelopment = process.env.NODE_ENV === "development";
 const isLocalhost = domain === "localhost";
 
+// Admin email(s) allowed to access the deployed version
+const ADMIN_EMAILS = [
+  "milloran@gmail.com", // Add your email here
+  // Add more admin emails if needed
+];
+
 // For development with HTTP on localhost, we need different cookie settings
 const cookiePrefix = isDevelopment && isLocalhost ? "" : "__Secure-";
 const useSecureCookies = !(isDevelopment && isLocalhost); // Disable secure cookies for localhost HTTP
@@ -49,6 +55,21 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // In development, allow all users
+      if (isDevelopment) {
+        return true;
+      }
+      
+      // In production, only allow admin emails
+      if (user.email && ADMIN_EMAILS.includes(user.email)) {
+        return true;
+      }
+      
+      // Deny access for non-admin users in production
+      console.log(`Access denied for email: ${user.email}`);
+      return false;
+    },
     session: async ({ session, token }) => {
       if (session?.user) {
         session.user.id = token.uid as string;

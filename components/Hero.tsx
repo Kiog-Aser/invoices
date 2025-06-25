@@ -1,4 +1,4 @@
-import ButtonSignin from "./ButtonSignin";
+import config from "@/config";
 
 export default function Hero() {
   return (
@@ -69,10 +69,14 @@ export default function Hero() {
 
         {/* CTA Button - improved styling and text */}
         <div className="mb-16">
-          <ButtonSignin 
-            text="Get Zenvoice ➜"
-            className="bg-green-500 hover:bg-green-600 text-white font-bold px-10 py-4 rounded-2xl text-lg border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-          />
+          <a
+            href={config.githubRepo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-green-500 hover:bg-green-600 text-white font-bold px-10 py-4 rounded-2xl text-lg border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 inline-block"
+          >
+            Get Zenvoice ➜
+          </a>
         </div>
 
         {/* Reviews section */}

@@ -16,6 +16,8 @@ const config = {
   logoPath: "/logo.png",
   // REQUIRED: The OG image used when someone shares your website on social media
   ogImagePath: "/opengraph-image.png",
+  // GitHub repository URL for "Get Started" links
+  githubRepo: "https://github.com/Kiog-Aser/invoices",
   // Optional: The Google Analytics measurement ID
   googleAnalytics: {
     measurementId: "",

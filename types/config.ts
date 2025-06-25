@@ -28,14 +28,15 @@ export type Theme =
   | "night"
   | "coffee"
   | "winter"
-  | "soul"
-  | "siliconfan"
-  | "";
+  | "dim"
+  | "nord"
+  | "sunset";
 
 export interface ConfigProps {
   appName: string;
   appDescription: string;
   domainName: string;
+  githubRepo: string;
   crisp: {
     id?: string;
     onlyShowOnRoutes?: string[];

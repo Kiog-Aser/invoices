@@ -67,6 +67,7 @@ const Header = () => {
             <ButtonSignin 
               text="Login"
               className="text-gray-600 hover:text-gray-900 font-medium bg-transparent border-0 shadow-none hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors"
+              allowAdminSignin={true}
             />
           </div>
 
@@ -124,6 +125,7 @@ const Header = () => {
                   <ButtonSignin 
                     text="Login"
                     className="w-full text-left text-gray-600 hover:text-gray-900 font-medium bg-transparent border-0 shadow-none hover:bg-gray-50 px-0 py-2"
+                    allowAdminSignin={true}
                   />
                 </div>
               </div>

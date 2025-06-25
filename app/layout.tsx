@@ -23,11 +23,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" data-theme={config.colors.theme} className={font.className}>
       <head>
         {config.domainName && <PlausibleProvider domain={config.domainName} />}
-        <script 
-          defer 
-          data-website-id="685bc24db79e1eba8622e03c" 
-          src="https://www.notifast.fun/js/embed.js"
-        />
       </head>
       <body>
         <Providers>

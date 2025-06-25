@@ -1,4 +1,4 @@
-import ButtonSignin from "./ButtonSignin";
+import config from "@/config";
 
 function CTA() {
   return (
@@ -13,10 +13,14 @@ function CTA() {
           invoices themselves.
         </p>
         
-        <ButtonSignin 
-          text="Get InvoiceLink →"
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-12 py-4 rounded-xl text-lg border-0 shadow-lg hover:shadow-xl transition-all duration-200 mb-20"
-        />
+        <a
+          href={config.githubRepo}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-12 py-4 rounded-xl text-lg border-0 shadow-lg hover:shadow-xl transition-all duration-200 mb-20 inline-block"
+        >
+          Get InvoiceLink →
+        </a>
 
       </div>
     </section>
