@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectMongo from "@/libs/mongoose";
 import Project from "@/models/Project";
-import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 import Stripe from "stripe";
 
 // POST /api/invoice/[slug]/generate-pdf - Generate PDF invoice
@@ -135,15 +136,16 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     // Try to use Puppeteer to convert HTML to PDF, fallback to HTML if it fails
     try {
       const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath,
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
       });
-      
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
-      
       const pdfBuffer = await page.pdf({
-        format: 'A4',
+        format: 'a4', // fixed: must be lowercase
         margin: {
           top: '40px',
           right: '40px',
@@ -152,14 +154,11 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         },
         printBackground: true
       });
-
       await browser.close();
-
       const headers = new Headers({
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${invoiceId}.pdf"`,
       });
-
       return new Response(pdfBuffer, { headers });
     } catch (puppeteerError) {
       console.warn('Puppeteer failed, falling back to HTML:', puppeteerError);
@@ -379,4 +378,4 @@ function generateInvoiceHTML(invoiceId: string, customerData: any, project: any,
 </body>
 </html>
   `;
-} 
+}

@@ -174,7 +174,6 @@ export default function InvoiceViewPage() {
 
   const handleDownloadPDF = async (invoice: Invoice) => {
     setIsDownloading(invoice.id);
-    
     try {
       const response = await fetch(`/api/invoice/${slug}/generate-pdf`, {
         method: 'POST',
@@ -190,25 +189,34 @@ export default function InvoiceViewPage() {
         }),
       });
 
-      if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (response.ok && contentType && contentType.includes('application/pdf')) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        
-        // Detect if response is PDF or HTML based on content type
-        const contentType = response.headers.get('content-type');
-        const fileExtension = contentType?.includes('pdf') ? 'pdf' : 'html';
-        
         const link = document.createElement('a');
         link.href = url;
-        link.download = `invoice-${invoice.number}.${fileExtension}`;
+        link.download = `invoice-${invoice.number}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        throw new Error('Failed to generate invoice');
+        // Try to read error message from response
+        let errorMsg = 'Failed to generate invoice.';
+        try {
+          const text = await response.text();
+          // If HTML, show a generic error; if JSON, try to parse error
+          if (contentType && contentType.includes('application/json')) {
+            const json = JSON.parse(text);
+            errorMsg = json.error || errorMsg;
+          } else if (contentType && contentType.includes('text/html')) {
+            errorMsg = 'Server returned an HTML error page. Please check your server logs.';
+          } else {
+            errorMsg = text || errorMsg;
+          }
+        } catch (e) {}
+        alert(errorMsg);
       }
-      
     } catch (error) {
       console.error('Error downloading invoice:', error);
       alert('Failed to download invoice. Please try again.');
