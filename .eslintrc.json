@@ -1,0 +1,15 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    // Disable common warnings
+    "no-unused-vars": "warn",
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-img-element": "off",
+    "react-hooks/exhaustive-deps": "warn",
+    
+    // Keep important rules enabled
+    "no-undef": "error",
+    "react/jsx-key": "error",
+    "react/display-name": "error"
+  }
+}
