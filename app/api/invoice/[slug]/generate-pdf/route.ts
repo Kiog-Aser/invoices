@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectMongo from "@/libs/mongoose";
 import Project from "@/models/Project";
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
 import Stripe from "stripe";
 
 // POST /api/invoice/[slug]/generate-pdf - Generate PDF invoice
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+  // Dynamic require to avoid Vercel/Next.js bundling issues
+  const chromium = require('chrome-aws-lambda');
+  const puppeteer = require('puppeteer-core');
   try {
     const body = await req.json();
     const { email, token, invoiceId, customerData, invoiceData } = body;
@@ -315,67 +316,60 @@ function generateInvoiceHTML(invoiceId: string, customerData: any, project: any,
               if (index === 0) return `<div><strong>${trimmedLine}</strong></div>`;
               return `<div>${trimmedLine}</div>`;
             }).join('');
-          } else {
-            return `<div><strong>Customer Name</strong></div><div>customer@email.com</div><div>Country</div>`;
           }
+          return '';
         })()}
     </div>
 
-    <div class="amount-due">
-        $${invoiceData?.amount?.toFixed(2) || '0.00'} due ${invoiceData?.dueDate || invoiceData?.created || new Date().toLocaleDateString()}
-    </div>
+    <div class="amount-due">Amount due: ${invoiceData?.amount_due / 100} ${invoiceData?.currency?.toUpperCase()}</div>
 
     <table class="items-table">
         <thead>
             <tr>
                 <th>Description</th>
-                <th style="text-align: center;">Quantity</th>
-                <th style="text-align: right;">Unit price</th>
-                <th style="text-align: right;">Amount</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th class="amount">Amount</th>
             </tr>
         </thead>
         <tbody>
-            ${invoiceData?.lines?.map((line: any) => `
-            <tr>
-                <td>${line.description || 'Item'}</td>
-                <td style="text-align: center;">${line.quantity || 1}</td>
-                <td style="text-align: right;">$${line.amount?.toFixed(2) || '0.00'}</td>
-                <td style="text-align: right;">$${(line.amount * (line.quantity || 1))?.toFixed(2) || '0.00'}</td>
-            </tr>
-            `).join('') || `
-            <tr>
-                <td>Service</td>
-                <td style="text-align: center;">1</td>
-                <td style="text-align: right;">$${invoiceData?.amount?.toFixed(2) || '0.00'}</td>
-                <td style="text-align: right;">$${invoiceData?.amount?.toFixed(2) || '0.00'}</td>
-            </tr>
-            `}
+            ${(() => {
+              if (invoiceData?.lines?.data) {
+                return invoiceData.lines.data.map((item: any) => {
+                  return `
+                    <tr>
+                      <td>${item.description || ''}</td>
+                      <td>${item.quantity || 0}</td>
+                      <td>${(item.price?.unit_amount / 100) || 0} ${invoiceData.currency?.toUpperCase()}</td>
+                      <td class="amount">${(item.amount_total / 100) || 0} ${invoiceData.currency?.toUpperCase()}</td>
+                    </tr>
+                  `;
+                }).join('');
+              }
+              return '<tr><td colspan="4">No items found</td></tr>';
+            })()}
         </tbody>
     </table>
 
     <div class="totals">
         <div class="row">
-            <span>Subtotal</span>
-            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'}</span>
+            <div>Subtotal</div>
+            <div class="amount">${(invoiceData?.amount_subtotal / 100) || 0} ${invoiceData.currency?.toUpperCase()}</div>
         </div>
         <div class="row">
-            <span>Discount</span>
-            <span>-$0.00</span>
+            <div>Tax</div>
+            <div class="amount">${(invoiceData?.tax / 100) || 0} ${invoiceData.currency?.toUpperCase()}</div>
         </div>
-        <div class="row total-row">
-            <span>Total</span>
-            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'}</span>
-        </div>
-        <div class="row">
-            <span>Amount due</span>
-            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'} ${invoiceData?.currency?.toUpperCase() || 'USD'}</span>
+        <div class="total-row row">
+            <div>Total</div>
+            <div class="amount">${(invoiceData?.amount_total / 100) || 0} ${invoiceData.currency?.toUpperCase()}</div>
         </div>
     </div>
 
     <div class="footer">
-        <p>Thank you for your business!</p>
+        Thank you for your business! If you have any questions about this invoice, please contact us at ${project.companyData?.email || 'support@example.com'}.
     </div>
 </body>
 </html>
-  `;
+`;
 }
