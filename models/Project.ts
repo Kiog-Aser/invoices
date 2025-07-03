@@ -84,15 +84,6 @@ const projectSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // --- BEGIN: Add tokens array for invoice access links ---
-    tokens: [
-      {
-        email: { type: String, required: true },
-        token: { type: String, required: true },
-        expires: { type: Date, required: true }
-      }
-    ],
-    // --- END: Add tokens array ---
     // Statistics
     totalSearches: {
       type: Number,
@@ -121,4 +112,4 @@ projectSchema.virtual('publicUrl').get(function() {
 // add plugin that converts mongoose to json
 projectSchema.plugin(toJSON);
 
-export default mongoose.models.Project || mongoose.model("Project", projectSchema);
+export default mongoose.models.Project || mongoose.model("Project", projectSchema); 

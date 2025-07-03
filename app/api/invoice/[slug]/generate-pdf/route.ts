@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectMongo from "@/libs/mongoose";
 import Project from "@/models/Project";
+import puppeteer from 'puppeteer';
 import Stripe from "stripe";
 
 // POST /api/invoice/[slug]/generate-pdf - Generate PDF invoice
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
-  // Dynamic require to avoid Vercel/Next.js bundling issues
-  const chromium = require('chrome-aws-lambda');
-  const puppeteer = require('puppeteer-core');
   try {
     const body = await req.json();
     const { email, token, invoiceId, customerData, invoiceData } = body;
@@ -27,17 +25,6 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
-
-    // --- Token validation: allow 'test' as a valid token for development ---
-    if (token !== 'test') {
-      const validToken = Array.isArray(project.tokens)
-        ? project.tokens.find((t: any) => t.email === email && t.token === token && (!t.expires || new Date(t.expires) > new Date()))
-        : null;
-      if (!validToken) {
-        return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
-      }
-    }
-    // --- End token validation ---
 
     // Fetch company data from Stripe with robust fallback
     let companyData = null;
@@ -148,16 +135,15 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     // Try to use Puppeteer to convert HTML to PDF, fallback to HTML if it fails
     try {
       const browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
-        headless: chromium.headless,
-        ignoreHTTPSErrors: true,
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
+      
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
+      
       const pdfBuffer = await page.pdf({
-        format: 'a4', // fixed: must be lowercase
+        format: 'A4',
         margin: {
           top: '40px',
           right: '40px',
@@ -166,11 +152,14 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         },
         printBackground: true
       });
+
       await browser.close();
+
       const headers = new Headers({
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${invoiceId}.pdf"`,
       });
+
       return new Response(pdfBuffer, { headers });
     } catch (puppeteerError) {
       console.warn('Puppeteer failed, falling back to HTML:', puppeteerError);
@@ -324,4 +313,70 @@ function generateInvoiceHTML(invoiceId: string, customerData: any, project: any,
             return lines.map((line: string, index: number) => {
               const trimmedLine = line.trim();
               if (!trimmedLine || trimmedLine.includes('(optional)')) return '';
-              if
+              if (index === 0) return `<div><strong>${trimmedLine}</strong></div>`;
+              return `<div>${trimmedLine}</div>`;
+            }).join('');
+          } else {
+            return `<div><strong>Customer Name</strong></div><div>customer@email.com</div><div>Country</div>`;
+          }
+        })()}
+    </div>
+
+    <div class="amount-due">
+        $${invoiceData?.amount?.toFixed(2) || '0.00'} due ${invoiceData?.dueDate || invoiceData?.created || new Date().toLocaleDateString()}
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: center;">Quantity</th>
+                <th style="text-align: right;">Unit price</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${invoiceData?.lines?.map((line: any) => `
+            <tr>
+                <td>${line.description || 'Item'}</td>
+                <td style="text-align: center;">${line.quantity || 1}</td>
+                <td style="text-align: right;">$${line.amount?.toFixed(2) || '0.00'}</td>
+                <td style="text-align: right;">$${(line.amount * (line.quantity || 1))?.toFixed(2) || '0.00'}</td>
+            </tr>
+            `).join('') || `
+            <tr>
+                <td>Service</td>
+                <td style="text-align: center;">1</td>
+                <td style="text-align: right;">$${invoiceData?.amount?.toFixed(2) || '0.00'}</td>
+                <td style="text-align: right;">$${invoiceData?.amount?.toFixed(2) || '0.00'}</td>
+            </tr>
+            `}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="row">
+            <span>Subtotal</span>
+            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'}</span>
+        </div>
+        <div class="row">
+            <span>Discount</span>
+            <span>-$0.00</span>
+        </div>
+        <div class="row total-row">
+            <span>Total</span>
+            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'}</span>
+        </div>
+        <div class="row">
+            <span>Amount due</span>
+            <span>$${invoiceData?.amount?.toFixed(2) || '0.00'} ${invoiceData?.currency?.toUpperCase() || 'USD'}</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+    </div>
+</body>
+</html>
+  `;
+} 
