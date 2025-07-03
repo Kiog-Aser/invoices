@@ -23,6 +23,13 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       isActive: true 
     }).populate('userId', 'name email');
 
+    // --- Ensure tokens array exists for migration ---
+    if (!project.tokens) {
+      project.tokens = [];
+      await project.save();
+      console.log('Migrated project.tokens to [] for project', project.slug); // DEBUG
+    }
+
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
@@ -30,6 +37,14 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     // Generate a secure token for accessing invoices
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store the token in the project.tokens array
+    if (!Array.isArray(project.tokens)) project.tokens = [];
+    // Remove expired tokens for this email
+    project.tokens = project.tokens.filter((t: any) => t.email !== email || (t.expires && new Date(t.expires) > new Date()));
+    project.tokens.push({ email, token, expires: expiresAt });
+    await project.save();
+    console.log('Tokens after save:', project.tokens); // DEBUG
 
     // Create the access link
     const domain = process.env.NODE_ENV === 'development' 
@@ -110,4 +125,4 @@ This email was sent by ${projectName}
     console.error("Error sending link:", error);
     return NextResponse.json({ error: "Failed to send link" }, { status: 500 });
   }
-} 
+}

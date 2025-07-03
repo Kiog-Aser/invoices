@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 interface Invoice {
   id: string;
@@ -172,60 +173,32 @@ export default function InvoiceViewPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleDownloadPDF = async (invoice: Invoice) => {
-    setIsDownloading(invoice.id);
+  const handleDownloadPDF = async () => {
+    if (!selectedInvoice) return;
+    setIsDownloading(selectedInvoice.id);
     try {
-      const response = await fetch(`/api/invoice/${slug}/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          token,
-          invoiceId: invoice.number,
-          customerData,
-          invoiceData: invoice
-        }),
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (response.ok && contentType && contentType.includes('application/pdf')) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `invoice-${invoice.number}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      const html2pdf = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
+      const element = document.getElementById('invoice-pdf-content');
+      if (element && html2pdf) {
+        await html2pdf()
+          .from(element)
+          .set({
+            margin: 0.5,
+            filename: `invoice-${selectedInvoice.number}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+          })
+          .save();
       } else {
-        // Try to read error message from response
-        let errorMsg = 'Failed to generate invoice.';
-        try {
-          const text = await response.text();
-          // If HTML, show a generic error; if JSON, try to parse error
-          if (contentType && contentType.includes('application/json')) {
-            const json = JSON.parse(text);
-            errorMsg = json.error || errorMsg;
-          } else if (contentType && contentType.includes('text/html')) {
-            errorMsg = 'Server returned an HTML error page. Please check your server logs.';
-          } else {
-            errorMsg = text || errorMsg;
-          }
-        } catch (e) {}
-        alert(errorMsg);
+        alert('PDF library or content not found.');
       }
     } catch (error) {
-      console.error('Error downloading invoice:', error);
-      alert('Failed to download invoice. Please try again.');
+      alert('Failed to generate PDF.');
+      console.error(error);
     } finally {
       setIsDownloading(null);
     }
   };
-
-
 
   if (loading) {
     return (
@@ -391,7 +364,7 @@ export default function InvoiceViewPage() {
               <h2 className="text-xl font-semibold text-gray-900">Invoice</h2>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleDownloadPDF(selectedInvoice)}
+                  onClick={handleDownloadPDF}
                   disabled={isDownloading === selectedInvoice.id}
                   className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-400"
                 >
@@ -419,7 +392,7 @@ export default function InvoiceViewPage() {
             </div>
 
             {/* Invoice Content */}
-            <div className="p-6">
+            <div id="invoice-pdf-content" className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column - Company Info */}
                 <div>

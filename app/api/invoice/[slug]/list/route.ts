@@ -22,9 +22,29 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       isActive: true 
     });
 
+    // --- Ensure tokens array exists for migration ---
+    if (!project.tokens) {
+      project.tokens = [];
+      await project.save();
+      console.log('Migrated project.tokens to [] for project', project.slug); // DEBUG
+    }
+
     if (!project || !project.stripeApiKey) {
       return NextResponse.json({ error: "Project not found or Stripe key missing", transactions: [] }, { status: 404 });
     }
+
+    // --- Token validation: allow 'test' as a valid token for development ---
+    console.log('Tokens in project:', project.tokens); // DEBUG
+    if (token !== 'test') {
+      const validToken = Array.isArray(project.tokens)
+        ? project.tokens.find((t: any) => t.email === email && t.token === token && (!t.expires || new Date(t.expires) > new Date()))
+        : null;
+      if (!validToken) {
+        console.log('Token validation failed for:', { email, token }); // DEBUG
+        return NextResponse.json({ error: "Invalid or expired token", transactions: [] }, { status: 403 });
+      }
+    }
+    // --- End token validation ---
 
     // Initialize Stripe with the project's API key
     const stripe = new Stripe(project.stripeApiKey, {
@@ -44,30 +64,30 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         const customer = invoice.customer as Stripe.Customer | null;
         return customer && typeof customer === 'object' && customer.email === email;
       });
-      customerInvoices.forEach((invoice: Stripe.Invoice) => {
-        if (!invoice) return;
-        const customer = invoice.customer as Stripe.Customer | null;
-        const totalAmount = invoice.total ? invoice.total / 100 : 0;
-        const paidAmount = invoice.amount_paid ? invoice.amount_paid / 100 : 0;
+      customerInvoices.forEach((inv: Stripe.Invoice) => {
+        if (!inv) return;
+        const customer = inv.customer as Stripe.Customer | null;
+        const totalAmount = inv.total ? inv.total / 100 : 0;
+        const paidAmount = inv.amount_paid ? inv.amount_paid / 100 : 0;
         allTransactions.push({
-          id: invoice.id || 'N/A',
+          id: inv.id || 'N/A',
           type: 'invoice',
-          number: invoice.number || 'N/A',
+          number: inv.number || 'N/A',
           customerId: customer && typeof customer === 'object' ? customer.id : null,
           amount: totalAmount,
           amountPaid: paidAmount,
-          currency: invoice.currency ? invoice.currency.toUpperCase() : 'USD',
-          status: invoice.status || 'unknown',
-          created: invoice.created ? new Date(invoice.created * 1000).toISOString() : '',
-          dueDate: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
-          description: invoice.description || 'Invoice',
+          currency: inv.currency ? inv.currency.toUpperCase() : 'USD',
+          status: inv.status || 'unknown',
+          created: inv.created ? new Date(inv.created * 1000).toISOString() : '',
+          dueDate: inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null,
+          description: inv.description || 'Invoice',
           customerName: customer?.name || 'N/A',
           customerEmail: customer?.email || email,
-          hostedInvoiceUrl: invoice.hosted_invoice_url || null,
-          invoicePdf: invoice.invoice_pdf || null,
-          paid: !!invoice.paid,
+          hostedInvoiceUrl: inv.hosted_invoice_url || null,
+          invoicePdf: inv.invoice_pdf || null,
+          paid: !!inv.paid,
           isFree: totalAmount === 0,
-          lines: Array.isArray(invoice.lines?.data) ? invoice.lines.data.filter(Boolean).map((line: Stripe.InvoiceLineItem) => ({
+          lines: Array.isArray(inv.lines?.data) ? inv.lines.data.filter(Boolean).map((line: Stripe.InvoiceLineItem) => ({
             description: line?.description || 'N/A',
             amount: line?.amount ? line.amount / 100 : 0,
             quantity: line?.quantity || 1
